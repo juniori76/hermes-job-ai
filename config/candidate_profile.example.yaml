@@ -1,0 +1,48 @@
+# ==========================================
+# Perfil do Candidato - Hermes Job AI
+# Preencha com os seus dados reais
+# ==========================================
+
+candidato:
+  nome_completo: "Seu Nome Completo"
+  email: "seu_email@exemplo.com"
+  telefone: "(11) 99999-9999"
+  cpf: "000.000.000-00"
+  cidade: "São Bernardo do Campo"
+  estado: "SP"
+  pais: "Brasil"
+  linkedin_url: "https://www.linkedin.com/in/seu-perfil"
+  github_url: "https://github.com/seu-usuario"
+  
+preferencias_de_vaga:
+  cargos_alvo:
+    - "Analista de Suporte"
+    - "Administrador de Redes"
+    - "Administrador de Sistemas Windows"
+    - "Analista de Infraestrutura"
+    - "Analista de TI"
+  
+  modalidades_aceitas:
+    remoto: true       # Aceita vagas 100% home office do Brasil todo
+    hibrido: true      # Aceita modelo híbrido dentro do raio
+    presencial: false   # Recusa vagas 100% presenciais se forem longe
+
+  raio_maximo_km_hibrido: 30  # Distância máxima aceitável para vagas híbridas (ex: Grande SP / Faria Lima)
+  
+  contratos_aceitos:
+    - "CLT"
+    - "PJ"
+
+  pretensao_salarial_clt: "A combinar" # Ou valor numérico (ex: 4500)
+  disponibilidade_inicio: "Imediata"
+
+# Palavras-chave essenciais para o Cérebro de IA destacar nas respostas
+competencias_chave:
+  - "Windows Server"
+  - "Active Directory (AD)"
+  - "DNS e DHCP"
+  - "GPO (Políticas de Grupo)"
+  - "Redes TCP/IP"
+  - "Segurança e Hardening"
+  - "Suporte a Usuários N2/N3"
+  - "Linux Básico"

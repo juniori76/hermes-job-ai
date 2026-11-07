@@ -1,0 +1,20 @@
+# Coleta de vagas de múltiplos sites
+python-jobspy>=1.1.50
+
+# Automação de navegador e formulários
+playwright>=1.49.0
+
+# SDK Oficial do Gemini / Google AI
+google-genai>=1.0.0
+
+# Servidor Web do Dashboard
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+
+# Utilitários de dados e arquivos
+pydantic>=2.10.0
+pyyaml>=6.0.2
+pandas>=2.2.0
+requests>=2.32.0
+python-dotenv>=1.0.1
+aiofiles>=24.1.0

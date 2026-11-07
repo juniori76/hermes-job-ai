@@ -1,0 +1,22 @@
+services:
+  hermes:
+    build: .
+    container_name: hermes_job_ai
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      - PORT=8088
+      - HOST=0.0.0.0
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL_FAST=${GEMINI_MODEL_FAST:-gemini-2.5-flash}
+      - GEMINI_MODEL_SMART=${GEMINI_MODEL_SMART:-gemini-2.5-pro}
+    volumes:
+      # Mantém os cookies de login do navegador, banco de dados e currículos salvos no seu servidor
+      - ./data:/app/data
+      - ./config:/app/config
+    # Prioridade de CPU amigável para não atrapalhar outros serviços do servidor
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
