@@ -57,9 +57,9 @@ async def dashboard_home(request: Request):
         jobs = [dict(row) for row in cursor.fetchall()]
 
     return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
+        request=request,
+        name="index.html",
+        context={
             "total_jobs": total_jobs,
             "high_match_jobs": high_match_jobs,
             "applied_jobs": applied_jobs,
