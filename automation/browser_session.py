@@ -167,8 +167,8 @@ def check_auth_status() -> Dict[str, bool]:
                 try:
                     page.goto("https://portal.gupy.io/", timeout=10000)
                     human_pause(1.0, 1.8)
-                    content = page.content().lower()
-                    if "minhas candidaturas" in content or "sair" in content or "meu perfil" in content:
+                    entrar_btn = page.locator("a:has-text('Entrar'), button:has-text('Entrar')").first
+                    if not entrar_btn.is_visible(timeout=1500):
                         status["gupy"] = True
                 except Exception:
                     pass
