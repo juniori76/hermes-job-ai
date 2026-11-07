@@ -3,80 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hermes Job AI - Dashboard</title>
+  <title>Hermes Job AI - Centro de Comando</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { background-color: #0f172a; color: #f8fafc; }
+    body { background-color: #0b0f19; color: #f1f5f9; }
   </style>
 </head>
-<body class="min-h-screen p-4 md:p-8">
+<body class="min-h-screen p-3 md:p-6">
 
-  <!-- Cabeçalho -->
-  <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 pb-6 border-b border-slate-800 gap-4">
+  <!-- Header Superior -->
+  <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-6 pb-6 border-b border-slate-800 gap-4">
     <div class="flex items-center gap-3">
-      <div class="bg-indigo-600 text-white p-3 rounded-xl shadow-lg shadow-indigo-500/30">
+      <div class="bg-indigo-600 text-white p-3 rounded-2xl shadow-lg shadow-indigo-500/20">
         <i class="fa-solid fa-robot text-2xl"></i>
       </div>
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+        <h1 class="text-2xl font-black text-white tracking-tight flex items-center gap-2">
           Hermes Job AI
-          <span class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">24/7 Ativo</span>
+          <span class="text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> 24/7 Ativo
+          </span>
         </h1>
-        <p class="text-xs text-slate-400">Servidor: 192.168.0.123 | Monitoramento Inteligente de Vagas</p>
+        <p class="text-xs text-slate-400">Servidor Linux: 192.168.0.123:8088</p>
       </div>
     </div>
 
-    <!-- Ações Rápidas -->
-    <div class="flex items-center gap-3">
-      <button onclick="triggerAction('/api/scan', 'Varredura iniciada!')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg text-sm font-medium border border-slate-700 flex items-center gap-2 transition">
-        <i class="fa-solid fa-radar text-indigo-400"></i> Buscar Vagas Agora
+    <!-- Navegação de Abas -->
+    <div class="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-xl border border-slate-800 text-sm">
+      <button onclick="switchTab('vagas')" id="tab-vagas" class="px-4 py-2 rounded-lg font-medium text-white bg-indigo-600 transition flex items-center gap-2">
+        <i class="fa-solid fa-briefcase"></i> Oportunidades
       </button>
-      <button onclick="triggerAction('/api/evaluate', 'Avaliação ATS disparada!')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md shadow-indigo-600/30 flex items-center gap-2 transition">
-        <i class="fa-solid fa-brain"></i> Avaliar com Gemini
+      <button onclick="switchTab('config')" id="tab-config" class="px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center gap-2">
+        <i class="fa-solid fa-sliders"></i> Configurações & IA
       </button>
     </div>
   </header>
 
-  <!-- Métricas -->
   <main class="max-w-7xl mx-auto">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-      <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
-        <p class="text-xs text-slate-400 font-medium">Total de Oportunidades no Radar</p>
-        <p class="text-3xl font-extrabold text-white mt-1">{{ total_jobs }}</p>
-      </div>
-      <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
-        <p class="text-xs text-slate-400 font-medium">Alta Compatibilidade (Score ≥ 75%)</p>
-        <p class="text-3xl font-extrabold text-emerald-400 mt-1">{{ high_match_jobs }}</p>
-      </div>
-      <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl">
-        <p class="text-xs text-slate-400 font-medium">Candidaturas Concluídas</p>
-        <p class="text-3xl font-extrabold text-indigo-400 mt-1">{{ applied_jobs }}</p>
-      </div>
-    </div>
 
-    <!-- Lista de Vagas -->
-    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-      <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+    <!-- ================= ABA 1: OPORTUNIDADES ================= -->
+    <div id="content-vagas">
+      
+      <!-- Banner de Status de Configuração -->
+      {% if not gemini_key_set or not resume_exists %}
+      <div class="mb-6 bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-amber-300 text-sm">
+        <div class="flex items-center gap-3">
+          <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+          <div>
+            <p class="font-bold">Atenção para o primeiro uso:</p>
+            <p class="text-xs text-amber-200/80">
+              {% if not gemini_key_set %}• Falta salvar sua Chave da API Gemini. {% endif %}
+              {% if not resume_exists %}• Falta enviar seu arquivo curriculo.pdf. {% endif %}
+            </p>
+          </div>
+        </div>
+        <button onclick="switchTab('config')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+          Resolver na aba Configurações
+        </button>
+      </div>
+      {% endif %}
+
+      <!-- Métricas -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-slate-900/70 border border-slate-800 p-5 rounded-2xl">
+          <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Total no Radar</p>
+          <p class="text-3xl font-black text-white mt-1">{{ total_jobs }}</p>
+        </div>
+        <div class="bg-slate-900/70 border border-slate-800 p-5 rounded-2xl">
+          <p class="text-xs text-emerald-400 font-semibold uppercase tracking-wider">Alta Compatibilidade (≥75%)</p>
+          <p class="text-3xl font-black text-emerald-400 mt-1">{{ high_match_jobs }}</p>
+        </div>
+        <div class="bg-slate-900/70 border border-slate-800 p-5 rounded-2xl">
+          <p class="text-xs text-indigo-400 font-semibold uppercase tracking-wider">Candidaturas Concluídas</p>
+          <p class="text-3xl font-black text-indigo-400 mt-1">{{ applied_jobs }}</p>
+        </div>
+      </div>
+
+      <!-- Barra de Ações -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 class="text-lg font-bold text-white flex items-center gap-2">
-          <i class="fa-solid fa-list-check text-indigo-400"></i> Top Vagas Ranqueadas
+          <i class="fa-solid fa-ranking-star text-indigo-400"></i> Melhores Vagas Ranqueadas
         </h2>
-        <span class="text-xs text-slate-400">Ordenado por Afinidade ATS</span>
+        <div class="flex gap-2">
+          <button onclick="triggerAction('/api/scan', 'Varredura de vagas iniciada no servidor!')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-satellite-dish text-indigo-400"></i> Varrer Vagas
+          </button>
+          <button onclick="triggerAction('/api/evaluate', 'Triagem de IA iniciada com Gemini Flash!')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-brain"></i> Avaliar com IA
+          </button>
+        </div>
       </div>
 
-      <div class="divide-y divide-slate-800/60">
+      <!-- Tabela / Cards de Vagas -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl overflow-hidden shadow-xl divide-y divide-slate-800/60">
         {% if jobs %}
           {% for job in jobs %}
-          <div class="p-5 hover:bg-slate-800/30 transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            
+          <div class="p-5 hover:bg-slate-800/20 transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div class="flex-1">
-              <div class="flex items-center gap-3">
-                <h3 class="text-base font-semibold text-white hover:text-indigo-400 transition">
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <h3 class="text-base font-bold text-white hover:text-indigo-400 transition">
                   <a href="{{ job.job_url }}" target="_blank">{{ job.title }}</a>
                 </h3>
-                
+
                 {% if job.match_score %}
-                  <span class="text-xs font-bold px-2 py-0.5 rounded-md 
+                  <span class="text-xs font-extrabold px-2.5 py-0.5 rounded-md 
                     {% if job.match_score >= 80 %} bg-emerald-500/20 text-emerald-400 border border-emerald-500/30
                     {% elif job.match_score >= 60 %} bg-amber-500/20 text-amber-400 border border-amber-500/30
                     {% else %} bg-rose-500/20 text-rose-400 border border-rose-500/30 {% endif %}">
@@ -87,82 +118,165 @@
                 {% endif %}
 
                 {% if job.is_remote %}
-                  <span class="text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-md">Remoto</span>
+                  <span class="text-[11px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-md font-medium">Remoto</span>
                 {% endif %}
               </div>
 
               <p class="text-xs text-slate-400 mt-1">
-                <i class="fa-regular fa-building"></i> {{ job.company }} • 
-                <i class="fa-solid fa-location-dot"></i> {{ job.location }} • 
-                <span class="uppercase font-semibold text-slate-500 text-[10px]">{{ job.site }}</span>
+                <strong class="text-slate-300">{{ job.company }}</strong> • {{ job.location }} • <span class="uppercase text-slate-500 font-semibold">{{ job.site }}</span>
               </p>
 
               {% if job.match_reasons %}
-                <p class="text-xs text-slate-300 mt-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/80">
-                  <strong class="text-indigo-300">Análise da IA:</strong> {{ job.match_reasons }}
+                <p class="text-xs text-slate-300 mt-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                  <span class="text-indigo-400 font-bold">🧠 Análise ATS:</span> {{ job.match_reasons }}
                 </p>
               {% endif %}
 
               {% if job.keywords_found %}
                 <div class="flex flex-wrap gap-1 mt-2">
                   {% for kw in job.keywords_found.split(',') %}
-                    <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">{{ kw.strip() }}</span>
+                    <span class="text-[10px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700/80 font-mono">{{ kw.strip() }}</span>
                   {% endfor %}
                 </div>
               {% endif %}
             </div>
 
-            <!-- Botões de Ação -->
+            <!-- Botões -->
             <div class="flex items-center gap-2 self-end md:self-center">
-              <a href="{{ job.job_url }}" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-lg border border-slate-700 transition">
+              <a href="{{ job.job_url }}" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl border border-slate-700 transition">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver Vaga
               </a>
-              
-              <button onclick="updateJobStatus('{{ job.id }}', 'approved')" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg font-medium shadow-sm transition">
-                <i class="fa-solid fa-check"></i> Aprovar Envio
+              <button onclick="updateJobStatus('{{ job.id }}', 'approved')" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl font-bold transition shadow-sm">
+                <i class="fa-solid fa-check"></i> Aprovar
               </button>
-
-              <button onclick="updateJobStatus('{{ job.id }}', 'rejected')" class="text-xs bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 px-3 py-2 rounded-lg border border-slate-700 transition">
-                <i class="fa-solid fa-xmark"></i> Descartar
+              <button onclick="updateJobStatus('{{ job.id }}', 'rejected')" class="text-xs bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 px-3 py-2 rounded-xl border border-slate-700 transition">
+                <i class="fa-solid fa-trash"></i>
               </button>
             </div>
-
           </div>
           {% endfor %}
         {% else %}
           <div class="p-12 text-center text-slate-500 text-sm">
-            Nenhuma vaga coletada ainda. Clique em "Buscar Vagas Agora" para iniciar o radar!
+            Nenhuma vaga registrada ainda. Clique em "Varrer Vagas" para iniciar a busca!
           </div>
         {% endif %}
       </div>
     </div>
+
+    <!-- ================= ABA 2: CONFIGURAÇÕES & IA ================= -->
+    <div id="content-config" class="hidden space-y-6">
+      
+      <!-- Chave do Gemini -->
+      <div class="bg-slate-900/70 border border-slate-800 p-6 rounded-2xl">
+        <h3 class="text-base font-bold text-white flex items-center gap-2 mb-2">
+          <i class="fa-solid fa-key text-indigo-400"></i> Chave da API do Gemini (Google AI)
+        </h3>
+        <p class="text-xs text-slate-400 mb-4">
+          Insira sua chave obtida gratuitamente no <a href="https://aistudio.google.com/apikey" target="_blank" class="text-indigo-400 underline">Google AI Studio</a> para ativar a triagem e respostas inteligentes.
+        </p>
+        <div class="flex gap-2 max-w-xl">
+          <input type="password" id="gemini-key-input" placeholder="Cole sua chave AIzaSy..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+          <button onclick="saveApiKey()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition">
+            Salvar Chave
+          </button>
+        </div>
+      </div>
+
+      <!-- Upload de Currículo -->
+      <div class="bg-slate-900/70 border border-slate-800 p-6 rounded-2xl">
+        <h3 class="text-base font-bold text-white flex items-center gap-2 mb-2">
+          <i class="fa-solid fa-file-pdf text-rose-400"></i> Upload do Currículo (PDF)
+        </h3>
+        <p class="text-xs text-slate-400 mb-4">
+          Este PDF será anexado automaticamente pelo robô quando o formulário da empresa exigir arquivo.
+        </p>
+        <div class="flex items-center gap-3">
+          <input type="file" id="resume-file-input" accept=".pdf" class="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700">
+          <button onclick="uploadResumeFile()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2 rounded-xl text-xs font-semibold transition">
+            Enviar PDF
+          </button>
+        </div>
+      </div>
+
+    </div>
+
   </main>
 
   <script>
-    async function triggerAction(endpoint, successMessage) {
+    function switchTab(tab) {
+      if (tab === 'vagas') {
+        document.getElementById('content-vagas').classList.remove('hidden');
+        document.getElementById('content-config').classList.add('hidden');
+        document.getElementById('tab-vagas').className = 'px-4 py-2 rounded-lg font-medium text-white bg-indigo-600 transition flex items-center gap-2';
+        document.getElementById('tab-config').className = 'px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center gap-2';
+      } else {
+        document.getElementById('content-vagas').classList.add('hidden');
+        document.getElementById('content-config').classList.remove('hidden');
+        document.getElementById('tab-config').className = 'px-4 py-2 rounded-lg font-medium text-white bg-indigo-600 transition flex items-center gap-2';
+        document.getElementById('tab-vagas').className = 'px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center gap-2';
+      }
+    }
+
+    async function triggerAction(endpoint, msg) {
       try {
         const res = await fetch(endpoint, { method: 'POST' });
         if (res.ok) {
-          alert(successMessage);
+          alert(msg);
           setTimeout(() => window.location.reload(), 2000);
         }
-      } catch (err) {
-        alert('Erro ao executar ação: ' + err);
+      } catch (e) {
+        alert('Erro: ' + e);
       }
     }
 
     async function updateJobStatus(jobId, newStatus) {
       try {
-        const res = await fetch(`/api/jobs/${jobId}/status`, {
+        await fetch(`/api/jobs/${jobId}/status`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: newStatus })
         });
+        window.location.reload();
+      } catch (e) {
+        alert('Erro: ' + e);
+      }
+    }
+
+    async function saveApiKey() {
+      const key = document.getElementById('gemini-key-input').value.trim();
+      if (!key) return alert('Por favor, digite a chave.');
+      try {
+        const res = await fetch('/api/settings/api-key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: key })
+        });
         if (res.ok) {
+          alert('Chave salva com sucesso no servidor!');
           window.location.reload();
         }
-      } catch (err) {
-        alert('Erro ao atualizar vaga: ' + err);
+      } catch (e) {
+        alert('Erro ao salvar chave: ' + e);
+      }
+    }
+
+    async function uploadResumeFile() {
+      const fileInput = document.getElementById('resume-file-input');
+      if (!fileInput.files.length) return alert('Selecione um arquivo PDF.');
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        const res = await fetch('/api/settings/upload-resume', {
+          method: 'POST',
+          body: formData
+        });
+        if (res.ok) {
+          alert('Currículo enviado com sucesso para o servidor!');
+          window.location.reload();
+        }
+      } catch (e) {
+        alert('Erro ao enviar currículo: ' + e);
       }
     }
   </script>
