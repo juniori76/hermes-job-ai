@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from core.database import get_connection
+from core import config
 from core.radar import scan_jobs, load_profile, CONFIG_PATH
 from core.ats_brain import run_ats_evaluation_batch
 from core.resume_analyzer import analyze_resume_with_ai
@@ -30,7 +31,7 @@ async def dashboard_home(request: Request):
     """Página principal do Dashboard exibindo métricas e vagas ranqueadas."""
     profile = load_profile()
     resume_exists = os.path.exists(os.path.join(DATA_DIR, "curriculo.pdf"))
-    gemini_key_set = bool(os.getenv("GEMINI_API_KEY"))
+    gemini_key_set = config.has_api_key()
 
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -74,30 +75,13 @@ async def dashboard_home(request: Request):
 
 @app.post("/api/settings/api-key")
 async def save_api_key(request: Request):
-    """Salva a chave do Gemini no arquivo .env e na memória."""
+    """Salva a chave do Gemini em data/runtime.env (volume persistente)."""
     data = await request.json()
     api_key = data.get("api_key", "").strip()
     if not api_key:
         return JSONResponse({"error": "Chave vazia"}, status_code=400)
 
-    env_path = os.path.join(BASE_DIR, ".env")
-    lines = []
-    found = False
-    if os.path.exists(env_path):
-        with open(env_path, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.startswith("GEMINI_API_KEY="):
-                    lines.append(f"GEMINI_API_KEY={api_key}\n")
-                    found = True
-                else:
-                    lines.append(line)
-    if not found:
-        lines.append(f"GEMINI_API_KEY={api_key}\n")
-
-    with open(env_path, "w", encoding="utf-8") as f:
-        f.writelines(lines)
-
-    os.environ["GEMINI_API_KEY"] = api_key
+    config.set_value("GEMINI_API_KEY", api_key)
     return {"success": True, "message": "Chave Gemini salva com sucesso!"}
 
 
