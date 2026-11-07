@@ -49,6 +49,11 @@ def send_telegram_message(message: str, reply_markup: dict = None) -> bool:
         return False
 
 
+# Alias de compatibilidade
+send_telegram_alert = send_telegram_message
+
+
+
 def notify_high_score_job(job: Dict[str, Any]) -> bool:
     """
     Alerta especial para vaga com alta afinidade (modo smart/auto).
