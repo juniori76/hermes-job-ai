@@ -4,17 +4,19 @@ services:
     container_name: hermes_job_ai
     restart: unless-stopped
     ports:
-      - "8090:8088"
+      - "8090:8088" # Painel Web do Hermes
+      - "6080:6080" # noVNC Interface Gráfica do Navegador
     env_file:
       - .env
     environment:
       - PORT=8088
       - HOST=0.0.0.0
+      - DISPLAY=:99
     volumes:
-      # Cookies de login, banco, currículo e chave salva pelo painel
+      # Cookies de login, banco, currículo e prints
       - ./data:/app/data
       - ./config:/app/config
     deploy:
       resources:
         limits:
-          memory: 2048M
+          memory: 2560M

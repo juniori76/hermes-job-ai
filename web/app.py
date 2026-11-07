@@ -28,6 +28,7 @@ from core.settings_manager import (
 )
 from core.notifier import test_telegram_connection
 from automation.apply_engine import apply_to_job
+from automation.browser_session import check_auth_status, launch_assisted_login
 
 app = FastAPI(title="Hermes Job AI Dashboard")
 
@@ -430,6 +431,24 @@ async def get_applications_history(request: Request):
         """)
         history = [dict(row) for row in cursor.fetchall()]
     return history
+
+
+@app.get("/api/auth/browser-status")
+async def get_browser_auth_status(request: Request):
+    """Verifica se há sessão autenticada do LinkedIn e Gupy no perfil persistente."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    status = check_auth_status()
+    return status
+
+
+@app.post("/api/auth/assisted-login")
+async def trigger_assisted_login(background_tasks: BackgroundTasks, request: Request, platform: str = "linkedin"):
+    """Dispara a abertura do navegador no display virtual para login assistido via noVNC."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    background_tasks.add_task(launch_assisted_login, platform)
+    return {"success": True, "message": f"Navegador aberto para {platform}. Acesse o noVNC para efetuar o login."}
 
 
 

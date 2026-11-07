@@ -1,8 +1,7 @@
 """
-Motor de Candidatura Automática Real - Hermes Job AI (Fase 5).
-Executa candidaturas completas via Playwright no Chromium,
-preenchendo formulários, anexando data/curriculo.pdf, gerando auditoria com prints,
-respeitando o limite diário e integrando aos modos Avaliação/Inteligente/Automático.
+Motor de Candidatura Automática Real - Hermes Job AI.
+Orquestra os drivers especializados (LinkedIn Easy Apply, Gupy Driver e Form Filler Genérico).
+Opera com DISPLAY virtual :99 para permitir acompanhamento ao vivo via noVNC (porta 6080).
 """
 
 import os
@@ -15,7 +14,9 @@ from core.database import get_connection
 from core.radar import load_profile
 from core.settings_manager import load_settings
 from core.notifier import notify_application_sent
-from automation.browser_session import open_session, human_pause, human_type, BASE_DIR
+from automation.browser_session import open_session, human_pause, BASE_DIR
+from automation.linkedin_driver import apply_linkedin_easy
+from automation.gupy_driver import apply_gupy_job
 from automation.form_filler import extract_fields, _fill
 from core.answer_engine import answer_fields
 
@@ -53,7 +54,6 @@ def log_application(job_id: str, platform: str, status: str, answers: Dict[str, 
             error
         ))
         
-        # Se for sucesso, marca job como applied
         if status == "success":
             cursor.execute("UPDATE jobs SET status = 'applied', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (job_id,))
         elif status == "failed":
@@ -86,8 +86,7 @@ def detect_platform(url: str) -> str:
 
 def apply_to_job(job: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
     """
-    Executa o fluxo completo de candidatura com Playwright.
-    dry_run=True apenas simula, tira screenshot e não envia.
+    Executa o fluxo de candidatura com Playwright delegando para o driver correto.
     """
     job_id = job.get("id")
     url = job.get("job_url")
@@ -98,7 +97,7 @@ def apply_to_job(job: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
     settings = load_settings()
     daily_limit = settings.get("auto_apply_daily_limit", 10)
     
-    # 1. Verifica limite diário (se não for dry-run)
+    # 1. Limite diário
     if not dry_run:
         today_total = count_applications_today()
         if today_total >= daily_limit:
@@ -108,7 +107,6 @@ def apply_to_job(job: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
             return {"status": "limit_reached", "error": msg}
 
     os.makedirs(SHOT_DIR, exist_ok=True)
-    profile = load_profile()
     report: Dict[str, Any] = {
         "job_id": job_id,
         "platform": platform,
@@ -117,135 +115,82 @@ def apply_to_job(job: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
         "answers": {}
     }
 
-    print(f"\n[Apply Engine] 🚀 Iniciando candidatura: {title} @ {company} ({platform})")
-    print(f"  URL: {url}")
-    print(f"  Modo: {'DRY-RUN (Simulação)' if dry_run else 'REAL'}")
+    print(f"\n[Apply Engine] 🚀 Candidatura: {title} @ {company} ({platform})")
+    print(f"  URL: {url} | Modo: {'DRY-RUN' if dry_run else 'REAL'}")
 
     try:
-        with open_session(headless=True) as ctx:
+        # Abre com headless=False para permitir visualização no noVNC (DISPLAY=:99)
+        with open_session(headless=False) as ctx:
             page = ctx.new_page()
-            
-            # Carrega a página da vaga
             try:
                 page.goto(url, wait_until="domcontentloaded", timeout=45000)
-            except Exception as e:
-                print(f"[Apply Engine] Timeout ao abrir página: {e}")
+            except Exception:
                 page.goto(url, timeout=30000)
-                
-            human_pause(2.5, 4.5)
+            human_pause(2.5, 4.0)
 
-            # Verifica se há botão inicial de 'Candidatar-se' para abrir formulário
-            apply_triggers = [
-                "button:has-text('Candidatar')",
-                "button:has-text('Candidatar-se')",
-                "a:has-text('Candidatar-se')",
-                "a:has-text('Apply')",
-                "button:has-text('Apply')",
-                "[data-testid='apply-button']",
-                ".job-apply-button",
-                "button:has-text('Quero me candidatar')",
-            ]
-            for selector in apply_triggers:
+            # Roteia para driver especializado
+            if platform == "linkedin":
+                report = apply_linkedin_easy(page, job, dry_run=dry_run)
+            elif platform == "gupy":
+                report = apply_gupy_job(page, job, dry_run=dry_run)
+            else:
+                # Driver genérico
+                fields = extract_fields(page)
+                if not fields:
+                    shot = os.path.join(SHOT_DIR, f"{job_id}_no_fields.png")
+                    page.screenshot(path=shot, full_page=True)
+                    report["status"] = "requires_human"
+                    report["error"] = "Campos não detectados ou exige login externo."
+                    report["screenshot"] = shot
+                else:
+                    profile = load_profile()
+                    answers = answer_fields(fields, profile, job)
+                    for f in fields:
+                        if f["type"] == "file" and os.path.exists(RESUME_PATH):
+                            try:
+                                page.set_input_files(f"[data-hermes-id='{f['id']}']", RESUME_PATH)
+                            except Exception:
+                                pass
+                            continue
+                        ans = answers.get(f["id"])
+                        if ans is not None:
+                            _fill(page, f, ans)
+
+                    shot = os.path.join(SHOT_DIR, f"{job_id}_{'dry' if dry_run else 'final'}.png")
+                    page.screenshot(path=shot, full_page=True)
+                    report["screenshot"] = shot
+                    report["answers"] = {f.get("label", f["id"]): answers.get(f["id"]) for f in fields if f["id"] in answers}
+
+                    if dry_run:
+                        report["status"] = "dry_run"
+                    else:
+                        submit_btn = page.locator("button[type='submit'], button:has-text('Enviar')").first
+                        if submit_btn.is_visible(timeout=1500):
+                            submit_btn.click()
+                            human_pause(3.0, 5.0)
+                            report["status"] = "success"
+                        else:
+                            report["status"] = "requires_human"
+
+            # Registra auditoria
+            log_application(
+                job_id,
+                platform,
+                report.get("status", "failed"),
+                report.get("answers", {}),
+                shot_path=report.get("screenshot"),
+                error=report.get("error")
+            )
+
+            # Notifica sucesso no Telegram
+            if report.get("status") == "success" and not dry_run:
                 try:
-                    btn = page.locator(selector).first
-                    if btn.is_visible(timeout=1500):
-                        print(f"[Apply Engine] Clicando no gatilho de candidatura: {selector}")
-                        btn.click()
-                        human_pause(2.0, 3.5)
-                        break
+                    notify_application_sent(title, company, job_url=url, status="sent")
                 except Exception:
                     pass
 
-            # Detecta campos do formulário
-            fields = extract_fields(page)
-            if not fields:
-                # Pode estar pedindo login ou tela externa
-                shot = os.path.join(SHOT_DIR, f"{job_id}_no_fields.png")
-                page.screenshot(path=shot, full_page=True)
-                err = "Nenhum campo de formulário detectado na página (pode exigir login manual prévio)."
-                print(f"[Apply Engine ⚠️] {err}")
-                log_application(job_id, platform, "requires_human", {}, shot_path=shot, error=err)
-                return {"status": "requires_human", "error": err, "screenshot": shot}
-
-            print(f"[Apply Engine] {len(fields)} campos detectados no formulário.")
-
-            # Gera respostas com LLM baseando-se estritamente no perfil
-            answers = answer_fields(fields, profile, job)
-            if answers.pop("_skip_job", False):
-                err = "Vaga rejeitada pelo motor de respostas (exige requisito incompatível)."
-                print(f"[Apply Engine] {err}")
-                log_application(job_id, platform, "skipped", {}, error=err)
-                return {"status": "skipped", "error": err}
-
-            # Preenche cada campo
-            for f in fields:
-                if f["type"] == "file":
-                    if os.path.exists(RESUME_PATH):
-                        try:
-                            print(f"[Apply Engine] Anexando currículo em: {f.get('label')}")
-                            page.set_input_files(f"[data-hermes-id='{f['id']}']", RESUME_PATH)
-                            human_pause(1.0, 2.0)
-                        except Exception as up_err:
-                            print(f"[Apply Engine] Aviso ao anexar arquivo: {up_err}")
-                    continue
-                
-                ans_val = answers.get(f["id"])
-                if ans_val is not None:
-                    _fill(page, f, ans_val)
-
-            # Tira print do formulário preenchido (Auditoria)
-            shot_file = f"{job_id}_{'dry' if dry_run else 'final'}.png"
-            shot_path = os.path.join(SHOT_DIR, shot_file)
-            page.screenshot(path=shot_path, full_page=True)
-            report["screenshot"] = shot_path
-            report["answers"] = {f.get("label", f["id"]): answers.get(f["id"]) for f in fields if f["id"] in answers}
-
-            # Submissão
-            if dry_run:
-                report["status"] = "dry_run"
-                log_application(job_id, platform, "dry_run", report["answers"], shot_path=shot_path)
-                print(f"[Apply Engine ✅] Simulação concluída com sucesso! Screenshot salvo.")
-            else:
-                # Clica no botão final de envio
-                submit_selectors = [
-                    "button[type='submit']",
-                    "button:has-text('Enviar Candidatura')",
-                    "button:has-text('Enviar')",
-                    "button:has-text('Finalizar')",
-                    "button:has-text('Concluir')",
-                    "button:has-text('Submit')",
-                ]
-                submitted = False
-                for s in submit_selectors:
-                    try:
-                        btn = page.locator(s).first
-                        if btn.is_visible(timeout=1500):
-                            btn.click()
-                            submitted = True
-                            print(f"[Apply Engine] Clicou para enviar: {s}")
-                            human_pause(3.0, 5.0)
-                            break
-                    except Exception:
-                        pass
-
-                if submitted:
-                    report["status"] = "success"
-                    log_application(job_id, platform, "success", report["answers"], shot_path=shot_path)
-                    print(f"[Apply Engine 🎉] Candidatura enviada com sucesso!")
-                    # Notifica no Telegram
-                    try:
-                        notify_application_sent(title, company, job_url=url, status="sent")
-                    except Exception as tg_e:
-                        print(f"[Apply Engine] Telegram aviso: {tg_e}")
-                else:
-                    err = "Formulário preenchido, mas botão final de envio não foi localizado com segurança."
-                    report["status"] = "requires_human"
-                    report["error"] = err
-                    log_application(job_id, platform, "requires_human", report["answers"], shot_path=shot_path, error=err)
-                    print(f"[Apply Engine ⚠️] {err}")
-
     except Exception as e:
-        err = f"Falha durante a automação: {str(e)}"
+        err = f"Falha na automação: {str(e)}"
         print(f"[Apply Engine ❌] {err}")
         log_application(job_id, platform, "failed", {}, error=err)
         return {"status": "failed", "error": err}

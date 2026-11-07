@@ -4,13 +4,20 @@ FROM mcr.microsoft.com/playwright/python:v1.49.0-jammy
 # Evita que o Python gere arquivos .pyc e força logs em tempo real
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV DISPLAY=:99
 
 WORKDIR /app
 
-# Instala dependências do sistema necessárias
+# Instala dependências do sistema necessárias incluindo ambiente X11 virtual, VNC e noVNC
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
+    xvfb \
+    fluxbox \
+    x11vnc \
+    novnc \
+    websockify \
+    net-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia e instala as dependências Python
@@ -24,11 +31,14 @@ RUN playwright install chromium
 # Copia o código da aplicação
 COPY . .
 
-# Cria pasta de dados para o perfil do navegador e banco de dados SQLite
-RUN mkdir -p data/browser_profile data/logs
+# Garante permissão de execução no script de inicialização
+RUN chmod +x entrypoint.sh
 
-# Expõe a porta do painel Web HTTP
-EXPOSE 8088
+# Cria pasta de dados para o perfil do navegador, banco de dados SQLite e screenshots
+RUN mkdir -p data/browser_profile data/logs data/screenshots
 
-# Comando padrão: inicia a API e o painel Web
-CMD ["python", "main.py"]
+# Expõe as portas: 8088 (Painel Web HTTP) e 6080 (noVNC Browser Visual)
+EXPOSE 8088 6080
+
+# Ponto de entrada que inicializa Xvfb + VNC + noVNC + FastAPI
+CMD ["./entrypoint.sh"]

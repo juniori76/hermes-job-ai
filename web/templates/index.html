@@ -407,6 +407,76 @@
 
     <!-- ================= ABA 4: PLATAFORMAS & IA ================= -->
     <div id="content-sessoes" class="hidden space-y-6">
+      <!-- ===== CONTAS, SESSÃO REAL & noVNC BROWSER ===== -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-browser text-sky-400"></i> Sessão Real do Navegador & Login Assistido (noVNC)
+            </h3>
+            <p class="text-xs text-slate-400">Acesse a tela do navegador dentro do servidor Linux para logar no LinkedIn e Gupy com segurança.</p>
+          </div>
+          <button onclick="checkAuthStatusNow()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 border border-slate-700">
+            <i class="fa-solid fa-rotate"></i> Verificar Logins
+          </button>
+        </div>
+
+        <!-- Cards de Status de Login -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- LinkedIn Card -->
+          <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="bg-sky-500/10 text-sky-400 p-3 rounded-xl">
+                <i class="fa-brands fa-linkedin text-2xl"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-white">LinkedIn</p>
+                <p id="status-linkedin" class="text-[11px] text-slate-400">Verificando sessão...</p>
+              </div>
+            </div>
+            <button onclick="startAssistedLogin('linkedin')" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Logar
+            </button>
+          </div>
+
+          <!-- Gupy Card -->
+          <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="bg-indigo-500/10 text-indigo-400 p-3 rounded-xl">
+                <i class="fa-solid fa-briefcase text-2xl"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-white">Portal Gupy</p>
+                <p id="status-gupy" class="text-[11px] text-slate-400">Verificando sessão...</p>
+              </div>
+            </div>
+            <button onclick="startAssistedLogin('gupy')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Logar
+            </button>
+          </div>
+        </div>
+
+        <!-- Visualizador noVNC Embutido -->
+        <div class="mt-4 border border-slate-800 rounded-2xl p-4 bg-slate-950/50 space-y-3">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
+              <i class="fa-solid fa-desktop text-emerald-400"></i> Interface Gráfica Remota (noVNC :6080)
+            </span>
+            <div class="flex gap-2">
+              <button onclick="toggleVncFrame()" id="btn-toggle-vnc" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg font-bold transition">
+                Abrir Visualizador no Painel
+              </button>
+              <a href="http://192.168.0.123:6080/vnc.html?autoconnect=true&resize=remote" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg font-bold transition border border-slate-700 flex items-center gap-1">
+                <i class="fa-solid fa-external-link"></i> Abrir em Nova Aba
+              </a>
+            </div>
+          </div>
+          <div id="vnc-container" class="hidden rounded-xl overflow-hidden border border-slate-800">
+            <iframe id="vnc-frame" src="" class="w-full h-[650px] border-0 bg-black"></iframe>
+          </div>
+        </div>
+      </div>
+
       
       <!-- Chaves de API e Fallback -->
       <div class="glass-card p-6 rounded-3xl space-y-4">
@@ -852,7 +922,55 @@ async function changePassword() {
     }
 
     // Carrega settings ao iniciar a página
-    document.addEventListener('DOMContentLoaded', loadCurrentSettings);
+    document.addEventListener('DOMContentLoaded', () => { loadCurrentSettings(); checkAuthStatusNow(); });
+
+    async function checkAuthStatusNow() {
+      const elIn = document.getElementById('status-linkedin');
+      const elGu = document.getElementById('status-gupy');
+      if (elIn) elIn.textContent = 'Checando cookies...';
+      if (elGu) elGu.textContent = 'Checando cookies...';
+      try {
+        const res = await fetch('/api/auth/browser-status');
+        const data = await res.json();
+        if (elIn) {
+          elIn.innerHTML = data.linkedin ? '<span class="text-emerald-400 font-bold">✅ Logado (Sessão Ativa)</span>' : '<span class="text-rose-400 font-bold">❌ Desconectado</span>';
+        }
+        if (elGu) {
+          elGu.innerHTML = data.gupy ? '<span class="text-emerald-400 font-bold">✅ Logado (Sessão Ativa)</span>' : '<span class="text-rose-400 font-bold">❌ Desconectado</span>';
+        }
+      } catch (e) {
+        if (elIn) elIn.textContent = 'Erro ao verificar';
+        if (elGu) elGu.textContent = 'Erro ao verificar';
+      }
+    }
+
+    async function startAssistedLogin(platform) {
+      showToast('🌐 Abrindo navegador para login assistido...', 'sky');
+      toggleVncFrame(true);
+      try {
+        await fetch(`/api/auth/assisted-login?platform=${platform}`, { method: 'POST' });
+      } catch (e) {
+        console.warn('Login assistido disparado');
+      }
+    }
+
+    function toggleVncFrame(forceOpen = false) {
+      const container = document.getElementById('vnc-container');
+      const frame = document.getElementById('vnc-frame');
+      const btn = document.getElementById('btn-toggle-vnc');
+      if (!container || !frame) return;
+      const isOpen = !container.classList.contains('hidden');
+      if (isOpen && !forceOpen) {
+        container.classList.add('hidden');
+        frame.src = '';
+        btn.textContent = 'Abrir Visualizador no Painel';
+      } else {
+        container.classList.remove('hidden');
+        frame.src = 'http://192.168.0.123:6080/vnc.html?autoconnect=true&resize=remote';
+        btn.textContent = 'Recolher Visualizador';
+      }
+    }
+
 
   </script>
 </body>
