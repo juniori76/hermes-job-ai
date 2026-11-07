@@ -29,6 +29,17 @@ def human_type(page: Page, selector: str, text: str):
     human_pause(0.3, 0.8)
 
 
+def _clear_singleton_locks():
+    """Remove symlinks de trava de instâncias anteriores do Chromium para evitar erro de profile-in-use."""
+    for lock_name in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+        lock_path = os.path.join(PROFILE_DIR, lock_name)
+        try:
+            if os.path.islink(lock_path) or os.path.exists(lock_path):
+                os.unlink(lock_path)
+        except Exception:
+            pass
+
+
 @contextmanager
 def open_session(headless: bool = False):
     """
@@ -37,6 +48,7 @@ def open_session(headless: bool = False):
     o que permite acompanhar tudo ao vivo via noVNC na porta 6080!
     """
     os.makedirs(PROFILE_DIR, exist_ok=True)
+    _clear_singleton_locks()
     with sync_playwright() as p:
         context: BrowserContext = p.chromium.launch_persistent_context(
             user_data_dir=PROFILE_DIR,
