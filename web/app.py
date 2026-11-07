@@ -27,6 +27,7 @@ from core.settings_manager import (
     load_settings, save_settings, set_operation_mode, update_telegram_config
 )
 from core.notifier import test_telegram_connection
+from automation.apply_engine import apply_to_job
 
 app = FastAPI(title="Hermes Job AI Dashboard")
 
@@ -380,6 +381,56 @@ async def reject_redirect(job_id: str):
         cursor.execute("UPDATE jobs SET status = 'rejected' WHERE id = ?", (job_id,))
         conn.commit()
     return RedirectResponse(url="/?tab=vagas", status_code=302)
+
+# =========================================================
+# FASE 5 — Candidatura Automática Real com Playwright
+# =========================================================
+
+def _run_apply_task(job_id: str, dry_run: bool = False):
+    """Executa a candidatura em background para não travar a requisição HTTP."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM jobs WHERE id = ?", (job_id,))
+        row = cursor.fetchone()
+        if row:
+            apply_to_job(dict(row), dry_run=dry_run)
+
+
+@app.post("/api/jobs/{job_id}/apply")
+async def trigger_apply(job_id: str, background_tasks: BackgroundTasks, request: Request):
+    """Dispara a candidatura real com Playwright em segundo plano."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    background_tasks.add_task(_run_apply_task, job_id, dry_run=False)
+    return {"success": True, "message": "Candidatura iniciada via Playwright em segundo plano! Acompanhe pelos logs ou Telegram."}
+
+
+@app.post("/api/jobs/{job_id}/dry-run")
+async def trigger_dry_run(job_id: str, background_tasks: BackgroundTasks, request: Request):
+    """Simula o preenchimento completo do formulário com print sem enviar."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    background_tasks.add_task(_run_apply_task, job_id, dry_run=True)
+    return {"success": True, "message": "Simulação (Dry-Run) iniciada! O formulário será preenchido e um print será gerado sem enviar."}
+
+
+@app.get("/api/applications/history")
+async def get_applications_history(request: Request):
+    """Retorna o histórico de auditoria de candidaturas enviadas."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT a.*, j.title, j.company, j.job_url 
+            FROM applications a
+            LEFT JOIN jobs j ON a.job_id = j.id
+            ORDER BY a.applied_at DESC
+            LIMIT 50
+        """)
+        history = [dict(row) for row in cursor.fetchall()]
+    return history
+
 
 
 @app.get("/", response_class=HTMLResponse)

@@ -2,6 +2,7 @@
 Agendador de Tarefas 24/7 - Hermes Job AI.
 Executa varreduras e triagens em intervalos inteligentes,
 priorizando horários humanos e respeitando a máquina doméstica.
+Integração com modo Automático (candidatura via Playwright).
 """
 
 import os
@@ -14,6 +15,8 @@ from core.database import init_db, get_connection
 from core.radar import scan_jobs
 from core.ats_brain import run_ats_evaluation_batch
 from core.notifier import notify_high_score_job
+from core.settings_manager import load_settings
+from automation.apply_engine import apply_to_job, get_approved_unapplied_jobs
 
 load_dotenv()
 
@@ -49,7 +52,7 @@ def check_and_notify_top_jobs():
 
 
 def run_cycle():
-    """Executa um ciclo completo: Radar -> IA Gemini -> Notificação."""
+    """Executa um ciclo completo: Radar -> IA Gemini -> Notificação -> Candidatura Auto (se ativo)."""
     print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 🔄 Iniciando ciclo do Hermes...")
     
     # 1. Coleta novas vagas
@@ -63,6 +66,17 @@ def run_cycle():
         check_and_notify_top_jobs()
     else:
         print("[Hermes Scheduler] Nenhuma vaga nova neste ciclo.")
+
+    # 4. Modo Automático: se houver vagas aprovadas ou com score alto, aplica
+    settings = load_settings()
+    mode = settings.get("operation_mode", "review")
+    if mode == "auto":
+        print("[Hermes Scheduler 🟢] Modo Automático ativo — verificando vagas para candidatura...")
+        approved = get_approved_unapplied_jobs(limit=3)
+        for job in approved:
+            print(f"[Hermes Scheduler 🤖] Auto-candidatando para {job.get('title')} @ {job.get('company')}...")
+            apply_to_job(job, dry_run=False)
+            time.sleep(random.randint(20, 45)) # Pausa humana entre submissões
 
 
 def start_scheduler():

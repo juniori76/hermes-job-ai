@@ -208,8 +208,11 @@
               <a href="{{ job.job_url }}" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl border border-slate-700 transition">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver Vaga
               </a>
-              <button onclick="updateJobStatus('{{ job.id }}', 'approved')" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl font-bold transition shadow-sm">
+              <button onclick="applyJob('{{ job.id }}')" title="Candidatura real automatizada via Playwright" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl font-bold transition shadow-sm flex items-center gap-1.5">
                 <i class="fa-solid fa-paper-plane"></i> Candidatar
+              </button>
+              <button onclick="dryRunJob('{{ job.id }}')" title="Simulação: preenche form e tira print sem enviar" class="text-xs bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 border border-purple-500/40 px-3 py-2 rounded-xl font-bold transition flex items-center gap-1">
+                <i class="fa-solid fa-flask"></i> Simular
               </button>
               <button onclick="updateJobStatus('{{ job.id }}', 'rejected')" class="text-xs bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 px-3 py-2 rounded-xl border border-slate-700 transition">
                 <i class="fa-solid fa-trash"></i>
@@ -618,7 +621,36 @@
       }
     }
 
-    async function changePassword() {
+        async function applyJob(jobId) {
+      if (!confirm('Deseja iniciar a candidatura automática real via Playwright para esta vaga? O robô preencherá o formulário e anexará seu currículo.')) return;
+      showToast('🚀 Iniciando candidatura automática via Playwright...', 'green');
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/apply`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ Candidatura em execução em background!', 'green');
+        } else {
+          alert('Aviso: ' + (data.message || data.error));
+        }
+      } catch (e) {
+        alert('Erro ao disparar candidatura: ' + e);
+      }
+    }
+
+    async function dryRunJob(jobId) {
+      showToast('🧪 Iniciando simulação (preencher + screenshot sem enviar)...', 'purple');
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/dry-run`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('📸 Simulação rodando! O print será salvo em data/screenshots.', 'purple');
+        }
+      } catch (e) {
+        alert('Erro ao disparar simulação: ' + e);
+      }
+    }
+
+async function changePassword() {
       const p = document.getElementById('new-password-input').value.trim();
       if (!p || p.length < 6) return alert('Digite uma senha com no mínimo 6 caracteres.');
       const res = await fetch('/api/auth/change-password', {
