@@ -10,6 +10,7 @@ import yaml
 from typing import List, Dict, Any
 from jobspy import scrape_jobs
 from core.database import save_jobs, init_db
+from core.gupy_radar import search_gupy_jobs
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config")
 
@@ -98,6 +99,17 @@ def scan_jobs(results_wanted_per_term: int = 15) -> int:
 
         except Exception as e:
             print(f"[Hermes Radar ⚠️] Erro ao buscar '{cargo}': {e}")
+
+        # Busca dedicada na Gupy
+        try:
+            print(f"[Hermes Radar] 🟣 Consultando portal Gupy para: '{cargo}'...")
+            gupy_jobs = search_gupy_jobs(job_name=cargo, limit=15)
+            if gupy_jobs:
+                novas_gupy = save_jobs(gupy_jobs)
+                total_novas += novas_gupy
+                print(f"[Hermes Radar] ✅ Gupy '{cargo}': {len(gupy_jobs)} encontradas, {novas_gupy} novas salvas.")
+        except Exception as eg:
+            print(f"[Hermes Radar ⚠️] Erro na busca Gupy: {eg}")
 
     print(f"\n[Hermes Radar] 🎯 Varredura concluída. Total de novas vagas registradas: {total_novas}\n")
     return total_novas

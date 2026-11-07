@@ -15,6 +15,7 @@ from fastapi.templating import Jinja2Templates
 from core.database import get_connection
 from core.radar import scan_jobs, load_profile, CONFIG_PATH
 from core.ats_brain import run_ats_evaluation_batch
+from core.resume_analyzer import analyze_resume_with_ai
 
 app = FastAPI(title="Hermes Job AI Dashboard")
 
@@ -111,10 +112,40 @@ async def upload_resume(file: UploadFile = File(...)):
 
 
 @app.post("/api/scan")
-async def trigger_scan(background_tasks: BackgroundTasks):
+async def trigger_scan(background_tasks: BackgroundTasks, request: Request = None):
     """Dispara uma varredura de novas vagas em segundo plano."""
     background_tasks.add_task(scan_jobs)
-    return {"message": "Varredura iniciada em segundo plano!"}
+    return {"message": "Varredura iniciada em segundo plano no LinkedIn, Gupy, Indeed e Glassdoor!"}
+
+
+@app.get("/api/resume/analysis")
+async def get_resume_analysis():
+    """Retorna o diagnóstico de IA do currículo atual."""
+    analysis = analyze_resume_with_ai()
+    return analysis
+
+
+@app.post("/api/settings/profile")
+async def update_profile_settings(request: Request):
+    """Salva as configurações de cargos e raio atualizadas pelo painel."""
+    data = await request.json()
+    profile_path = os.path.join(CONFIG_PATH, "candidate_profile.yaml")
+    
+    current = load_profile()
+    if "cargos" in data:
+        cargos = [c.strip() for c in data["cargos"].split(",") if c.strip()]
+        current.setdefault("preferencias_de_vaga", {})["cargos_alvo"] = cargos
+    if "raio" in data:
+        current.setdefault("preferencias_de_vaga", {})["raio_maximo_km_hibrido"] = int(data["raio"])
+    if "cidade" in data:
+        current.setdefault("candidato", {})["cidade"] = data["cidade"].strip()
+    if "estado" in data:
+        current.setdefault("candidato", {})["estado"] = data["estado"].strip()
+
+    with open(profile_path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(current, f, allow_unicode=True)
+
+    return {"success": True, "message": "Preferências salvas com sucesso!"}
 
 
 @app.post("/api/evaluate")
@@ -179,10 +210,40 @@ async def dashboard_home(request: Request):
 
 
 @app.post("/api/scan")
-async def trigger_scan(background_tasks: BackgroundTasks):
+async def trigger_scan(background_tasks: BackgroundTasks, request: Request = None):
     """Dispara uma varredura de novas vagas em segundo plano."""
     background_tasks.add_task(scan_jobs)
-    return {"message": "Varredura iniciada em segundo plano!"}
+    return {"message": "Varredura iniciada em segundo plano no LinkedIn, Gupy, Indeed e Glassdoor!"}
+
+
+@app.get("/api/resume/analysis")
+async def get_resume_analysis():
+    """Retorna o diagnóstico de IA do currículo atual."""
+    analysis = analyze_resume_with_ai()
+    return analysis
+
+
+@app.post("/api/settings/profile")
+async def update_profile_settings(request: Request):
+    """Salva as configurações de cargos e raio atualizadas pelo painel."""
+    data = await request.json()
+    profile_path = os.path.join(CONFIG_PATH, "candidate_profile.yaml")
+    
+    current = load_profile()
+    if "cargos" in data:
+        cargos = [c.strip() for c in data["cargos"].split(",") if c.strip()]
+        current.setdefault("preferencias_de_vaga", {})["cargos_alvo"] = cargos
+    if "raio" in data:
+        current.setdefault("preferencias_de_vaga", {})["raio_maximo_km_hibrido"] = int(data["raio"])
+    if "cidade" in data:
+        current.setdefault("candidato", {})["cidade"] = data["cidade"].strip()
+    if "estado" in data:
+        current.setdefault("candidato", {})["estado"] = data["estado"].strip()
+
+    with open(profile_path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(current, f, allow_unicode=True)
+
+    return {"success": True, "message": "Preferências salvas com sucesso!"}
 
 
 @app.post("/api/evaluate")
