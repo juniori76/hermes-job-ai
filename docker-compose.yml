@@ -4,7 +4,7 @@ services:
     container_name: hermes_job_ai
     restart: unless-stopped
     ports:
-      - "8088:8088"
+      - "8090:8088"
     environment:
       - PORT=8088
       - HOST=0.0.0.0
