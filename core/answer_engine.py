@@ -1,8 +1,8 @@
 """
-Motor de respostas - Hermes Job AI.
-- Campos simples/escolha: modelo rápido
-- Perguntas abertas: modelo forte (método STAR)
-Regra de ouro: nunca inventar experiência que não esteja no perfil.
+Motor de respostas inteligente - Hermes Job AI.
+- Campos simples/escolha: LLM rápido com perfil e preferências
+- Perguntas abertas/comportamentais: LLM estruturado com método STAR
+Regra de ouro: nunca inventar experiência ou dados que não estejam no perfil real.
 """
 
 import json
@@ -24,31 +24,60 @@ def answer_fields(fields: List[Dict[str, Any]], profile: Dict[str, Any], job: Di
     result: Dict[str, Any] = {}
 
     rules = (
-        "Responda em primeira pessoa, no idioma da vaga. Use APENAS fatos presentes no perfil. "
-        "Se não souber ou o perfil não cobrir, devolva null. Nunca invente experiências, "
-        "certificações ou números."
+        "Você é o assistente pessoal de candidatura do candidato. "
+        "Responda estritamente em primeira pessoa, em português do Brasil (ou no idioma da vaga). "
+        "Use APENAS fatos presentes no PERFIL. "
+        "Para pretensão salarial, use a pretensão CLT ou PJ indicada no perfil (ex: 4500 ou 7000). "
+        "Para disponibilidade, use 'Imediata' ou 'A combinar'. "
+        "Para PCD (Pessoa com Deficiência), responda 'Não' salvo especificado no perfil. "
+        "Se uma pergunta de múltipla escolha/select tiver opções, sua resposta DEVE ser EXATAMENTE uma das opções fornecidas. "
+        "Nunca invente experiências, empresas ou certificações que não constem no perfil."
     )
 
     if simple_fields:
         prompt = f"""{rules}
-PERFIL: {json.dumps(profile, ensure_ascii=False)}
-VAGA: {job.get('title')} - {job.get('company')} - {job.get('location')}
-CAMPOS: {json.dumps(simple_fields, ensure_ascii=False)}
-Para campos com 'options', devolva exatamente um dos textos de options.
-Devolva JSON: {{"answers": {{"<id>": <valor|null>}}, "skip_job": <true se a vaga exige algo que o perfil recusa>}}"""
-        data = llm.generate_json(prompt, temperature=0.1)
-        result.update(data.get("answers", {}))
-        result["_skip_job"] = bool(data.get("skip_job", False))
+PERFIL DO CANDIDATO:
+{json.dumps(profile, ensure_ascii=False, indent=2)}
+
+DADOS DA VAGA:
+Cargo: {job.get('title')}
+Empresa: {job.get('company')}
+Local: {job.get('location')}
+
+CAMPOS DO FORMULÁRIO A PREENCHER:
+{json.dumps(simple_fields, ensure_ascii=False, indent=2)}
+
+Devolva EXCLUSIVAMENTE um objeto JSON no formato:
+{{
+  "answers": {{
+    "<field_id>": <valor|null>
+  }},
+  "skip_job": <true se o formulário exigir algo inaceitável para o candidato, caso contrário false>
+}}"""
+        try:
+            data = llm.generate_json(prompt, temperature=0.1)
+            result.update(data.get("answers", {}))
+            result["_skip_job"] = bool(data.get("skip_job", False))
+        except Exception as e:
+            print(f"[Answer Engine] Erro ao responder campos simples: {e}")
 
     for f in open_fields:
         prompt = f"""{rules}
-Responda de forma concisa (máx. 900 caracteres), com estrutura STAR se for pergunta comportamental,
-incluindo naturalmente as palavras-chave da vaga que o candidato realmente domina.
-PERFIL: {json.dumps(profile, ensure_ascii=False)}
-VAGA: {job.get('title')} - {job.get('company')}
+Responda de forma concisa, profissional e direta (máximo 800 caracteres).
+Se for uma pergunta comportamental (ex: 'conte uma situação onde...'), use a estrutura STAR (Situação, Tarefa, Ação, Resultado) baseando-se no histórico real do candidato como Analista de Suporte e Infraestrutura.
+
+PERFIL DO CANDIDATO:
+{json.dumps(profile, ensure_ascii=False)}
+
+VAGA: {job.get('title')} na {job.get('company')}
 DESCRIÇÃO: {(job.get('description') or '')[:2500]}
-PERGUNTA: {f.get('label')}
-Devolva apenas o texto da resposta."""
-        result[f["id"]] = llm.generate(prompt, smart=True, temperature=0.5)
+PERGUNTA DO RECRUTADOR: {f.get('label')}
+
+Devolva APENAS o texto puro da resposta, sem aspas adicionais nem introduções."""
+        try:
+            ans_text = llm.generate(prompt, smart=True, temperature=0.3)
+            result[f["id"]] = (ans_text or "").strip()
+        except Exception as e:
+            print(f"[Answer Engine] Erro ao responder pergunta aberta: {e}")
 
     return result

@@ -2,6 +2,7 @@
 Motor de Candidatura Automática Real - Hermes Job AI.
 Orquestra os drivers especializados (LinkedIn Easy Apply, Gupy Driver e Form Filler Genérico).
 Opera com DISPLAY virtual :99 para permitir acompanhamento ao vivo via noVNC (porta 6080).
+Aplica limites diários, pausas humanas, retentativas e auditoria com prints.
 """
 
 import os
@@ -60,13 +61,15 @@ def log_application(job_id: str, platform: str, status: str, answers: Dict[str, 
             cursor.execute("UPDATE jobs SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (job_id,))
         elif status == "dry_run":
             cursor.execute("UPDATE jobs SET status = 'dry_run', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (job_id,))
+        elif status == "already_applied":
+            cursor.execute("UPDATE jobs SET status = 'applied', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (job_id,))
             
         conn.commit()
 
 
 def detect_platform(url: str) -> str:
     """Identifica a plataforma da vaga pela URL."""
-    u = url.lower()
+    u = (url or "").lower()
     if "gupy.io" in u:
         return "gupy"
     elif "linkedin.com" in u:
@@ -84,9 +87,74 @@ def detect_platform(url: str) -> str:
     return "generic"
 
 
+def _apply_generic(page, job: Dict[str, Any], dry_run: bool = True) -> Dict[str, Any]:
+    """Driver genérico para páginas de vagas externas com formulário."""
+    job_id = job.get("id", "generic_job")
+    report: Dict[str, Any] = {"status": "failed", "job_id": job_id, "platform": "generic", "answers": {}}
+    profile = load_profile()
+
+    fields = extract_fields(page)
+    if not fields:
+        shot = os.path.join(SHOT_DIR, f"{job_id}_no_fields.png")
+        page.screenshot(path=shot, full_page=True)
+        report["status"] = "requires_human"
+        report["error"] = "Campos não detectados ou formulário exige autenticação externa."
+        report["screenshot"] = shot
+        return report
+
+    answers = answer_fields(fields, profile, job)
+    if answers.pop("_skip_job", False):
+        report["status"] = "skipped"
+        report["error"] = "Vaga incompatível com as preferências do perfil."
+        return report
+
+    for f in fields:
+        if f.get("type") == "file" and os.path.exists(RESUME_PATH):
+            try:
+                page.set_input_files(f"[data-hermes-id='{f['id']}']", RESUME_PATH)
+            except Exception:
+                pass
+            continue
+        ans = answers.get(f["id"])
+        if ans is not None:
+            _fill(page, f, ans)
+            report["answers"][f.get("label", f["id"])] = ans
+
+    shot = os.path.join(SHOT_DIR, f"{job_id}_{'dry' if dry_run else 'final'}.png")
+    page.screenshot(path=shot, full_page=True)
+    report["screenshot"] = shot
+
+    if dry_run:
+        report["status"] = "dry_run"
+        return report
+
+    # Submissão no modo real
+    submit_selectors = [
+        "button[type='submit']",
+        "button:has-text('Enviar')",
+        "button:has-text('Candidatar')",
+        "button:has-text('Submit')",
+        "input[type='submit']"
+    ]
+    for sel in submit_selectors:
+        try:
+            loc = page.locator(sel).first
+            if loc.is_visible(timeout=1000):
+                loc.click()
+                human_pause(3.0, 5.0)
+                report["status"] = "success"
+                return report
+        except Exception:
+            pass
+
+    report["status"] = "requires_human"
+    return report
+
+
 def apply_to_job(job: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
     """
     Executa o fluxo de candidatura com Playwright delegando para o driver correto.
+    Suporta retentativas e visualização ao vivo via noVNC (DISPLAY=:99).
     """
     job_id = job.get("id")
     url = job.get("job_url")
@@ -97,7 +165,7 @@ def apply_to_job(job: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
     settings = load_settings()
     daily_limit = settings.get("auto_apply_daily_limit", 10)
     
-    # 1. Limite diário
+    # 1. Checa limite diário de candidaturas
     if not dry_run:
         today_total = count_applications_today()
         if today_total >= daily_limit:
@@ -115,91 +183,69 @@ def apply_to_job(job: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
         "answers": {}
     }
 
-    print(f"\n[Apply Engine] 🚀 Candidatura: {title} @ {company} ({platform})")
+    print(f"\n[Apply Engine] 🚀 Iniciando candidatura: {title} @ {company} ({platform})")
     print(f"  URL: {url} | Modo: {'DRY-RUN' if dry_run else 'REAL'}")
 
-    try:
-        # Abre com headless=False para permitir visualização no noVNC (DISPLAY=:99)
-        with open_session(headless=False) as ctx:
-            page = ctx.new_page()
-            try:
-                page.goto(url, wait_until="domcontentloaded", timeout=45000)
-            except Exception:
-                page.goto(url, timeout=30000)
-            human_pause(2.5, 4.0)
-
-            # Roteia para driver especializado
-            if platform == "linkedin":
-                report = apply_linkedin_easy(page, job, dry_run=dry_run)
-            elif platform == "gupy":
-                report = apply_gupy_job(page, job, dry_run=dry_run)
-            else:
-                # Driver genérico
-                fields = extract_fields(page)
-                if not fields:
-                    shot = os.path.join(SHOT_DIR, f"{job_id}_no_fields.png")
-                    page.screenshot(path=shot, full_page=True)
-                    report["status"] = "requires_human"
-                    report["error"] = "Campos não detectados ou exige login externo."
-                    report["screenshot"] = shot
-                else:
-                    profile = load_profile()
-                    answers = answer_fields(fields, profile, job)
-                    for f in fields:
-                        if f["type"] == "file" and os.path.exists(RESUME_PATH):
-                            try:
-                                page.set_input_files(f"[data-hermes-id='{f['id']}']", RESUME_PATH)
-                            except Exception:
-                                pass
-                            continue
-                        ans = answers.get(f["id"])
-                        if ans is not None:
-                            _fill(page, f, ans)
-
-                    shot = os.path.join(SHOT_DIR, f"{job_id}_{'dry' if dry_run else 'final'}.png")
-                    page.screenshot(path=shot, full_page=True)
-                    report["screenshot"] = shot
-                    report["answers"] = {f.get("label", f["id"]): answers.get(f["id"]) for f in fields if f["id"] in answers}
-
-                    if dry_run:
-                        report["status"] = "dry_run"
-                    else:
-                        submit_btn = page.locator("button[type='submit'], button:has-text('Enviar')").first
-                        if submit_btn.is_visible(timeout=1500):
-                            submit_btn.click()
-                            human_pause(3.0, 5.0)
-                            report["status"] = "success"
-                        else:
-                            report["status"] = "requires_human"
-
-            # Registra auditoria
-            log_application(
-                job_id,
-                platform,
-                report.get("status", "failed"),
-                report.get("answers", {}),
-                shot_path=report.get("screenshot"),
-                error=report.get("error")
-            )
-
-            # Notifica sucesso no Telegram
-            if report.get("status") == "success" and not dry_run:
+    max_retries = 2
+    for attempt in range(1, max_retries + 1):
+        try:
+            # headless=False para permitir que a janela seja renderizada no X11/noVNC
+            with open_session(headless=False) as ctx:
+                page = ctx.new_page()
+                page.set_default_timeout(35000)
+                
                 try:
-                    notify_application_sent(title, company, job_url=url, status="sent")
+                    page.goto(url, wait_until="domcontentloaded", timeout=40000)
                 except Exception:
-                    pass
+                    page.goto(url, timeout=30000)
+                human_pause(2.0, 3.5)
 
-    except Exception as e:
-        err = f"Falha na automação: {str(e)}"
-        print(f"[Apply Engine ❌] {err}")
-        log_application(job_id, platform, "failed", {}, error=err)
-        return {"status": "failed", "error": err}
+                # Roteia para o driver da plataforma
+                if platform == "linkedin":
+                    report = apply_linkedin_easy(page, job, dry_run=dry_run)
+                elif platform == "gupy":
+                    report = apply_gupy_job(page, job, dry_run=dry_run)
+                else:
+                    report = _apply_generic(page, job, dry_run=dry_run)
+
+                # Se obteve um resultado definitivo, sai do loop de tentativas
+                if report.get("status") in ("success", "dry_run", "already_applied", "requires_login", "security_checkpoint"):
+                    break
+
+        except Exception as e:
+            err = f"Tentativa {attempt}/{max_retries} falhou: {str(e)}"
+            print(f"[Apply Engine ⚠️] {err}")
+            if attempt == max_retries:
+                report["status"] = "failed"
+                report["error"] = err
+
+    # Registra no banco de dados para auditoria
+    log_application(
+        job_id,
+        platform,
+        report.get("status", "failed"),
+        report.get("answers", {}),
+        shot_path=report.get("screenshot"),
+        error=report.get("error")
+    )
+
+    # Notifica via Telegram
+    if report.get("status") == "success" and not dry_run:
+        try:
+            notify_application_sent(title, company, job_url=url, status="sent")
+        except Exception as te:
+            print(f"[Apply Engine] Aviso Telegram: {te}")
+    elif report.get("status") == "dry_run":
+        try:
+            notify_application_sent(title, company, job_url=url, status="dry_run")
+        except Exception:
+            pass
 
     return report
 
 
 def get_approved_unapplied_jobs(limit: int = 5):
-    """Busca vagas que foram aprovadas e ainda não foram aplicadas."""
+    """Busca vagas aprovadas que ainda não foram aplicadas."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
