@@ -72,33 +72,69 @@ def open_session(headless: bool = False):
 def check_auth_status() -> Dict[str, bool]:
     """
     Verifica se existem sessões ativas e válidas para o LinkedIn e a Gupy.
-    Retorna {'linkedin': bool, 'gupy': bool}.
+    Primeiro verifica o banco de cookies (instantâneo, sem travar o browser).
+    Se inconclusivo, faz verificação ativa via Playwright.
     """
     status = {"linkedin": False, "gupy": False}
+    
+    # Método 1: Verificação direta via SQLite de cookies do Chromium
+    cookie_paths = [
+        os.path.join(PROFILE_DIR, "Default", "Network", "Cookies"),
+        os.path.join(PROFILE_DIR, "Default", "Cookies"),
+    ]
+    for cp in cookie_paths:
+        if os.path.exists(cp):
+            try:
+                import sqlite3, shutil
+                tmp_db = "/tmp/hermes_chk_cookies.db" if os.name != "nt" else os.path.join(PROFILE_DIR, "chk_cookies.db")
+                shutil.copy2(cp, tmp_db)
+                conn = sqlite3.connect(tmp_db)
+                cur = conn.cursor()
+                cur.execute("SELECT host_key, name FROM cookies WHERE host_key LIKE '%linkedin%'")
+                li_names = {r[1] for r in cur.fetchall()}
+                if "li_at" in li_names or "li_theme" in li_names or "lidc" in li_names or "bcookie" in li_names:
+                    if "li_at" in li_names:
+                        status["linkedin"] = True
+                
+                cur.execute("SELECT host_key, name FROM cookies WHERE host_key LIKE '%gupy%'")
+                gu_names = {r[1] for r in cur.fetchall()}
+                if gu_names:
+                    status["gupy"] = True
+                    
+                conn.close()
+                if os.path.exists(tmp_db):
+                    os.remove(tmp_db)
+            except Exception as ce:
+                print(f"[Auth Status] Aviso check cookies db: {ce}")
+                
+    if status["linkedin"] and status["gupy"]:
+        return status
+
+    # Método 2: Verificação ativa via Playwright
     try:
         with open_session(headless=True) as ctx:
             page = ctx.new_page()
 
             # Checagem LinkedIn
-            try:
-                page.goto("https://www.linkedin.com/feed/", timeout=15000)
-                human_pause(1.5, 2.5)
-                # Se redirecionou para /login ou /uas, não está logado
-                if "/feed" in page.url and "/login" not in page.url:
-                    status["linkedin"] = True
-            except Exception:
-                status["linkedin"] = False
+            if not status["linkedin"]:
+                try:
+                    page.goto("https://www.linkedin.com/feed/", timeout=15000)
+                    human_pause(1.0, 2.0)
+                    if "/feed" in page.url or "/in/" in page.url:
+                        status["linkedin"] = True
+                except Exception:
+                    pass
 
             # Checagem Gupy
-            try:
-                page.goto("https://portal.gupy.io/", timeout=15000)
-                human_pause(1.5, 2.5)
-                # Verifica se há indicador de usuário logado
-                content = page.content().lower()
-                if "minhas candidaturas" in content or "sair" in content or "meu perfil" in content:
-                    status["gupy"] = True
-            except Exception:
-                status["gupy"] = False
+            if not status["gupy"]:
+                try:
+                    page.goto("https://portal.gupy.io/", timeout=15000)
+                    human_pause(1.0, 2.0)
+                    content = page.content().lower()
+                    if "minhas candidaturas" in content or "sair" in content or "meu perfil" in content:
+                        status["gupy"] = True
+                except Exception:
+                    pass
 
     except Exception as e:
         print(f"[Auth Status ⚠️] Erro ao verificar sessões: {e}")

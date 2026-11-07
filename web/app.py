@@ -434,7 +434,7 @@ async def get_applications_history(request: Request):
 
 
 @app.get("/api/auth/browser-status")
-async def get_browser_auth_status(request: Request):
+def get_browser_auth_status(request: Request):
     """Verifica se há sessão autenticada do LinkedIn e Gupy no perfil persistente."""
     if not get_current_user(request):
         return JSONResponse({"error": "Não autorizado"}, status_code=401)
