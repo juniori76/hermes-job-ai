@@ -5,10 +5,13 @@ FROM mcr.microsoft.com/playwright/python:v1.49.0-jammy
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DISPLAY=:99
+# EVITA QUE O APT/DEBCONF TRAVE PERGUNTANDO FUSO HORARIO (TZDATA INTERATIVO)
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/Sao_Paulo
 
 WORKDIR /app
 
-# Instala dependências do sistema necessárias incluindo ambiente X11 virtual, VNC e noVNC
+# Instala dependências do sistema com modo noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
@@ -18,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     novnc \
     websockify \
     net-tools \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia e instala as dependências Python
