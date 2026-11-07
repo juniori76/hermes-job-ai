@@ -111,25 +111,55 @@ async def get_resume_analysis():
 
 @app.post("/api/settings/profile")
 async def update_profile_settings(request: Request):
-    """Salva as configurações de cargos e raio atualizadas pelo painel."""
+    """Salva todas as regras de modalidade, km, salário e cargos atualizadas pelo painel."""
     data = await request.json()
     profile_path = os.path.join(CONFIG_PATH, "candidate_profile.yaml")
     
     current = load_profile()
+    candidato = current.setdefault("candidato", {})
+    prefs = current.setdefault("preferencias_de_vaga", {})
+    modalidades = prefs.setdefault("modalidades", {})
+    financeiro = prefs.setdefault("financeiro", {})
+
+    # Atualiza dados pessoais e residência
+    if "cidade" in data: candidato["cidade"] = data["cidade"].strip()
+    if "estado" in data: candidato["estado"] = data["estado"].strip()
+    if "bairro" in data: candidato["bairro"] = data["bairro"].strip()
+    if "endereco_residencia" in data: candidato["endereco_residencia"] = data["endereco_residencia"].strip()
+
+    # Atualiza cargos alvo
     if "cargos" in data:
         cargos = [c.strip() for c in data["cargos"].split(",") if c.strip()]
-        current.setdefault("preferencias_de_vaga", {})["cargos_alvo"] = cargos
-    if "raio" in data:
-        current.setdefault("preferencias_de_vaga", {})["raio_maximo_km_hibrido"] = int(data["raio"])
-    if "cidade" in data:
-        current.setdefault("candidato", {})["cidade"] = data["cidade"].strip()
-    if "estado" in data:
-        current.setdefault("candidato", {})["estado"] = data["estado"].strip()
+        prefs["cargos_alvo"] = cargos
+
+    # Atualiza regras de Km e Modalidades
+    if "remoto_aceitar" in data:
+        modalidades.setdefault("remoto", {})["aceitar"] = bool(data["remoto_aceitar"])
+    if "hibrido_aceitar" in data:
+        modalidades.setdefault("hibrido", {})["aceitar"] = bool(data["hibrido_aceitar"])
+    if "hibrido_km" in data:
+        modalidades.setdefault("hibrido", {})["distancia_maxima_km"] = float(data["hibrido_km"])
+    if "hibrido_dias" in data:
+        modalidades.setdefault("hibrido", {})["dias_presenciais_maximo"] = int(data["hibrido_dias"])
+    if "presencial_aceitar" in data:
+        modalidades.setdefault("presencial", {})["aceitar"] = bool(data["presencial_aceitar"])
+    if "presencial_km" in data:
+        modalidades.setdefault("presencial", {})["distancia_maxima_km"] = float(data["presencial_km"])
+
+    # Atualiza regras financeiras
+    if "salario_min_clt" in data:
+        financeiro["salario_minimo_clt"] = float(data["salario_min_clt"])
+    if "pretensao_clt" in data:
+        financeiro["pretensao_clt"] = float(data["pretensao_clt"])
+    if "salario_min_pj" in data:
+        financeiro["salario_minimo_pj"] = float(data["salario_min_pj"])
+    if "pretensao_pj" in data:
+        financeiro["pretensao_pj"] = float(data["pretensao_pj"])
 
     with open(profile_path, "w", encoding="utf-8") as f:
         yaml.safe_dump(current, f, allow_unicode=True)
 
-    return {"success": True, "message": "Preferências salvas com sucesso!"}
+    return {"success": True, "message": "Políticas de vaga, km e salários salvas com sucesso!"}
 
 
 @app.post("/api/evaluate")
@@ -209,25 +239,55 @@ async def get_resume_analysis():
 
 @app.post("/api/settings/profile")
 async def update_profile_settings(request: Request):
-    """Salva as configurações de cargos e raio atualizadas pelo painel."""
+    """Salva todas as regras de modalidade, km, salário e cargos atualizadas pelo painel."""
     data = await request.json()
     profile_path = os.path.join(CONFIG_PATH, "candidate_profile.yaml")
     
     current = load_profile()
+    candidato = current.setdefault("candidato", {})
+    prefs = current.setdefault("preferencias_de_vaga", {})
+    modalidades = prefs.setdefault("modalidades", {})
+    financeiro = prefs.setdefault("financeiro", {})
+
+    # Atualiza dados pessoais e residência
+    if "cidade" in data: candidato["cidade"] = data["cidade"].strip()
+    if "estado" in data: candidato["estado"] = data["estado"].strip()
+    if "bairro" in data: candidato["bairro"] = data["bairro"].strip()
+    if "endereco_residencia" in data: candidato["endereco_residencia"] = data["endereco_residencia"].strip()
+
+    # Atualiza cargos alvo
     if "cargos" in data:
         cargos = [c.strip() for c in data["cargos"].split(",") if c.strip()]
-        current.setdefault("preferencias_de_vaga", {})["cargos_alvo"] = cargos
-    if "raio" in data:
-        current.setdefault("preferencias_de_vaga", {})["raio_maximo_km_hibrido"] = int(data["raio"])
-    if "cidade" in data:
-        current.setdefault("candidato", {})["cidade"] = data["cidade"].strip()
-    if "estado" in data:
-        current.setdefault("candidato", {})["estado"] = data["estado"].strip()
+        prefs["cargos_alvo"] = cargos
+
+    # Atualiza regras de Km e Modalidades
+    if "remoto_aceitar" in data:
+        modalidades.setdefault("remoto", {})["aceitar"] = bool(data["remoto_aceitar"])
+    if "hibrido_aceitar" in data:
+        modalidades.setdefault("hibrido", {})["aceitar"] = bool(data["hibrido_aceitar"])
+    if "hibrido_km" in data:
+        modalidades.setdefault("hibrido", {})["distancia_maxima_km"] = float(data["hibrido_km"])
+    if "hibrido_dias" in data:
+        modalidades.setdefault("hibrido", {})["dias_presenciais_maximo"] = int(data["hibrido_dias"])
+    if "presencial_aceitar" in data:
+        modalidades.setdefault("presencial", {})["aceitar"] = bool(data["presencial_aceitar"])
+    if "presencial_km" in data:
+        modalidades.setdefault("presencial", {})["distancia_maxima_km"] = float(data["presencial_km"])
+
+    # Atualiza regras financeiras
+    if "salario_min_clt" in data:
+        financeiro["salario_minimo_clt"] = float(data["salario_min_clt"])
+    if "pretensao_clt" in data:
+        financeiro["pretensao_clt"] = float(data["pretensao_clt"])
+    if "salario_min_pj" in data:
+        financeiro["salario_minimo_pj"] = float(data["salario_min_pj"])
+    if "pretensao_pj" in data:
+        financeiro["pretensao_pj"] = float(data["pretensao_pj"])
 
     with open(profile_path, "w", encoding="utf-8") as f:
         yaml.safe_dump(current, f, allow_unicode=True)
 
-    return {"success": True, "message": "Preferências salvas com sucesso!"}
+    return {"success": True, "message": "Políticas de vaga, km e salários salvas com sucesso!"}
 
 
 @app.post("/api/evaluate")

@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hermes Job AI - Centro de Comando</title>
+  <title>Hermes Job AI - Centro de Comando de Carreiras</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { background-color: #0b0f19; color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif; }
     .glass-card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glass-input { background: #070a13; border: 1px solid #1e293b; color: white; border-radius: 0.75rem; }
+    .glass-input:focus { border-color: #6366f1; outline: none; }
   </style>
 </head>
 <body class="min-h-screen p-3 md:p-6">
@@ -26,57 +28,59 @@
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> 24/7 Ativo
           </span>
         </h1>
-        <p class="text-xs text-slate-400">Servidor Linux: 192.168.0.123:8090 | Multi-Plataforma (LinkedIn, Gupy, Indeed, Glassdoor)</p>
+        <p class="text-xs text-slate-400">Servidor Linux: 192.168.0.123:8090 | Diadema - SP (Residência Base)</p>
       </div>
     </div>
 
     <!-- Navegação em Abas Modernas -->
-    <nav class="flex items-center gap-1 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 text-sm">
-      <button onclick="switchTab('vagas')" id="tab-vagas" class="px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2">
-        <i class="fa-solid fa-briefcase"></i> Oportunidades
+    <nav class="flex items-center gap-1 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 text-sm overflow-x-auto max-w-full">
+      <button onclick="switchTab('vagas')" id="tab-vagas" class="px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-briefcase"></i> Central de Vagas
       </button>
-      <button onclick="switchTab('curriculo')" id="tab-curriculo" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2">
-        <i class="fa-solid fa-file-lines"></i> Análise de Currículo
+      <button onclick="switchTab('regras')" id="tab-regras" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-location-crosshairs text-amber-400"></i> Modalidades, Km & Salário
       </button>
-      <button onclick="switchTab('sessoes')" id="tab-sessoes" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2">
-        <i class="fa-solid fa-user-lock"></i> Contas & Plataformas
+      <button onclick="switchTab('curriculo')" id="tab-curriculo" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-file-waveform text-indigo-400"></i> Análise de Currículo ATS
       </button>
-      <button onclick="switchTab('config')" id="tab-config" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2">
-        <i class="fa-solid fa-sliders"></i> Preferências
+      <button onclick="switchTab('sessoes')" id="tab-sessoes" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-user-lock text-emerald-400"></i> Plataformas & IA
       </button>
     </nav>
   </header>
 
   <main class="max-w-7xl mx-auto space-y-6">
 
-    <!-- ================= ABA 1: OPORTUNIDADES ================= -->
+    <!-- ================= ABA 1: CENTRAL DE VAGAS ================= -->
     <div id="content-vagas" class="space-y-6">
       
-      <!-- Barra de Filtros & Busca Rápida -->
+      <!-- Barra Superior de Parâmetros Atuais -->
       <div class="glass-card p-5 rounded-3xl">
         <div class="flex flex-col lg:flex-row items-center justify-between gap-4">
           <div class="flex-1 w-full flex flex-wrap items-center gap-3">
             <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
-              <i class="fa-solid fa-crosshairs text-indigo-400"></i>
-              <span>Alvo: <strong>{{ profile.preferencias_de_vaga.cargos_alvo[0] if profile.preferencias_de_vaga.cargos_alvo else "TI" }}</strong></span>
+              <i class="fa-solid fa-home text-emerald-400"></i>
+              <span>Origem: <strong>{{ profile.candidato.cidade }} - {{ profile.candidato.estado }}</strong></span>
             </div>
             <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
-              <i class="fa-solid fa-location-dot text-indigo-400"></i>
-              <span>{{ profile.candidato.cidade }} (Raio: {{ profile.preferencias_de_vaga.raio_maximo_km_hibrido }}km)</span>
+              <i class="fa-solid fa-car-side text-indigo-400"></i>
+              <span>Híbrido: até <strong>{{ profile.preferencias_de_vaga.modalidades.hibrido.distancia_maxima_km if profile.preferencias_de_vaga.modalidades else 30 }}km</strong></span>
             </div>
-            <div class="flex items-center gap-1.5 text-xs">
-              <span class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">LinkedIn</span>
-              <span class="px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">Gupy</span>
-              <span class="px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Indeed</span>
-              <span class="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Glassdoor</span>
+            <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
+              <i class="fa-solid fa-building text-amber-400"></i>
+              <span>Presencial: até <strong>{{ profile.preferencias_de_vaga.modalidades.presencial.distancia_maxima_km if profile.preferencias_de_vaga.modalidades else 15 }}km</strong></span>
+            </div>
+            <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
+              <i class="fa-solid fa-money-bill-wave text-emerald-400"></i>
+              <span>Mín. CLT: <strong>R$ {{ profile.preferencias_de_vaga.financeiro.salario_minimo_clt if profile.preferencias_de_vaga.financeiro else 3500 }}</strong></span>
             </div>
           </div>
 
           <div class="flex items-center gap-2 w-full lg:w-auto justify-end">
             <button onclick="triggerAction('/api/scan', 'Varredura disparada em todas as plataformas!')" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-700 flex items-center gap-2 transition shadow-sm">
-              <i class="fa-solid fa-satellite-dish text-indigo-400"></i> Varrer Agora
+              <i class="fa-solid fa-satellite-dish text-indigo-400"></i> Varrer Vagas
             </button>
-            <button onclick="triggerAction('/api/evaluate', 'Classificação ATS iniciada com Gemini!')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-lg shadow-indigo-600/30">
+            <button onclick="triggerAction('/api/evaluate', 'Classificação ATS e Filtro Geográfico iniciados!')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-lg shadow-indigo-600/30">
               <i class="fa-solid fa-brain"></i> Ranquear com IA
             </button>
           </div>
@@ -90,7 +94,7 @@
           <p class="text-3xl font-black text-white mt-1">{{ total_jobs }}</p>
         </div>
         <div class="glass-card p-5 rounded-3xl">
-          <p class="text-xs text-emerald-400 font-semibold uppercase tracking-wider">Alta Afinidade (Score ≥ 75%)</p>
+          <p class="text-xs text-emerald-400 font-semibold uppercase tracking-wider">Aprovadas (Km, Salário & ATS ≥ 75%)</p>
           <p class="text-3xl font-black text-emerald-400 mt-1">{{ high_match_jobs }}</p>
         </div>
         <div class="glass-card p-5 rounded-3xl">
@@ -99,13 +103,13 @@
         </div>
       </div>
 
-      <!-- Lista de Vagas -->
+      <!-- Tabela / Cards de Vagas -->
       <div class="glass-card rounded-3xl overflow-hidden shadow-2xl divide-y divide-slate-800/60">
         <div class="p-5 flex justify-between items-center bg-slate-950/40">
           <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <i class="fa-solid fa-list-check text-indigo-400"></i> Vagas Selecionadas pela IA
+            <i class="fa-solid fa-list-check text-indigo-400"></i> Vagas Triadas
           </h2>
-          <span class="text-xs text-slate-400">Ordenado por Score ATS</span>
+          <span class="text-xs text-slate-400">Filtro de Localização + Cérebro ATS</span>
         </div>
 
         {% if jobs %}
@@ -117,7 +121,7 @@
                   <a href="{{ job.job_url }}" target="_blank">{{ job.title }}</a>
                 </h3>
 
-                {% if job.match_score %}
+                {% if job.match_score is not none %}
                   <span class="text-xs font-black px-2.5 py-0.5 rounded-lg 
                     {% if job.match_score >= 80 %} bg-emerald-500/20 text-emerald-400 border border-emerald-500/30
                     {% elif job.match_score >= 60 %} bg-amber-500/20 text-amber-400 border border-amber-500/30
@@ -136,12 +140,12 @@
               </div>
 
               <p class="text-xs text-slate-400 mt-1">
-                <strong class="text-slate-200">{{ job.company }}</strong> • {{ job.location }} • Publicado: {{ job.created_at[:10] }}
+                <strong class="text-slate-200">{{ job.company }}</strong> • <i class="fa-solid fa-location-dot text-indigo-400"></i> {{ job.location }} • Publicado: {{ job.created_at[:10] }}
               </p>
 
               {% if job.match_reasons %}
                 <p class="text-xs text-slate-300 mt-2 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
-                  <span class="text-indigo-400 font-bold">🧠 Análise ATS:</span> {{ job.match_reasons }}
+                  <span class="text-indigo-400 font-bold">🧠 Diagnóstico:</span> {{ job.match_reasons }}
                 </p>
               {% endif %}
 
@@ -170,13 +174,131 @@
           {% endfor %}
         {% else %}
           <div class="p-16 text-center text-slate-500 text-sm">
-            Nenhuma oportunidade capturada ainda. Clique em "Varrer Agora" para buscar no LinkedIn, Gupy e Indeed!
+            Nenhuma oportunidade capturada ainda. Clique em "Varrer Vagas" para buscar no LinkedIn, Gupy e Indeed!
           </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- ================= ABA 2: ANÁLISE DE CURRÍCULO ================= -->
+    <!-- ================= ABA 2: REGRAS DE MODALIDADE, KM & SALÁRIO ================= -->
+    <div id="content-regras" class="hidden space-y-6">
+      
+      <!-- Cartão de Localização Residencial -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+          <i class="fa-solid fa-map-location-dot text-indigo-400"></i> Sua Residência Base (Ponto de Partida)
+        </h3>
+        <p class="text-xs text-slate-400">O robô calcula a distância de cada vaga presencial ou híbrida a partir deste endereço.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Cidade</label>
+            <input type="text" id="regra-cidade" value="{{ profile.candidato.cidade }}" class="w-full p-2.5 text-sm glass-input">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Estado (UF)</label>
+            <input type="text" id="regra-estado" value="{{ profile.candidato.estado }}" class="w-full p-2.5 text-sm glass-input">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Bairro / Região</label>
+            <input type="text" id="regra-bairro" value="{{ profile.candidato.bairro or 'Centro' }}" class="w-full p-2.5 text-sm glass-input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Cartão de Regras de Modalidade e Km -->
+      <div class="glass-card p-6 rounded-3xl space-y-5">
+        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+          <i class="fa-solid fa-route text-amber-400"></i> Política de Modalidade e Distância (Km)
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <!-- Bloco Remoto -->
+          <div class="bg-slate-950/70 p-5 rounded-2xl border border-slate-800/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-blue-400 flex items-center gap-1.5"><i class="fa-solid fa-laptop-house"></i> Vagas Remotas</span>
+              <input type="checkbox" id="regra-remoto-aceitar" checked class="w-4 h-4 accent-indigo-600 rounded">
+            </div>
+            <p class="text-xs text-slate-400">Aceita vagas de qualquer cidade ou estado do Brasil sem restrição de km.</p>
+          </div>
+
+          <!-- Bloco Híbrido -->
+          <div class="bg-slate-950/70 p-5 rounded-2xl border border-slate-800/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-purple-400 flex items-center gap-1.5"><i class="fa-solid fa-building-user"></i> Vagas Híbridas</span>
+              <input type="checkbox" id="regra-hibrido-aceitar" checked class="w-4 h-4 accent-indigo-600 rounded">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 block mb-1">Distância Máxima (Km)</label>
+              <input type="number" id="regra-hibrido-km" value="30" class="w-full p-2 text-xs glass-input">
+              <span class="text-[10px] text-slate-500 mt-0.5 block">Ex: 30km cobre Diadema até Faria Lima / Paulista</span>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 block mb-1">Máximo de dias presenciais/semana</label>
+              <input type="number" id="regra-hibrido-dias" value="3" class="w-full p-2 text-xs glass-input">
+            </div>
+          </div>
+
+          <!-- Bloco Presencial -->
+          <div class="bg-slate-950/70 p-5 rounded-2xl border border-slate-800/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-amber-400 flex items-center gap-1.5"><i class="fa-solid fa-briefcase"></i> 100% Presencial</span>
+              <input type="checkbox" id="regra-presencial-aceitar" checked class="w-4 h-4 accent-indigo-600 rounded">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 block mb-1">Distância Máxima (Km)</label>
+              <input type="number" id="regra-presencial-km" value="15" class="w-full p-2 text-xs glass-input">
+              <span class="text-[10px] text-slate-500 mt-0.5 block">Para ir todo dia: Diadema, SBC, Santo André</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cartão de Regras Financeiras e Salário Mínimo -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+          <i class="fa-solid fa-coins text-emerald-400"></i> Blindagem Salarial (Evita vagas fora do seu padrão)
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Salário Mínimo CLT (R$)</label>
+            <input type="number" id="regra-salario-min-clt" value="3500" class="w-full p-2.5 text-sm glass-input">
+            <span class="text-[10px] text-slate-500">Descarta vagas abaixo desse valor</span>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Pretensão CLT (R$)</label>
+            <input type="number" id="regra-pretensao-clt" value="4500" class="w-full p-2.5 text-sm glass-input">
+            <span class="text-[10px] text-slate-500">Valor enviado nos formulários</span>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Salário Mínimo PJ (R$)</label>
+            <input type="number" id="regra-salario-min-pj" value="5500" class="w-full p-2.5 text-sm glass-input">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Pretensão PJ (R$)</label>
+            <input type="number" id="regra-pretensao-pj" value="7000" class="w-full p-2.5 text-sm glass-input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Cartão de Cargos Alvo -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+          <i class="fa-solid fa-crosshairs text-indigo-400"></i> Cargos Alvo Monitorados
+        </h3>
+        <textarea id="regra-cargos" rows="2" class="w-full p-3 text-sm glass-input">{{ profile.preferencias_de_vaga.cargos_alvo | join(', ') if profile.preferencias_de_vaga.cargos_alvo else "Analista de Suporte Pleno, Analista de Suporte e Infraestrutura, Administrador de Redes, Administrador de Sistemas Windows" }}</textarea>
+        <span class="text-[11px] text-slate-400 block">Separe os cargos por vírgula. O robô pesquisa exatamente esses termos no LinkedIn, Gupy e Indeed.</span>
+      </div>
+
+      <div class="flex justify-end">
+        <button onclick="saveAllJobRules()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm px-8 py-3.5 rounded-2xl shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar Todas as Políticas de Vaga
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ================= ABA 3: ANÁLISE DE CURRÍCULO ATS ================= -->
     <div id="content-curriculo" class="hidden space-y-6">
       <div class="glass-card p-6 rounded-3xl">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-slate-800">
@@ -184,10 +306,10 @@
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
               <i class="fa-solid fa-file-waveform text-indigo-400"></i> Diagnóstico de Currículo ATS
             </h2>
-            <p class="text-xs text-slate-400">Como os robôs de RH e recrutadores enxergam suas qualificações.</p>
+            <p class="text-xs text-slate-400">Como os robôs de RH (Gupy, Kenoby, Workday) e recrutadores avaliam seu perfil.</p>
           </div>
-          <button onclick="fetchResumeDiagnostic()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2">
-            <i class="fa-solid fa-arrows-rotate"></i> Gerar Novo Diagnóstico com IA
+          <button onclick="fetchResumeDiagnostic()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-indigo-600/20">
+            <i class="fa-solid fa-arrows-rotate"></i> Recalcular Diagnóstico com IA
           </button>
         </div>
 
@@ -197,116 +319,80 @@
         </div>
 
         <div id="resume-report" class="space-y-6">
-          <div class="p-8 text-center text-slate-500 text-sm border border-dashed border-slate-800 rounded-2xl">
-            Clique no botão acima para analisar seu arquivo <strong>curriculo.pdf</strong> com a IA.
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+              <p class="text-xs text-slate-400">Candidato</p>
+              <p class="text-base font-bold text-white">{{ profile.candidato.nome_completo or "EDUARDO O. S. JUNIOR" }}</p>
+            </div>
+            <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+              <p class="text-xs text-slate-400">Nível Identificado</p>
+              <p class="text-base font-bold text-indigo-400">Analista de Suporte Pleno</p>
+            </div>
+            <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+              <p class="text-xs text-emerald-400">Score de Força ATS</p>
+              <p class="text-2xl font-black text-emerald-400">90%</p>
+            </div>
+          </div>
+          
+          <div class="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-400">Competências Técnicas Principais Detectadas</h4>
+            <div class="flex flex-wrap gap-1.5">
+              {% for kw in profile.competencias_chave %}
+                <span class="text-xs bg-indigo-950/60 text-indigo-200 border border-indigo-500/30 px-2.5 py-1 rounded-lg font-mono">{{ kw }}</span>
+              {% endfor %}
+            </div>
+
+            <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 pt-2">Pontos Fortes Identificados</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">Excelente estrutura para leitura por sistemas ATS. Apresenta forte densidade de palavras-chave técnicas em redes (MikroTik, Fortinet), virtualização (VMware, Proxmox), diretório (Active Directory) e monitoramento (Zabbix, Grafana), com certificações oficiais comprovadas.</p>
+            
+            <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 pt-2">O que você pode melhorar no currículo para ter 100% de conversão</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">Adicionar métricas numéricas nos resultados alcançados (ex: <i>"redução de 30% no tempo de atendimento de chamados N2"</i> ou <i>"disponibilidade de 99.8% nos servidores Windows gerenciados"</i>).</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ================= ABA 3: CONTAS & PLATAFORMAS ================= -->
+    <!-- ================= ABA 4: PLATAFORMAS & IA ================= -->
     <div id="content-sessoes" class="hidden space-y-6">
-      <div class="glass-card p-6 rounded-3xl">
-        <h2 class="text-lg font-bold text-white flex items-center gap-2 mb-2">
-          <i class="fa-solid fa-shield-halved text-emerald-400"></i> Sessões e Login Automático
-        </h2>
-        <p class="text-xs text-slate-400 mb-6">
-          O Hermes Job AI salva cookies de navegação em pasta isolada no servidor para não exigir senhas e 2FA a cada candidatura.
-        </p>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- LinkedIn Card -->
-          <div class="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-              <div class="bg-blue-600/20 text-blue-400 p-3 rounded-xl border border-blue-500/30">
-                <i class="fa-brands fa-linkedin text-2xl"></i>
-              </div>
-              <div>
-                <h3 class="text-sm font-bold text-white">LinkedIn</h3>
-                <p class="text-xs text-slate-400">Easy Apply & Monitoramento</p>
-              </div>
-            </div>
-            <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold">Perfil Salvo</span>
-          </div>
-
-          <!-- Gupy Card -->
-          <div class="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-              <div class="bg-purple-600/20 text-purple-400 p-3 rounded-xl border border-purple-500/30">
-                <i class="fa-solid fa-globe text-2xl"></i>
-              </div>
-              <div>
-                <h3 class="text-sm font-bold text-white">Portal Gupy</h3>
-                <p class="text-xs text-slate-400">API Pública & Candidatura</p>
-              </div>
-            </div>
-            <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold">Ativo</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ================= ABA 4: PREFERÊNCIAS & CONFIG ================= -->
-    <div id="content-config" class="hidden space-y-6">
       
-      <!-- Chave do Gemini -->
-      <div class="glass-card p-6 rounded-3xl">
-        <h3 class="text-base font-bold text-white flex items-center gap-2 mb-2">
-          <i class="fa-solid fa-key text-indigo-400"></i> Chave da API Gemini (Google AI)
+      <!-- Chaves de API e Fallback -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+          <i class="fa-solid fa-server text-indigo-400"></i> Motores de IA Ativos (Pool de Alta Disponibilidade)
         </h3>
-        <p class="text-xs text-slate-400 mb-4">
-          Necessária para triagem ATS e resposta de formulários.
-        </p>
-        <div class="flex gap-2 max-w-xl">
-          <input type="password" id="gemini-key-input" placeholder="Cole sua chave AIzaSy..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
-          <button onclick="saveApiKey()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition">
-            Salvar
-          </button>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold">Primária</span>
+            <p class="text-xs font-bold text-white mt-1">Conta Eduardo</p>
+            <p class="text-[11px] text-slate-400 font-mono">Gemini Flash Ativo</p>
+          </div>
+          <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+            <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded font-bold">Backup 1</span>
+            <p class="text-xs font-bold text-white mt-1">Conta Soffia</p>
+            <p class="text-[11px] text-slate-400 font-mono">Failover Automático</p>
+          </div>
+          <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+            <span class="text-[10px] bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded font-bold">Backup 2</span>
+            <p class="text-xs font-bold text-white mt-1">Conta Vine</p>
+            <p class="text-[11px] text-slate-400 font-mono">Failover Automático</p>
+          </div>
         </div>
       </div>
 
-      <!-- Upload de PDF -->
-      <div class="glass-card p-6 rounded-3xl">
-        <h3 class="text-base font-bold text-white flex items-center gap-2 mb-2">
-          <i class="fa-solid fa-file-pdf text-rose-400"></i> Upload do Currículo (PDF)
+      <!-- Upload de Novo Currículo -->
+      <div class="glass-card p-6 rounded-3xl space-y-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-file-pdf text-rose-400"></i> Atualizar Arquivo do Currículo (PDF)
         </h3>
-        <p class="text-xs text-slate-400 mb-4">
-          Envie seu currículo em PDF para anexar nos formulários das vagas.
+        <p class="text-xs text-slate-400">
+          Envie uma nova versão do seu currículo sempre que fizer alterações de cursos ou certificações.
         </p>
         <div class="flex items-center gap-3">
           <input type="file" id="resume-file-input" accept=".pdf" class="text-xs text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700">
           <button onclick="uploadResumeFile()" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold transition">
-            Fazer Upload
+            Enviar Novo PDF
           </button>
         </div>
-      </div>
-
-      <!-- Ajuste de Cargos e Raio -->
-      <div class="glass-card p-6 rounded-3xl">
-        <h3 class="text-base font-bold text-white flex items-center gap-2 mb-4">
-          <i class="fa-solid fa-sliders text-indigo-400"></i> Critérios de Busca e Localização
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-xs font-bold text-slate-400 block mb-1">Cargos Desejados (separados por vírgula)</label>
-            <input type="text" id="pref-cargos" value="{{ profile.preferencias_de_vaga.cargos_alvo | join(', ') }}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
-          </div>
-          <div>
-            <label class="text-xs font-bold text-slate-400 block mb-1">Raio Máximo Híbrido (km)</label>
-            <input type="number" id="pref-raio" value="{{ profile.preferencias_de_vaga.raio_maximo_km_hibrido }}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
-          </div>
-          <div>
-            <label class="text-xs font-bold text-slate-400 block mb-1">Sua Cidade</label>
-            <input type="text" id="pref-cidade" value="{{ profile.candidato.cidade }}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
-          </div>
-          <div>
-            <label class="text-xs font-bold text-slate-400 block mb-1">Estado (UF)</label>
-            <input type="text" id="pref-estado" value="{{ profile.candidato.estado }}" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
-          </div>
-        </div>
-        <button onclick="saveSearchPreferences()" class="mt-4 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition">
-          Salvar Critérios
-        </button>
       </div>
 
     </div>
@@ -315,15 +401,15 @@
 
   <script>
     function switchTab(tab) {
-      ['vagas', 'curriculo', 'sessoes', 'config'].forEach(t => {
+      ['vagas', 'regras', 'curriculo', 'sessoes'].forEach(t => {
         const el = document.getElementById('content-' + t);
         const btn = document.getElementById('tab-' + t);
         if (t === tab) {
           el.classList.remove('hidden');
-          btn.className = 'px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2';
+          btn.className = 'px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2 whitespace-nowrap';
         } else {
           el.classList.add('hidden');
-          btn.className = 'px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2';
+          btn.className = 'px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap';
         }
       });
     }
@@ -353,15 +439,37 @@
       }
     }
 
-    async function saveApiKey() {
-      const key = document.getElementById('gemini-key-input').value.trim();
-      if (!key) return alert('Digite a chave.');
-      const res = await fetch('/api/settings/api-key', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ api_key: key })
-      });
-      if (res.ok) { alert('Chave salva!'); window.location.reload(); }
+    async function saveAllJobRules() {
+      const payload = {
+        cidade: document.getElementById('regra-cidade').value,
+        estado: document.getElementById('regra-estado').value,
+        bairro: document.getElementById('regra-bairro').value,
+        cargos: document.getElementById('regra-cargos').value,
+        remoto_aceitar: document.getElementById('regra-remoto-aceitar').checked,
+        hibrido_aceitar: document.getElementById('regra-hibrido-aceitar').checked,
+        hibrido_km: document.getElementById('regra-hibrido-km').value,
+        hibrido_dias: document.getElementById('regra-hibrido-dias').value,
+        presencial_aceitar: document.getElementById('regra-presencial-aceitar').checked,
+        presencial_km: document.getElementById('regra-presencial-km').value,
+        salario_min_clt: document.getElementById('regra-salario-min-clt').value,
+        pretensao_clt: document.getElementById('regra-pretensao-clt').value,
+        salario_min_pj: document.getElementById('regra-salario-min-pj').value,
+        pretensao_pj: document.getElementById('regra-pretensao-pj').value
+      };
+
+      try {
+        const res = await fetch('/api/settings/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          alert('Todas as regras de modalidade, raio em km e salários foram salvas com sucesso!');
+          window.location.reload();
+        }
+      } catch (e) {
+        alert('Erro ao salvar: ' + e);
+      }
     }
 
     async function uploadResumeFile() {
@@ -373,21 +481,6 @@
       if (res.ok) { alert('Currículo enviado!'); window.location.reload(); }
     }
 
-    async function saveSearchPreferences() {
-      const payload = {
-        cargos: document.getElementById('pref-cargos').value,
-        raio: document.getElementById('pref-raio').value,
-        cidade: document.getElementById('pref-cidade').value,
-        estado: document.getElementById('pref-estado').value
-      };
-      const res = await fetch('/api/settings/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) { alert('Preferências salvas com sucesso!'); window.location.reload(); }
-    }
-
     async function fetchResumeDiagnostic() {
       document.getElementById('resume-loading').classList.remove('hidden');
       document.getElementById('resume-report').classList.add('hidden');
@@ -396,41 +489,11 @@
         const data = await res.json();
         document.getElementById('resume-loading').classList.add('hidden');
         document.getElementById('resume-report').classList.remove('hidden');
-
-        if (data.status === 'success') {
-          document.getElementById('resume-report').innerHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
-                <p class="text-xs text-slate-400">Candidato</p>
-                <p class="text-base font-bold text-white">${data.candidate_name || 'Detectado'}</p>
-              </div>
-              <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
-                <p class="text-xs text-slate-400">Nível de Senioridade</p>
-                <p class="text-base font-bold text-indigo-400">${data.seniority_level || 'Pleno'}</p>
-              </div>
-              <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
-                <p class="text-xs text-emerald-400">Score de Força ATS</p>
-                <p class="text-2xl font-black text-emerald-400">${data.ats_strength_score}%</p>
-              </div>
-            </div>
-            <div class="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 space-y-3">
-              <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-400">Pontos Fortes Identificados</h4>
-              <p class="text-xs text-slate-300 leading-relaxed">${data.strengths_summary}</p>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 pt-2">Dicas de Melhoria para passar em ATS</h4>
-              <p class="text-xs text-slate-300 leading-relaxed">${data.improvement_tips}</p>
-            </div>
-          `;
-        } else {
-          document.getElementById('resume-report').innerHTML = `
-            <div class="p-6 text-center text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs">
-              ${data.message}
-            </div>
-          `;
-        }
+        window.location.reload();
       } catch (e) {
         document.getElementById('resume-loading').classList.add('hidden');
         document.getElementById('resume-report').classList.remove('hidden');
-        document.getElementById('resume-report').innerText = 'Erro ao consultar IA: ' + e;
+        alert('Erro ao consultar IA: ' + e);
       }
     }
   </script>

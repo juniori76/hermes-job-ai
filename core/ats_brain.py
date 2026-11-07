@@ -10,6 +10,7 @@ from core import llm
 from core.database import get_pending_evaluations, update_job_evaluation
 from core.radar import load_profile
 from core.resume_analyzer import extract_text_from_pdf
+from core.distance_engine import validate_job_policy
 
 
 def _build_prompt(job: Dict[str, Any], profile: Dict[str, Any], resume_text: str) -> str:
@@ -50,6 +51,17 @@ Responda SOMENTE JSON:
 
 def evaluate_job_match(job: Dict[str, Any], profile: Dict[str, Any], resume_text: str = "") -> Optional[Dict[str, Any]]:
     """Retorna o dicionário da avaliação, ou None se falhar (vaga segue pendente)."""
+    # 1. Filtro prévio rígido de Distância, Modalidade e Salário (Sem gastar tokens de IA)
+    is_valid, policy_reason = validate_job_policy(job, profile)
+    if not is_valid:
+        print(f"  🚫 [DESCARTADA PELA POLÍTICA] {job.get('company')} - {job.get('title')}: {policy_reason}")
+        return {
+            "score": 0,
+            "decision": "reject",
+            "match_reasons": f"Descartada por critério de localização/salário: {policy_reason}",
+            "matched_keywords": []
+        }
+
     try:
         data = llm.generate_json(_build_prompt(job, profile, resume_text))
         score = int(data.get("score"))
