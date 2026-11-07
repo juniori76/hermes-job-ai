@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C environments
+.env
+.env.*
+!.env.example
+
+# Dados sensíveis, perfis e currículos reais
+config/candidate_profile.yaml
+config/credentials.yaml
+data/curriculo.pdf
+data/curriculo.docx
+data/browser_data/
+data/browser_profile/
+data/*.db
+data/*.sqlite3
+
+# Logs e arquivos temporários
+logs/
+*.log
+
+# Docker
+.docker/
+
+# IDEs
+.vscode/
+.idea/
