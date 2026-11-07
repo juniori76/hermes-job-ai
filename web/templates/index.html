@@ -311,13 +311,18 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-slate-800">
           <div>
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-file-waveform text-indigo-400"></i> Diagnóstico de Currículo ATS
+              <i class="fa-solid fa-file-waveform text-indigo-400"></i> Diagnóstico de Currículo ATS & Perfil
             </h2>
             <p class="text-xs text-slate-400">Como os robôs de RH (Gupy, Kenoby, Workday) e recrutadores avaliam seu perfil.</p>
           </div>
-          <button onclick="fetchResumeDiagnostic()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-indigo-600/20">
-            <i class="fa-solid fa-arrows-rotate"></i> Recalcular Diagnóstico com IA
-          </button>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="triggerProfileSync()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-600/20">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Sincronizar Perfil com IA
+            </button>
+            <button onclick="fetchResumeDiagnostic()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-indigo-600/20">
+              <i class="fa-solid fa-arrows-rotate"></i> Recalcular Diagnóstico
+            </button>
+          </div>
         </div>
 
         <div id="resume-loading" class="hidden p-12 text-center text-indigo-400 animate-pulse text-sm">
@@ -485,7 +490,32 @@
       const fd = new FormData();
       fd.append('file', file);
       const res = await fetch('/api/settings/upload-resume', { method: 'POST', body: fd });
-      if (res.ok) { alert('Currículo enviado!'); window.location.reload(); }
+      if (res.ok) { 
+        alert('Currículo enviado com sucesso! Clique em "Sincronizar Perfil com IA" para ler os novos dados.'); 
+        window.location.reload(); 
+      }
+    }
+
+    async function triggerProfileSync() {
+      if (!confirm('Deseja que a IA extraia todas as competências e experiências do PDF e atualize seu perfil?')) return;
+      document.getElementById('resume-loading').classList.remove('hidden');
+      document.getElementById('resume-report').classList.add('hidden');
+      try {
+        const res = await fetch('/api/profile/sync', { method: 'POST' });
+        const data = await res.json();
+        document.getElementById('resume-loading').classList.add('hidden');
+        document.getElementById('resume-report').classList.remove('hidden');
+        if (data.status === 'success') {
+          alert('Perfil sincronizado com sucesso a partir do seu PDF!');
+          window.location.reload();
+        } else {
+          alert('Aviso: ' + data.message);
+        }
+      } catch (e) {
+        document.getElementById('resume-loading').classList.add('hidden');
+        document.getElementById('resume-report').classList.remove('hidden');
+        alert('Erro ao sincronizar perfil: ' + e);
+      }
     }
 
     async function changePassword() {

@@ -17,6 +17,7 @@ from core import config
 from core.radar import scan_jobs, load_profile, CONFIG_PATH
 from core.ats_brain import run_ats_evaluation_batch
 from core.resume_analyzer import analyze_resume_with_ai
+from core.profile_sync import sync_profile_from_resume_ai
 from core.auth import (
     authenticate_user, create_session, validate_session,
     revoke_session, change_user_password, init_auth
@@ -174,10 +175,21 @@ async def trigger_scan(background_tasks: BackgroundTasks, request: Request = Non
 
 
 @app.get("/api/resume/analysis")
-async def get_resume_analysis():
+async def get_resume_analysis(request: Request):
     """Retorna o diagnóstico de IA do currículo atual."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
     analysis = analyze_resume_with_ai()
     return analysis
+
+
+@app.post("/api/profile/sync")
+async def trigger_profile_sync(request: Request):
+    """Dispara a extração profunda de dados do PDF para o candidate_profile.yaml."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    result = sync_profile_from_resume_ai()
+    return result
 
 
 @app.post("/api/settings/profile")
@@ -302,10 +314,21 @@ async def trigger_scan(background_tasks: BackgroundTasks, request: Request = Non
 
 
 @app.get("/api/resume/analysis")
-async def get_resume_analysis():
+async def get_resume_analysis(request: Request):
     """Retorna o diagnóstico de IA do currículo atual."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
     analysis = analyze_resume_with_ai()
     return analysis
+
+
+@app.post("/api/profile/sync")
+async def trigger_profile_sync(request: Request):
+    """Dispara a extração profunda de dados do PDF para o candidate_profile.yaml."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    result = sync_profile_from_resume_ai()
+    return result
 
 
 @app.post("/api/settings/profile")
