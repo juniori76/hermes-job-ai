@@ -1,67 +1,92 @@
 """
-Cliente Gemini compartilhado: timeout curto, retry e CADEIA DE FALLBACK de modelos.
-Se um modelo estiver sobrecarregado (503/504), sem cota (429) ou indisponível (404),
-passa automaticamente para o próximo da cadeia.
+Cliente Híbrido: Suporta MÚLTIPLAS CHAVES GEMINI + OLLAMA LOCAL (RTX 3090).
+Alterna automaticamente entre a Chave 1 (Eduardo), Chave 2 (Soffia) e Ollama local.
+Se um provedor falhar ou esgotar cota (429), tenta o próximo sem parar o robô.
 """
 
 import json
 import time
-from typing import Any, Dict, List
-
+import requests
+from typing import Any, Dict, List, Optional
 from google import genai
 from google.genai import types
 
 from core import config
 
 
-class GeminiAuthError(Exception):
-    """Chave inválida/ausente: não adianta tentar outros modelos."""
+def get_gemini_keys() -> List[str]:
+    """Retorna lista de chaves Gemini cadastradas (primária + backup)."""
+    keys = []
+    k1 = config.get("GEMINI_API_KEY")
+    k2 = config.get("GEMINI_API_KEY_BACKUP")
+    if k1: keys.append(k1.strip())
+    if k2 and k2 != k1: keys.append(k2.strip())
+    return keys
 
 
-class GeminiUnavailable(Exception):
-    """Nenhum modelo da cadeia respondeu."""
+def query_ollama(prompt: str, model: str = "qwen2.5:14b", json_mode: bool = False, timeout: int = 40) -> Optional[str]:
+    """Tenta consultar o Ollama local (RTX 3090) se estiver acessível."""
+    host = config.get("OLLAMA_HOST", "http://192.168.0.20:11434")
+    url = f"{host.rstrip('/')}/api/generate"
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": False,
+        "format": "json" if json_mode else ""
+    }
+    try:
+        r = requests.post(url, json=payload, timeout=timeout)
+        if r.status_code == 200:
+            return r.json().get("response", "").strip()
+    except Exception:
+        pass
+    return None
 
 
-def get_client() -> genai.Client:
-    key = config.get("GEMINI_API_KEY")
-    if not key:
-        raise GeminiAuthError("GEMINI_API_KEY não configurada.")
-    return genai.Client(api_key=key, http_options=types.HttpOptions(timeout=45_000))
+def generate(prompt: str, smart: bool = False, json_mode: bool = False, temperature: float = 0.2) -> str:
+    """Gera texto usando a cadeia de resiliência: Chaves Gemini -> Ollama RTX 3090."""
+    gemini_keys = get_gemini_keys()
+    models = [config.get("GEMINI_MODEL_FAST", "gemini-3.5-flash-lite")] + [
+        m.strip() for m in config.get("GEMINI_MODEL_FALLBACKS", "gemini-3.6-flash,gemini-3.5-flash,gemini-3.1-flash-lite").split(",") if m.strip()
+    ]
 
+    # 1. Tenta nas chaves do Gemini
+    for key_idx, key in enumerate(gemini_keys):
+        client = genai.Client(api_key=key, http_options=types.HttpOptions(timeout=35_000))
+        for model in models:
+            try:
+                cfg = types.GenerateContentConfig(
+                    temperature=temperature,
+                    response_mime_type="application/json" if json_mode else None
+                )
+                resp = client.models.generate_content(model=model, contents=prompt, config=cfg)
+                if resp.text:
+                    return resp.text.strip()
+            except Exception as e:
+                err_msg = str(e)
+                if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
+                    print(f"[LLM] Cota esgotada na Chave {key_idx+1} para {model}. Alternando...")
+                    break # Pula para a próxima chave
+                time.sleep(1)
 
-def model_chain(smart: bool = False) -> List[str]:
-    primary = config.get("GEMINI_MODEL_SMART" if smart else "GEMINI_MODEL_FAST")
-    chain = [primary] + [m.strip() for m in config.get("GEMINI_MODEL_FALLBACKS", "").split(",") if m.strip()]
-    seen, out = set(), []
-    for m in chain:
-        if m and m not in seen:
-            seen.add(m)
-            out.append(m)
-    return out
+    # 2. Se as APIs do Gemini falharem, usa a RTX 3090 local (Ollama)
+    ollama_model = config.get("OLLAMA_MODEL", "qwen2.5:14b")
+    print(f"[LLM 🔄] Alternando para motor local RTX 3090 (Ollama: {ollama_model})...")
+    ollama_resp = query_ollama(prompt, model=ollama_model, json_mode=json_mode)
+    if ollama_resp:
+        return ollama_resp
 
-
-def generate(prompt: str, smart: bool = False, json_mode: bool = False,
-             temperature: float = 0.2) -> str:
-    client = get_client()
-    cfg = types.GenerateContentConfig(
-        temperature=temperature,
-        response_mime_type="application/json" if json_mode else None,
-    )
-    errors = []
-    for model in model_chain(smart):
-        try:
-            resp = client.models.generate_content(model=model, contents=prompt, config=cfg)
-            if resp.text:
-                return resp.text.strip()
-            errors.append(f"{model}: resposta vazia")
-        except Exception as e:
-            msg = str(e)
-            if "API_KEY_INVALID" in msg or "API key not valid" in msg:
-                raise GeminiAuthError(f"Chave rejeitada pelo Gemini: {msg[:120]}")
-            errors.append(f"{model}: {msg[:70]}")
-            time.sleep(1)
-    raise GeminiUnavailable("Nenhum modelo respondeu -> " + " | ".join(errors))
+    raise RuntimeError("Todos os provedores falharam (Chaves Gemini 1 e 2 esgotadas e Ollama indisponível).")
 
 
 def generate_json(prompt: str, smart: bool = False, temperature: float = 0.2) -> Dict[str, Any]:
-    return json.loads(generate(prompt, smart=smart, json_mode=True, temperature=temperature))
+    raw = generate(prompt, smart=smart, json_mode=True, temperature=temperature)
+    # Garante parsing de JSON limpo mesmo se a LLM mandar marcação markdown
+    clean = raw.strip()
+    if clean.startswith("```json"):
+        clean = clean[7:]
+    if clean.startswith("```"):
+        clean = clean[3:]
+    if clean.endswith("```"):
+        clean = clean[:-3]
+    return json.loads(clean.strip())

@@ -12,9 +12,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUNTIME_ENV = os.path.join(BASE_DIR, "data", "runtime.env")
 
 DEFAULTS = {
-    "GEMINI_MODEL_FAST": "gemini-3.6-flash",
+    "GEMINI_MODEL_FAST": "gemini-3.5-flash-lite",
     "GEMINI_MODEL_SMART": "gemini-3.5-flash",
-    "GEMINI_MODEL_FALLBACKS": "gemini-3.5-flash,gemini-3.1-flash-lite,gemini-3.5-flash-lite",
+    "GEMINI_MODEL_FALLBACKS": "gemini-3.6-flash,gemini-3.5-flash,gemini-3.1-flash-lite",
+    "OLLAMA_HOST": "http://192.168.0.20:11434",
+    "OLLAMA_MODEL": "qwen2.5:14b",
 }
 
 
