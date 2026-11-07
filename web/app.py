@@ -7,8 +7,8 @@ import os
 import shutil
 import yaml
 from typing import Optional
-from fastapi import FastAPI, Request, BackgroundTasks, UploadFile, File, Form
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, Request, BackgroundTasks, UploadFile, File, Form, Response, Depends
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -17,6 +17,10 @@ from core import config
 from core.radar import scan_jobs, load_profile, CONFIG_PATH
 from core.ats_brain import run_ats_evaluation_batch
 from core.resume_analyzer import analyze_resume_with_ai
+from core.auth import (
+    authenticate_user, create_session, validate_session,
+    revoke_session, change_user_password, init_auth
+)
 
 app = FastAPI(title="Hermes Job AI Dashboard")
 
@@ -25,10 +29,61 @@ WEB_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 templates = Jinja2Templates(directory=os.path.join(WEB_DIR, "templates"))
 
+# Inicializa credenciais
+init_auth()
+
+
+def get_current_user(request: Request) -> Optional[str]:
+    """Extrai e valida o token de sessão do cookie."""
+    token = request.cookies.get("hermes_session")
+    return validate_session(token)
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Exibe a tela de login."""
+    if get_current_user(request):
+        return RedirectResponse(url="/", status_code=302)
+    return templates.TemplateResponse(request=request, name="login.html", context={"error": None})
+
+
+@app.post("/login")
+async def login_submit(request: Request, username: str = Form(...), password: str = Form(...)):
+    """Processa a tentativa de login."""
+    if authenticate_user(username, password):
+        token = create_session(username)
+        response = RedirectResponse(url="/", status_code=303)
+        response.set_cookie(
+            key="hermes_session",
+            value=token,
+            httponly=True,
+            max_age=14 * 86400, # 14 dias de validade
+            samesite="lax"
+        )
+        return response
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"error": "Usuário ou senha incorretos."}
+    )
+
+
+@app.get("/logout")
+async def logout(request: Request):
+    """Encerra a sessão do usuário."""
+    token = request.cookies.get("hermes_session")
+    revoke_session(token)
+    response = RedirectResponse(url="/login", status_code=302)
+    response.delete_cookie("hermes_session")
+    return response
+
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard_home(request: Request):
-    """Página principal do Dashboard exibindo métricas e vagas ranqueadas."""
+    """Página principal do Dashboard (Protegida por Login)."""
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
     profile = load_profile()
     resume_exists = os.path.exists(os.path.join(DATA_DIR, "curriculo.pdf"))
     gemini_key_set = config.has_api_key()
@@ -71,6 +126,22 @@ async def dashboard_home(request: Request):
             "gemini_key_set": gemini_key_set
         }
     )
+
+
+@app.post("/api/auth/change-password")
+async def api_change_password(request: Request):
+    """Altera a senha do usuário logado."""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    data = await request.json()
+    new_pass = data.get("new_password", "").strip()
+    if len(new_pass) < 6:
+        return JSONResponse({"error": "Senha muito curta"}, status_code=400)
+    
+    if change_user_password(user, new_pass):
+        return {"success": True, "message": "Senha alterada!"}
+    return JSONResponse({"error": "Erro ao atualizar"}, status_code=500)
 
 
 @app.post("/api/settings/api-key")
