@@ -45,7 +45,7 @@ def init_db():
                 salary_min REAL,
                 salary_max REAL,
                 
-                # Campos de Inteligência (ATS)
+                -- Campos de Inteligencia (ATS)
                 match_score INTEGER DEFAULT NULL,
                 match_reasons TEXT DEFAULT NULL,
                 keywords_found TEXT DEFAULT NULL,
