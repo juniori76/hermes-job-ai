@@ -11,6 +11,8 @@ from core.database import get_pending_evaluations, update_job_evaluation
 from core.radar import load_profile
 from core.resume_analyzer import extract_text_from_pdf
 from core.distance_engine import validate_job_policy
+from core.settings_manager import get_operation_mode, load_settings
+from core.notifier import notify_high_score_job
 
 
 def _build_prompt(job: Dict[str, Any], profile: Dict[str, Any], resume_text: str) -> str:
@@ -103,15 +105,29 @@ def run_ats_evaluation_batch(batch_size: int = 30) -> int:
         if result is None:
             continue
 
+        final_status = result.get("decision", "review")
         update_job_evaluation(
             job_id=job["id"],
             score=result["score"],
             reasons=result.get("match_reasons", ""),
             keywords=", ".join(result.get("matched_keywords", [])),
-            status=result.get("decision", "review"),
+            status=final_status,
         )
         done += 1
-        print(f"  [{result['score']}%] {job.get('company')} - {job.get('title')} -> {result.get('decision')}")
+        print(f"  [{result['score']}%] {job.get('company')} - {job.get('title')} -> {final_status}")
+
+        # --- Telegram: notifica vagas de alto score em modo smart ou auto ---
+        try:
+            settings = load_settings()
+            mode = settings.get("operation_mode", "review")
+            threshold = settings.get("smart_score_threshold", 80)
+            if mode in ("smart", "auto") and result["score"] >= threshold:
+                enriched_job = {**job, "match_score": result["score"],
+                                "match_reasons": result.get("match_reasons", ""),
+                                "age_hours": job.get("age_hours")}
+                notify_high_score_job(enriched_job)
+        except Exception as tg_err:
+            print(f"[ATS Brain] Telegram erro (não crítico): {tg_err}")
 
     print(f"[ATS Brain] {done}/{len(pending)} vagas avaliadas.")
     return done

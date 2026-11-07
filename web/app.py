@@ -23,6 +23,10 @@ from core.auth import (
     authenticate_user, create_session, validate_session,
     revoke_session, change_user_password, init_auth
 )
+from core.settings_manager import (
+    load_settings, save_settings, set_operation_mode, update_telegram_config
+)
+from core.notifier import test_telegram_connection
 
 app = FastAPI(title="Hermes Job AI Dashboard")
 
@@ -278,6 +282,106 @@ async def update_status(job_id: str, request: Request):
     return {"success": True, "job_id": job_id, "new_status": new_status}
 
 
+# =========================================================
+# FASE 4 — Modos de Operação, Telegram, Aprovação Rápida
+# =========================================================
+
+@app.get("/api/settings")
+async def get_settings(request: Request):
+    """Retorna as configurações atuais (modo de operação, Telegram)."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    s = load_settings()
+    # Mascara o token do bot para segurança — retorna só se está configurado
+    return {
+        "operation_mode": s.get("operation_mode", "review"),
+        "telegram_enabled": s.get("telegram_enabled", False),
+        "telegram_chat_id": s.get("telegram_chat_id", ""),
+        "telegram_token_set": bool(s.get("telegram_bot_token")),
+        "smart_score_threshold": s.get("smart_score_threshold", 80),
+        "auto_score_threshold": s.get("auto_score_threshold", 85),
+        "auto_apply_daily_limit": s.get("auto_apply_daily_limit", 10),
+    }
+
+
+@app.post("/api/settings/mode")
+async def set_mode(request: Request):
+    """Altera o modo de operação: review | smart | auto."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    data = await request.json()
+    mode = data.get("mode", "review")
+    try:
+        set_operation_mode(mode)
+        return {"success": True, "operation_mode": mode}
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+@app.post("/api/settings/telegram")
+async def save_telegram(request: Request):
+    """Salva ou atualiza as credenciais do Telegram."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    data = await request.json()
+    token = data.get("token", "").strip()
+    chat_id = data.get("chat_id", "").strip()
+    update_telegram_config(token, chat_id)
+    return {"success": True, "telegram_enabled": bool(token and chat_id)}
+
+
+@app.post("/api/settings/telegram/test")
+async def test_telegram(request: Request):
+    """Envia uma mensagem de teste para verificar as credenciais do Telegram."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    data = await request.json()
+    token = data.get("token", "").strip()
+    chat_id = data.get("chat_id", "").strip()
+    if not token or not chat_id:
+        return JSONResponse({"error": "Token e Chat ID são obrigatórios para o teste."}, status_code=400)
+    result = test_telegram_connection(token, chat_id)
+    return result
+
+
+@app.post("/api/settings/thresholds")
+async def save_thresholds(request: Request):
+    """Salva os thresholds de score para alertas e candidatura automática."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    data = await request.json()
+    s = load_settings()
+    if "smart_score_threshold" in data:
+        s["smart_score_threshold"] = int(data["smart_score_threshold"])
+    if "auto_score_threshold" in data:
+        s["auto_score_threshold"] = int(data["auto_score_threshold"])
+    if "auto_apply_daily_limit" in data:
+        s["auto_apply_daily_limit"] = int(data["auto_apply_daily_limit"])
+    save_settings(s)
+    return {"success": True}
+
+
+@app.get("/api/jobs/{job_id}/approve_redirect")
+async def approve_redirect(job_id: str):
+    """Aprovação rápida via link do Telegram — redireciona para o painel após aprovar."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE jobs SET status = 'approved' WHERE id = ?", (job_id,))
+        conn.commit()
+    # Redireciona para o painel principal
+    return RedirectResponse(url="/?tab=vagas&highlight=" + job_id, status_code=302)
+
+
+@app.get("/api/jobs/{job_id}/reject_redirect")
+async def reject_redirect(job_id: str):
+    """Rejeição rápida via link do Telegram — redireciona para o painel após rejeitar."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE jobs SET status = 'rejected' WHERE id = ?", (job_id,))
+        conn.commit()
+    return RedirectResponse(url="/?tab=vagas", status_code=302)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard_home(request: Request):
     """Página principal do Dashboard exibindo métricas e vagas ranqueadas."""
@@ -426,3 +530,103 @@ async def update_status(job_id: str, request: Request):
         conn.commit()
         
     return {"success": True, "job_id": job_id, "new_status": new_status}
+
+
+# =========================================================
+# FASE 4 — Modos de Operação, Telegram, Aprovação Rápida
+# =========================================================
+
+@app.get("/api/settings")
+async def get_settings(request: Request):
+    """Retorna as configurações atuais (modo de operação, Telegram)."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    s = load_settings()
+    # Mascara o token do bot para segurança — retorna só se está configurado
+    return {
+        "operation_mode": s.get("operation_mode", "review"),
+        "telegram_enabled": s.get("telegram_enabled", False),
+        "telegram_chat_id": s.get("telegram_chat_id", ""),
+        "telegram_token_set": bool(s.get("telegram_bot_token")),
+        "smart_score_threshold": s.get("smart_score_threshold", 80),
+        "auto_score_threshold": s.get("auto_score_threshold", 85),
+        "auto_apply_daily_limit": s.get("auto_apply_daily_limit", 10),
+    }
+
+
+@app.post("/api/settings/mode")
+async def set_mode(request: Request):
+    """Altera o modo de operação: review | smart | auto."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    data = await request.json()
+    mode = data.get("mode", "review")
+    try:
+        set_operation_mode(mode)
+        return {"success": True, "operation_mode": mode}
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+@app.post("/api/settings/telegram")
+async def save_telegram(request: Request):
+    """Salva ou atualiza as credenciais do Telegram."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    data = await request.json()
+    token = data.get("token", "").strip()
+    chat_id = data.get("chat_id", "").strip()
+    update_telegram_config(token, chat_id)
+    return {"success": True, "telegram_enabled": bool(token and chat_id)}
+
+
+@app.post("/api/settings/telegram/test")
+async def test_telegram(request: Request):
+    """Envia uma mensagem de teste para verificar as credenciais do Telegram."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    data = await request.json()
+    token = data.get("token", "").strip()
+    chat_id = data.get("chat_id", "").strip()
+    if not token or not chat_id:
+        return JSONResponse({"error": "Token e Chat ID são obrigatórios para o teste."}, status_code=400)
+    result = test_telegram_connection(token, chat_id)
+    return result
+
+
+@app.post("/api/settings/thresholds")
+async def save_thresholds(request: Request):
+    """Salva os thresholds de score para alertas e candidatura automática."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    data = await request.json()
+    s = load_settings()
+    if "smart_score_threshold" in data:
+        s["smart_score_threshold"] = int(data["smart_score_threshold"])
+    if "auto_score_threshold" in data:
+        s["auto_score_threshold"] = int(data["auto_score_threshold"])
+    if "auto_apply_daily_limit" in data:
+        s["auto_apply_daily_limit"] = int(data["auto_apply_daily_limit"])
+    save_settings(s)
+    return {"success": True}
+
+
+@app.get("/api/jobs/{job_id}/approve_redirect")
+async def approve_redirect(job_id: str):
+    """Aprovação rápida via link do Telegram — redireciona para o painel após aprovar."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE jobs SET status = 'approved' WHERE id = ?", (job_id,))
+        conn.commit()
+    # Redireciona para o painel principal
+    return RedirectResponse(url="/?tab=vagas&highlight=" + job_id, status_code=302)
+
+
+@app.get("/api/jobs/{job_id}/reject_redirect")
+async def reject_redirect(job_id: str):
+    """Rejeição rápida via link do Telegram — redireciona para o painel após rejeitar."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE jobs SET status = 'rejected' WHERE id = ?", (job_id,))
+        conn.commit()
+    return RedirectResponse(url="/?tab=vagas", status_code=302)

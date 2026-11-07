@@ -60,6 +60,37 @@
 
     <!-- ================= ABA 1: CENTRAL DE VAGAS ================= -->
     <div id="content-vagas" class="space-y-6">
+
+      <!-- ===== SELETOR DE MODO DE OPERAÇÃO ===== -->
+      <div class="glass-card p-5 rounded-3xl">
+        <div class="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2 mb-0.5">
+              <i class="fa-solid fa-sliders text-indigo-400"></i> Modo de Operação
+            </h2>
+            <p class="text-xs text-slate-400" id="mode-description">Selecione como o Hermes deve agir ao encontrar vagas compatíveis.</p>
+          </div>
+          <div class="flex gap-2 flex-wrap" id="mode-selector">
+            <!-- Modo Avaliação -->
+            <button onclick="setOperationMode('review')" id="btn-mode-review"
+              class="mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 border-blue-500 bg-blue-500/20 text-blue-300">
+              <i class="fa-solid fa-eye"></i> 🔵 Avaliação
+            </button>
+            <!-- Modo Inteligente -->
+            <button onclick="setOperationMode('smart')" id="btn-mode-smart"
+              class="mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 border-slate-700 bg-transparent text-slate-400 hover:border-purple-500 hover:text-purple-300">
+              <i class="fa-solid fa-brain"></i> 🟣 Inteligente
+            </button>
+            <!-- Modo Automático -->
+            <button onclick="setOperationMode('auto')" id="btn-mode-auto"
+              class="mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 border-slate-700 bg-transparent text-slate-400 hover:border-emerald-500 hover:text-emerald-300">
+              <i class="fa-solid fa-robot"></i> 🟢 Automático
+            </button>
+          </div>
+        </div>
+        <!-- Legenda dinâmica do modo -->
+        <div class="mt-3 p-3 rounded-xl text-xs" id="mode-info-box" style="display:none;"></div>
+      </div>
       
       <!-- Barra Superior de Parâmetros Atuais -->
       <div class="glass-card p-5 rounded-3xl">
@@ -414,6 +445,68 @@
         </div>
       </div>
 
+      <!-- ===== TELEGRAM INTEGRATION ===== -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-brands fa-telegram text-sky-400"></i> Notificações via Telegram
+          <span id="tg-status-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Não configurado</span>
+        </h3>
+        <p class="text-xs text-slate-400">
+          Configure seu Bot do Telegram para receber alertas de vagas com score alto diretamente no celular.
+          No modo <strong class="text-purple-300">Inteligente</strong> o Hermes envia alertas. No modo <strong class="text-emerald-300">Automático</strong> ele também se candidata.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-400 font-semibold block mb-1">Token do Bot</label>
+            <input type="text" id="tg-token-input" placeholder="123456789:AAF..." class="w-full p-2.5 text-xs glass-input font-mono">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 font-semibold block mb-1">Chat ID (seu ID pessoal)</label>
+            <input type="text" id="tg-chatid-input" placeholder="ex: 123456789" class="w-full p-2.5 text-xs glass-input font-mono">
+          </div>
+        </div>
+
+        <div class="text-xs text-slate-500 bg-slate-950/60 rounded-xl p-3 border border-slate-800 space-y-1">
+          <p>📌 <strong class="text-slate-300">Como obter:</strong></p>
+          <p>1. Fale com <code class="text-sky-400">@BotFather</code> no Telegram → /newbot → copie o <strong>Token</strong></p>
+          <p>2. Fale com <code class="text-sky-400">@userinfobot</code> no Telegram → copie seu <strong>Chat ID</strong></p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2">
+          <button onclick="saveTelegramConfig()" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar Configuração
+          </button>
+          <button onclick="testTelegramConnection()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition border border-slate-700">
+            <i class="fa-solid fa-paper-plane"></i> Testar Conexão
+          </button>
+        </div>
+
+        <!-- Thresholds de Score -->
+        <div class="border-t border-slate-800 pt-4 mt-2">
+          <h4 class="text-xs font-bold text-slate-300 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-gauge text-indigo-400"></i> Thresholds de Score (Alertas & Auto)
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="text-xs text-slate-400 font-semibold block mb-1">🟣 Score mín. para Alertar (Smart)</label>
+              <input type="number" id="thresh-smart" value="80" min="50" max="100" class="w-full p-2.5 text-xs glass-input">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 font-semibold block mb-1">🟢 Score mín. para Candidatar (Auto)</label>
+              <input type="number" id="thresh-auto" value="85" min="60" max="100" class="w-full p-2.5 text-xs glass-input">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 font-semibold block mb-1">🤖 Limite de Candidaturas/Dia (Auto)</label>
+              <input type="number" id="thresh-daily" value="10" min="1" max="30" class="w-full p-2.5 text-xs glass-input">
+            </div>
+          </div>
+          <button onclick="saveThresholds()" class="mt-3 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition">
+            <i class="fa-solid fa-save mr-1"></i> Salvar Thresholds
+          </button>
+        </div>
+      </div>
+
     </div>
 
   </main>
@@ -556,6 +649,179 @@
         alert('Erro ao consultar IA: ' + e);
       }
     }
+
+    // ======================================================
+    // FASE 4 — Modo de Operação & Telegram
+    // ======================================================
+
+    const MODE_INFO = {
+      review: {
+        label: '🔵 Modo Avaliação',
+        desc: 'O Hermes apenas monitora e classifica vagas. Você decide tudo manualmente. Nenhuma ação automática é realizada.',
+        boxClass: 'bg-blue-500/10 text-blue-300 border border-blue-500/20',
+        btnActive: 'border-blue-500 bg-blue-500/20 text-blue-300',
+        btnInactive: 'border-slate-700 bg-transparent text-slate-400'
+      },
+      smart: {
+        label: '🟣 Modo Inteligente',
+        desc: 'O Hermes envia alertas via Telegram quando encontra vagas com score alto (≥80%). Você aprova ou rejeita pelo chat. A candidatura só é enviada com sua aprovação.',
+        boxClass: 'bg-purple-500/10 text-purple-300 border border-purple-500/20',
+        btnActive: 'border-purple-500 bg-purple-500/20 text-purple-300',
+        btnInactive: 'border-slate-700 bg-transparent text-slate-400'
+      },
+      auto: {
+        label: '🟢 Modo Automático',
+        desc: 'O Hermes monitora, alerta via Telegram E se candidata automaticamente nas vagas com score ≥85%. Você é notificado de cada candidatura. Respeita o limite diário configurado.',
+        boxClass: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
+        btnActive: 'border-emerald-500 bg-emerald-500/20 text-emerald-300',
+        btnInactive: 'border-slate-700 bg-transparent text-slate-400'
+      }
+    };
+
+    let currentMode = 'review';
+
+    async function loadCurrentSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        const s = await res.json();
+        currentMode = s.operation_mode || 'review';
+        applyModeUI(currentMode);
+
+        // Thresholds
+        if (document.getElementById('thresh-smart')) {
+          document.getElementById('thresh-smart').value = s.smart_score_threshold || 80;
+          document.getElementById('thresh-auto').value = s.auto_score_threshold || 85;
+          document.getElementById('thresh-daily').value = s.auto_apply_daily_limit || 10;
+        }
+
+        // Status badge Telegram
+        const badge = document.getElementById('tg-status-badge');
+        if (badge) {
+          if (s.telegram_enabled) {
+            badge.textContent = '✅ Configurado';
+            badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/30';
+          } else {
+            badge.textContent = 'Não configurado';
+            badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
+          }
+          if (s.telegram_chat_id) {
+            document.getElementById('tg-chatid-input').value = s.telegram_chat_id;
+          }
+        }
+      } catch(e) { console.warn('Erro ao carregar settings:', e); }
+    }
+
+    function applyModeUI(mode) {
+      const info = MODE_INFO[mode] || MODE_INFO['review'];
+      // Atualiza botões
+      ['review', 'smart', 'auto'].forEach(m => {
+        const btn = document.getElementById('btn-mode-' + m);
+        if (!btn) return;
+        const modeInfo = MODE_INFO[m];
+        if (m === mode) {
+          btn.className = `mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 ${modeInfo.btnActive}`;
+        } else {
+          btn.className = `mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 ${modeInfo.btnInactive} hover:text-white`;
+        }
+      });
+      // Atualiza caixa de info
+      const box = document.getElementById('mode-info-box');
+      if (box) {
+        box.className = `mt-3 p-3 rounded-xl text-xs ${info.boxClass}`;
+        box.innerHTML = `<strong>${info.label}:</strong> ${info.desc}`;
+        box.style.display = 'block';
+      }
+      // Atualiza descrição curta
+      const desc = document.getElementById('mode-description');
+      if (desc) desc.textContent = info.desc.substring(0, 80) + '…';
+    }
+
+    async function setOperationMode(mode) {
+      try {
+        const res = await fetch('/api/settings/mode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode })
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentMode = mode;
+          applyModeUI(mode);
+          const labels = { review: 'Avaliação', smart: 'Inteligente', auto: 'Automático' };
+          // Toast simples
+          showToast(`✅ Modo alterado para ${labels[mode]}`, mode === 'review' ? 'blue' : mode === 'smart' ? 'purple' : 'green');
+        }
+      } catch(e) { alert('Erro ao salvar modo: ' + e); }
+    }
+
+    async function saveTelegramConfig() {
+      const token = document.getElementById('tg-token-input').value.trim();
+      const chat_id = document.getElementById('tg-chatid-input').value.trim();
+      if (!token || !chat_id) return alert('Preencha o Token e o Chat ID.');
+      const res = await fetch('/api/settings/telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, chat_id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('✅ Telegram salvo com sucesso!', 'sky');
+        loadCurrentSettings();
+      } else {
+        alert('Erro ao salvar Telegram: ' + JSON.stringify(data));
+      }
+    }
+
+    async function testTelegramConnection() {
+      const token = document.getElementById('tg-token-input').value.trim();
+      const chat_id = document.getElementById('tg-chatid-input').value.trim();
+      if (!token || !chat_id) return alert('Preencha o Token e o Chat ID antes de testar.');
+      showToast('⏳ Enviando mensagem de teste…', 'slate');
+      const res = await fetch('/api/settings/telegram/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, chat_id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('📱 Mensagem enviada! Verifique seu Telegram.', 'sky');
+      } else {
+        alert('❌ Falha no Telegram:\n' + data.message);
+      }
+    }
+
+    async function saveThresholds() {
+      const payload = {
+        smart_score_threshold: parseInt(document.getElementById('thresh-smart').value),
+        auto_score_threshold: parseInt(document.getElementById('thresh-auto').value),
+        auto_apply_daily_limit: parseInt(document.getElementById('thresh-daily').value)
+      };
+      const res = await fetch('/api/settings/thresholds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) showToast('✅ Thresholds salvos!', 'indigo');
+    }
+
+    // Toast notification helper
+    function showToast(msg, color = 'indigo') {
+      const colorMap = {
+        indigo: 'bg-indigo-600 text-white', blue: 'bg-blue-600 text-white',
+        purple: 'bg-purple-600 text-white', green: 'bg-emerald-600 text-white',
+        sky: 'bg-sky-600 text-white', slate: 'bg-slate-700 text-white'
+      };
+      const toast = document.createElement('div');
+      toast.className = `fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl font-bold text-sm shadow-2xl transition-all ${colorMap[color] || colorMap.indigo}`;
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
+    }
+
+    // Carrega settings ao iniciar a página
+    document.addEventListener('DOMContentLoaded', loadCurrentSettings);
+
   </script>
 </body>
 </html>
