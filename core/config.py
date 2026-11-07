@@ -12,8 +12,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUNTIME_ENV = os.path.join(BASE_DIR, "data", "runtime.env")
 
 DEFAULTS = {
-    "GEMINI_MODEL_FAST": "gemini-3.8-flash",
-    "GEMINI_MODEL_SMART": "gemini-3.1-pro-preview",
+    "GEMINI_MODEL_FAST": "gemini-3.6-flash",
+    "GEMINI_MODEL_SMART": "gemini-3.5-flash",
+    "GEMINI_MODEL_FALLBACKS": "gemini-3.5-flash,gemini-3.1-flash-lite,gemini-3.5-flash-lite",
 }
 
 

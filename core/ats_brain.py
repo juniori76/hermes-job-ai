@@ -55,7 +55,7 @@ def evaluate_job_match(job: Dict[str, Any], profile: Dict[str, Any], resume_text
         score = int(data.get("score"))
         data["score"] = max(0, min(100, score))
         return data
-    except llm.GeminiAuthError:
+    except (llm.GeminiAuthError, llm.GeminiUnavailable):
         raise
     except Exception as e:
         print(f"[ATS Brain] Falha ao avaliar '{job.get('title')}': {e}")
@@ -72,13 +72,22 @@ def run_ats_evaluation_batch(batch_size: int = 30) -> int:
     resume_text = extract_text_from_pdf()
     print(f"[ATS Brain] Avaliando {len(pending)} vagas (currículo {'carregado' if resume_text else 'AUSENTE'})...")
     done = 0
+    consecutive_unavailable = 0
 
     for job in pending:
         try:
             result = evaluate_job_match(job, profile, resume_text)
+            consecutive_unavailable = 0
         except llm.GeminiAuthError as e:
             print(f"[ATS Brain] ERRO DE CONFIGURAÇÃO, lote interrompido: {e}")
             break
+        except llm.GeminiUnavailable as e:
+            consecutive_unavailable += 1
+            print(f"[ATS Brain] IA indisponível para '{job.get('title')}': {e}")
+            if consecutive_unavailable >= 3:
+                print("[ATS Brain] 3 falhas seguidas: lote interrompido, tentará no próximo ciclo.")
+                break
+            continue
         if result is None:
             continue
 
