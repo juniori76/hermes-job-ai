@@ -19,6 +19,20 @@ def _build_prompt(job: Dict[str, Any], profile: Dict[str, Any], resume_text: str
     candidato = profile.get("candidato", {})
     competencias = profile.get("competencias_chave", [])
     prefs = profile.get("preferencias_de_vaga", {})
+    
+    # Extrai modalidades aceitas do YAML de forma robusta
+    modalidades_cfg = prefs.get("modalidades", {})
+    modalidades_list = []
+    if modalidades_cfg.get("remoto", {}).get("aceitar", True):
+        modalidades_list.append("Remoto (100% Home Office)")
+    if modalidades_cfg.get("hibrido", {}).get("aceitar", True):
+        max_h = modalidades_cfg.get("hibrido", {}).get("distancia_maxima_km", 30)
+        modalidades_list.append(f"Híbrido (até {max_h} km)")
+    if modalidades_cfg.get("presencial", {}).get("aceitar", True):
+        max_p = modalidades_cfg.get("presencial", {}).get("distancia_maxima_km", 20)
+        modalidades_list.append(f"Presencial (até {max_p} km de Diadema/Grande SP)")
+    modalidades_str = ", ".join(modalidades_list) if modalidades_list else "Remoto, Híbrido e Presencial"
+
     resume_block = f"\nCURRÍCULO (texto extraído):\n{resume_text[:4000]}\n" if resume_text else ""
 
     return f"""
@@ -26,10 +40,10 @@ Você é um avaliador especialista em recrutamento técnico e filtros ATS.
 Analise com rigor a vaga contra o perfil REAL do candidato. Não invente qualificações.
 
 --- PERFIL DO CANDIDATO ---
+Candidato: {candidato.get('nome_completo', 'Eduardo')} - Residente em {candidato.get('cidade', 'Diadema')}-{candidato.get('estado', 'SP')}
 Competências Chave: {', '.join(competencias)}
 Cargos-alvo: {', '.join(prefs.get('cargos_alvo', []))}
-Modalidades Aceitas: {prefs.get('modalidades_aceitas')}
-Raio Aceitável para Híbrido: {prefs.get('raio_maximo_km_hibrido')} km a partir de {candidato.get('cidade')}-{candidato.get('estado')}
+Modalidades Aceitas: {modalidades_str} (IMPORTANTE: O candidato aceita vagas Presenciais na região metropolitana/Grande SP, além de Híbridas e Remotas!)
 {resume_block}
 --- VAGA ---
 Título: {job.get('title')}
@@ -41,13 +55,17 @@ Descrição:
 {(job.get('description') or '')[:3000]}
 \"\"\"
 
---- CRITÉRIOS ---
-1. score 0-100: 90+ encaixe perfeito; 70-89 bom; abaixo de 60 fora do escopo ou modalidade incompatível.
+--- CRITÉRIOS DE PONTUAÇÃO ---
+1. score (0-100):
+   - 85-100: Encaixe técnico excelente em infraestrutura, redes (UniFi/MikroTik), suporte N1/N2/N3, M365 ou servidores.
+   - 70-84: Bom alinhamento com a maioria dos requisitos da vaga.
+   - 50-69: Exige tecnologias centrais que o candidato não possui (ex: programação pesada, Cloud avançada).
+   - < 50: Vaga fora da área de TI ou fora do estado de SP.
 2. matched_keywords: termos técnicos da vaga que o candidato realmente possui.
-3. decision: "approve" (>=75), "review" (60-74), "reject" (<60).
+3. decision: "approve" (score >= 75), "review" (60-74), "reject" (< 60).
 
 Responda SOMENTE JSON:
-{{"score": <int>, "decision": "approve"|"review"|"reject", "match_reasons": "<2 frases>", "matched_keywords": ["..."]}}
+{{"score": <int>, "decision": "approve"|"review"|"reject", "match_reasons": "<2 frases explicando a aderência técnica e viabilidade de localização>", "matched_keywords": ["..."]}}
 """
 
 
