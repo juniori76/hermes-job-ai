@@ -139,6 +139,13 @@
                   <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg">Aguardando Avaliação</span>
                 {% endif %}
 
+                <!-- Badge de Idade / Recência da Vaga -->
+                {% if job.badge_text %}
+                  <span class="text-xs px-2.5 py-0.5 rounded-lg border {{ job.badge_css }} flex items-center gap-1">
+                    <i class="{{ job.badge_icon }}"></i> {{ job.badge_text }}
+                  </span>
+                {% endif %}
+
                 {% if job.is_remote %}
                   <span class="text-[11px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-md font-medium">Remoto</span>
                 {% endif %}

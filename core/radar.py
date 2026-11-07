@@ -63,7 +63,7 @@ def scan_jobs(results_wanted_per_term: int = 15) -> int:
                 country_indeed='brazil',
                 distance=distance_miles,
                 is_remote=is_remote,
-                hours_old=72 # Apenas vagas recentes dos últimos 3 dias
+                hours_old=24 # Vagas publicadas nas últimas 24 HORAS para ser o primeiro da fila!
             )
 
             if jobs_df is None or jobs_df.empty:

@@ -18,6 +18,7 @@ from core.radar import scan_jobs, load_profile, CONFIG_PATH
 from core.ats_brain import run_ats_evaluation_batch
 from core.resume_analyzer import analyze_resume_with_ai
 from core.profile_sync import sync_profile_from_resume_ai
+from core.recency_engine import calculate_job_age_hours, format_job_badge
 from core.auth import (
     authenticate_user, create_session, validate_session,
     revoke_session, change_user_password, init_auth
@@ -105,14 +106,25 @@ async def dashboard_home(request: Request):
         # Top 50 melhores vagas ranqueadas
         cursor.execute("""
             SELECT id, site, title, company, location, is_remote, job_url, 
-                   match_score, match_reasons, keywords_found, status, created_at
+                   match_score, match_reasons, keywords_found, status, date_posted, created_at
             FROM jobs
             ORDER BY 
                 CASE WHEN match_score IS NULL THEN 0 ELSE match_score END DESC,
                 created_at DESC
-            LIMIT 50;
+            LIMIT 60;
         """)
-        jobs = [dict(row) for row in cursor.fetchall()]
+        raw_jobs = [dict(row) for row in cursor.fetchall()]
+
+        # Processa tags de antiguidade da vaga
+        jobs = []
+        for j in raw_jobs:
+            age = calculate_job_age_hours(j.get("date_posted") or j.get("created_at", ""))
+            badge_text, badge_css, badge_icon = format_job_badge(age)
+            j["age_hours"] = age
+            j["badge_text"] = badge_text
+            j["badge_css"] = badge_css
+            j["badge_icon"] = badge_icon
+            jobs.append(j)
 
     return templates.TemplateResponse(
         request=request,
@@ -285,14 +297,25 @@ async def dashboard_home(request: Request):
         # Top 50 melhores vagas ranqueadas
         cursor.execute("""
             SELECT id, site, title, company, location, is_remote, job_url, 
-                   match_score, match_reasons, keywords_found, status, created_at
+                   match_score, match_reasons, keywords_found, status, date_posted, created_at
             FROM jobs
             ORDER BY 
                 CASE WHEN match_score IS NULL THEN 0 ELSE match_score END DESC,
                 created_at DESC
-            LIMIT 50;
+            LIMIT 60;
         """)
-        jobs = [dict(row) for row in cursor.fetchall()]
+        raw_jobs = [dict(row) for row in cursor.fetchall()]
+
+        # Processa tags de antiguidade da vaga
+        jobs = []
+        for j in raw_jobs:
+            age = calculate_job_age_hours(j.get("date_posted") or j.get("created_at", ""))
+            badge_text, badge_css, badge_icon = format_job_badge(age)
+            j["age_hours"] = age
+            j["badge_text"] = badge_text
+            j["badge_css"] = badge_css
+            j["badge_icon"] = badge_icon
+            jobs.append(j)
 
     return templates.TemplateResponse(
         "index.html",
