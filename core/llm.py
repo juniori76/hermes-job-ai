@@ -15,12 +15,14 @@ from core import config
 
 
 def get_gemini_keys() -> List[str]:
-    """Retorna lista de chaves Gemini cadastradas (primária + backup)."""
+    """Retorna lista de chaves Gemini cadastradas (primária + backups)."""
     keys = []
     k1 = config.get("GEMINI_API_KEY")
     k2 = config.get("GEMINI_API_KEY_BACKUP")
-    if k1: keys.append(k1.strip())
-    if k2 and k2 != k1: keys.append(k2.strip())
+    k3 = config.get("GEMINI_API_KEY_BACKUP2")
+    for k in (k1, k2, k3):
+        if k and k.strip() and k.strip() not in keys:
+            keys.append(k.strip())
     return keys
 
 
