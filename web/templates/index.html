@@ -125,19 +125,96 @@
         </div>
       </div>
 
-      <!-- Métricas -->
+      <!-- Métricas Clicáveis -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="glass-card p-5 rounded-3xl">
-          <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Oportunidades no Radar</p>
+        <div onclick="filterFromMetric('all')" title="Clique para ver todas as vagas do radar" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-slate-500 transition group select-none">
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-slate-400 group-hover:text-slate-200 font-semibold uppercase tracking-wider">Oportunidades no Radar</p>
+            <i class="fa-solid fa-radar text-xs text-slate-500 group-hover:text-indigo-400 transition"></i>
+          </div>
           <p class="text-3xl font-black text-white mt-1">{{ total_jobs }}</p>
         </div>
-        <div class="glass-card p-5 rounded-3xl">
-          <p class="text-xs text-emerald-400 font-semibold uppercase tracking-wider">Aprovadas (Km, Salário & ATS ≥ 75%)</p>
+        <div onclick="filterFromMetric('approved')" title="Clique para filtrar apenas vagas aprovadas (≥ 75%)" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-emerald-500 transition group select-none border border-emerald-500/20">
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-emerald-400 group-hover:text-emerald-300 font-semibold uppercase tracking-wider">Aprovadas (Km, Salário & ATS ≥ 75%)</p>
+            <i class="fa-solid fa-circle-check text-xs text-emerald-500"></i>
+          </div>
           <p class="text-3xl font-black text-emerald-400 mt-1">{{ high_match_jobs }}</p>
         </div>
-        <div class="glass-card p-5 rounded-3xl">
-          <p class="text-xs text-indigo-400 font-semibold uppercase tracking-wider">Candidaturas Realizadas</p>
+        <div onclick="filterFromMetric('applied')" title="Clique para filtrar candidaturas realizadas" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-indigo-500 transition group select-none border border-indigo-500/20">
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-indigo-400 group-hover:text-indigo-300 font-semibold uppercase tracking-wider">Candidaturas Realizadas</p>
+            <i class="fa-solid fa-paper-plane text-xs text-indigo-500"></i>
+          </div>
           <p class="text-3xl font-black text-indigo-400 mt-1">{{ applied_jobs }}</p>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros Avançados -->
+      <div class="glass-card p-5 rounded-3xl space-y-3">
+        <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
+            <input type="text" id="filter-search" oninput="applyAllJobFilters()" 
+                   placeholder="Buscar por cargo, empresa, tecnologia ou cidade (ex: Simpress, MikroTik, Diadema)..." 
+                   class="w-full pl-9 pr-4 py-2.5 text-xs glass-input rounded-xl text-white">
+          </div>
+
+          <div class="flex items-center gap-3 justify-between md:justify-end">
+            <span class="text-xs text-slate-400 font-medium whitespace-nowrap">
+              Exibindo <span id="filtered-count" class="text-white font-bold">{{ jobs|length }}</span> de <span class="text-indigo-400 font-bold">{{ total_jobs }}</span> vagas
+            </span>
+            <button onclick="resetJobFilters()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl border border-slate-700 transition flex items-center gap-1.5 whitespace-nowrap">
+              <i class="fa-solid fa-filter-circle-xmark"></i> Limpar Filtros
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Score / Status ATS</label>
+            <select id="filter-score" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200">
+              <option value="all">Todos os Scores</option>
+              <option value="approved">⭐ Aprovadas (Score ≥ 75%)</option>
+              <option value="top">🔥 Top Score (Score ≥ 85%)</option>
+              <option value="pending">⏳ Aguardando IA</option>
+              <option value="applied">✅ Candidatadas / Realizadas</option>
+              <option value="dry_run">🧪 Simuladas (Dry-Run)</option>
+              <option value="rejected">❌ Rejeitadas</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Data / Recência</label>
+            <select id="filter-recency" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200">
+              <option value="all">Todas as Datas</option>
+              <option value="2h">🔥 Urgente (&lt; 2h)</option>
+              <option value="6h">⚡ Recente (&lt; 6h)</option>
+              <option value="24h">🕒 Hoje (&lt; 24h)</option>
+              <option value="3d">📅 Últimos 3 dias</option>
+              <option value="7d">🗓️ Últimos 7 dias</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Modalidade</label>
+            <select id="filter-modality" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200">
+              <option value="all">Todas as Modalidades</option>
+              <option value="remote">🏠 Remoto</option>
+              <option value="presential">🏢 Presencial / Híbrido</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Plataforma</label>
+            <select id="filter-platform" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200">
+              <option value="all">Todas as Plataformas</option>
+              <option value="gupy">Gupy</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="indeed">Indeed</option>
+              <option value="glassdoor">Glassdoor</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -152,7 +229,17 @@
 
         {% if jobs %}
           {% for job in jobs %}
-          <div class="p-5 hover:bg-slate-800/30 transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div class="job-card p-5 hover:bg-slate-800/30 transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+               data-job-id="{{ job.id }}"
+               data-title="{{ job.title | lower }}"
+               data-company="{{ job.company | lower }}"
+               data-location="{{ (job.location or '') | lower }}"
+               data-keywords="{{ (job.keywords_found or '') | lower }}"
+               data-score="{{ job.match_score if job.match_score is not none else -1 }}"
+               data-status="{{ job.status or 'discovered' }}"
+               data-age-hours="{{ job.age_hours if job.age_hours is not None else 9999 }}"
+               data-remote="{{ '1' if job.is_remote else '0' }}"
+               data-platform="{{ (job.site or '') | lower }}">
             <div class="flex-1">
               <div class="flex items-center gap-2.5 flex-wrap">
                 <h3 class="text-base font-bold text-white hover:text-indigo-400 transition">
@@ -357,13 +444,34 @@
             <p class="text-xs text-slate-400">Como os robôs de RH (Gupy, Kenoby, Workday) e recrutadores avaliam seu perfil.</p>
           </div>
           <div class="flex flex-wrap gap-2">
+            <input type="file" id="resume-file-input" accept=".pdf" class="hidden" onchange="uploadResumeFile(this)">
+            <button onclick="document.getElementById('resume-file-input').click()" class="bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-sky-600/20">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Enviar Novo PDF
+            </button>
             <button onclick="triggerProfileSync()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-600/20">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Sincronizar Perfil com IA
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Sincronizar Perfil
             </button>
             <button onclick="fetchResumeDiagnostic()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-indigo-600/20">
               <i class="fa-solid fa-arrows-rotate"></i> Recalcular Diagnóstico
             </button>
           </div>
+        </div>
+
+        <!-- Dropzone de Upload de Currículo -->
+        <div onclick="document.getElementById('resume-file-input').click()" 
+             class="mb-6 bg-slate-950/40 p-4 rounded-2xl border border-dashed border-slate-700 hover:border-indigo-500/60 transition cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-3 group">
+          <div class="flex items-center gap-3">
+            <div class="bg-indigo-500/10 group-hover:bg-indigo-500/20 text-indigo-400 p-3 rounded-xl transition">
+              <i class="fa-solid fa-file-pdf text-2xl"></i>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-white">Currículo Ativo no Servidor: <span class="text-indigo-400 font-mono">curriculo.pdf</span></p>
+              <p class="text-[11px] text-slate-400">Clique para selecionar e enviar o seu novo PDF (ex: curriculo_eduardo_junior.pdf da Área de Trabalho)</p>
+            </div>
+          </div>
+          <span class="text-xs bg-slate-800 group-hover:bg-indigo-600 text-slate-200 group-hover:text-white px-3.5 py-2 rounded-xl border border-slate-700 group-hover:border-indigo-500 transition font-bold whitespace-nowrap">
+            <i class="fa-solid fa-upload mr-1"></i> Selecionar Arquivo
+          </span>
         </div>
 
         <div id="resume-loading" class="hidden p-12 text-center text-indigo-400 animate-pulse text-sm">

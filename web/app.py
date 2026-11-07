@@ -117,7 +117,7 @@ async def dashboard_home(request: Request):
             ORDER BY 
                 CASE WHEN match_score IS NULL THEN 0 ELSE match_score END DESC,
                 created_at DESC
-            LIMIT 60;
+            LIMIT 500;
         """)
         raw_jobs = [dict(row) for row in cursor.fetchall()]
 
@@ -190,6 +190,34 @@ async def trigger_scan(background_tasks: BackgroundTasks, request: Request = Non
     """Dispara uma varredura de novas vagas em segundo plano."""
     background_tasks.add_task(scan_jobs)
     return {"message": "Varredura iniciada em segundo plano no LinkedIn, Gupy, Indeed e Glassdoor!"}
+
+
+@app.post("/api/resume/upload")
+async def upload_resume(file: UploadFile = File(...), request: Request = None):
+    """Recebe upload de novo curriculo.pdf, salva em data/curriculo.pdf e sincroniza perfil e analise ATS."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    
+    if not file.filename.lower().endswith(".pdf"):
+        return JSONResponse({"error": "Apenas arquivos PDF (.pdf) são aceitos."}, status_code=400)
+        
+    resume_path = os.path.join(BASE_DIR, "data", "curriculo.pdf")
+    os.makedirs(os.path.dirname(resume_path), exist_ok=True)
+    
+    content = await file.read()
+    with open(resume_path, "wb") as f:
+        f.write(content)
+        
+    # Reanalisa com IA e sincroniza perfil
+    analysis = analyze_resume_with_ai()
+    sync = sync_profile_from_resume_ai()
+    
+    return {
+        "success": True,
+        "message": f"Currículo '{file.filename}' recebido e analisado pela IA com sucesso!",
+        "analysis": analysis,
+        "sync": sync
+    }
 
 
 @app.get("/api/resume/analysis")
@@ -476,7 +504,7 @@ async def dashboard_home(request: Request):
             ORDER BY 
                 CASE WHEN match_score IS NULL THEN 0 ELSE match_score END DESC,
                 created_at DESC
-            LIMIT 60;
+            LIMIT 500;
         """)
         raw_jobs = [dict(row) for row in cursor.fetchall()]
 
@@ -508,6 +536,34 @@ async def trigger_scan(background_tasks: BackgroundTasks, request: Request = Non
     """Dispara uma varredura de novas vagas em segundo plano."""
     background_tasks.add_task(scan_jobs)
     return {"message": "Varredura iniciada em segundo plano no LinkedIn, Gupy, Indeed e Glassdoor!"}
+
+
+@app.post("/api/resume/upload")
+async def upload_resume(file: UploadFile = File(...), request: Request = None):
+    """Recebe upload de novo curriculo.pdf, salva em data/curriculo.pdf e sincroniza perfil e analise ATS."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    
+    if not file.filename.lower().endswith(".pdf"):
+        return JSONResponse({"error": "Apenas arquivos PDF (.pdf) são aceitos."}, status_code=400)
+        
+    resume_path = os.path.join(BASE_DIR, "data", "curriculo.pdf")
+    os.makedirs(os.path.dirname(resume_path), exist_ok=True)
+    
+    content = await file.read()
+    with open(resume_path, "wb") as f:
+        f.write(content)
+        
+    # Reanalisa com IA e sincroniza perfil
+    analysis = analyze_resume_with_ai()
+    sync = sync_profile_from_resume_ai()
+    
+    return {
+        "success": True,
+        "message": f"Currículo '{file.filename}' recebido e analisado pela IA com sucesso!",
+        "analysis": analysis,
+        "sync": sync
+    }
 
 
 @app.get("/api/resume/analysis")
