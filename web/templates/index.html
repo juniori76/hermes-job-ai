@@ -237,7 +237,7 @@
                data-keywords="{{ (job.keywords_found or '') | lower }}"
                data-score="{{ job.match_score if job.match_score is not none else -1 }}"
                data-status="{{ job.status or 'discovered' }}"
-               data-age-hours="{{ job.age_hours if job.age_hours is not None else 9999 }}"
+               data-age-hours="{{ job.age_hours if job.age_hours is not none else 9999 }}"
                data-remote="{{ '1' if job.is_remote else '0' }}"
                data-platform="{{ (job.site or '') | lower }}">
             <div class="flex-1">
