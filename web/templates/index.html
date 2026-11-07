@@ -542,7 +542,7 @@
                 <p id="status-linkedin" class="text-[11px] text-slate-400">Verificando sessão...</p>
               </div>
             </div>
-            <button onclick="startAssistedLogin('linkedin')" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
+            <button id="btn-login-linkedin" onclick="startAssistedLogin('linkedin')" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
               <i class="fa-solid fa-arrow-up-right-from-square"></i> Logar
             </button>
           </div>
@@ -558,7 +558,7 @@
                 <p id="status-gupy" class="text-[11px] text-slate-400">Verificando sessão...</p>
               </div>
             </div>
-            <button onclick="startAssistedLogin('gupy')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
+            <button id="btn-login-gupy" onclick="startAssistedLogin('gupy')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
               <i class="fa-solid fa-arrow-up-right-from-square"></i> Logar
             </button>
           </div>
@@ -1030,28 +1030,45 @@ async function changePassword() {
     }
 
     // Carrega settings ao iniciar a página
-    document.addEventListener('DOMContentLoaded', () => { loadCurrentSettings(); checkAuthStatusNow(); });
+    document.addEventListener('DOMContentLoaded', () => { loadCurrentSettings(); checkAuthStatusNow(); setInterval(checkAuthStatusNow, 6000); });
 
     async function checkAuthStatusNow() {
       const elIn = document.getElementById('status-linkedin');
       const elGu = document.getElementById('status-gupy');
-      if (elIn) elIn.textContent = 'Checando cookies...';
-      if (elGu) elGu.textContent = 'Checando cookies...';
+      const btnIn = document.getElementById('btn-login-linkedin');
+      const btnGu = document.getElementById('btn-login-gupy');
       try {
         const res = await fetch('/api/auth/browser-status');
         const data = await res.json();
         if (elIn) {
-          elIn.innerHTML = data.linkedin ? '<span class="text-emerald-400 font-bold">✅ Logado (Sessão Ativa)</span>' : '<span class="text-rose-400 font-bold">❌ Desconectado</span>';
+          elIn.innerHTML = data.linkedin ? '<span class="text-emerald-400 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Conectado (Sessão Ativa)</span>' : '<span class="text-rose-400 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-xmark"></i> Desconectado</span>';
+        }
+        if (btnIn) {
+          if (data.linkedin) {
+            btnIn.className = 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5';
+            btnIn.innerHTML = '<i class="fa-solid fa-check"></i> Conectado';
+          } else {
+            btnIn.className = 'bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5';
+            btnIn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Logar';
+          }
         }
         if (elGu) {
-          elGu.innerHTML = data.gupy ? '<span class="text-emerald-400 font-bold">✅ Logado (Sessão Ativa)</span>' : '<span class="text-rose-400 font-bold">❌ Desconectado</span>';
+          elGu.innerHTML = data.gupy ? '<span class="text-emerald-400 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Conectado (Sessão Ativa)</span>' : '<span class="text-rose-400 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-xmark"></i> Desconectado</span>';
+        }
+        if (btnGu) {
+          if (data.gupy) {
+            btnGu.className = 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5';
+            btnGu.innerHTML = '<i class="fa-solid fa-check"></i> Conectado';
+          } else {
+            btnGu.className = 'bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5';
+            btnGu.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Logar';
+          }
         }
       } catch (e) {
-        if (elIn) elIn.textContent = 'Erro ao verificar';
-        if (elGu) elGu.textContent = 'Erro ao verificar';
+        if (elIn && !elIn.innerHTML.includes('Conectado')) elIn.textContent = 'Erro ao verificar';
+        if (elGu && !elGu.innerHTML.includes('Conectado')) elGu.textContent = 'Erro ao verificar';
       }
     }
-
     async function startAssistedLogin(platform) {
       showToast('🌐 Abrindo navegador para login assistido...', 'sky');
       toggleVncFrame(true);

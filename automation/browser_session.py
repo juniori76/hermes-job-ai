@@ -51,18 +51,23 @@ def _clear_singleton_locks():
             pass
 
     # Previne a mensagem 'Restore pages? Chromium didn't shut down correctly'
-    pref_file = os.path.join(PROFILE_DIR, "Default", "Preferences")
-    if os.path.exists(pref_file):
-        try:
-            with open(pref_file, "r", encoding="utf-8") as pf:
-                content = pf.read()
-            if '"exit_type":"Crashed"' in content or '"exited_cleanly":false' in content:
-                content = content.replace('"exit_type":"Crashed"', '"exit_type":"Normal"')
-                content = content.replace('"exited_cleanly":false', '"exited_cleanly":true')
-                with open(pref_file, "w", encoding="utf-8") as pf:
-                    pf.write(content)
-        except Exception:
-            pass
+    for f in [os.path.join(PROFILE_DIR, "Default", "Preferences"), os.path.join(PROFILE_DIR, "Local State")]:
+        if os.path.exists(f):
+            try:
+                with open(f, "r", encoding="utf-8") as pf:
+                    content = pf.read()
+                modified = False
+                if '"exit_type":"Crashed"' in content:
+                    content = content.replace('"exit_type":"Crashed"', '"exit_type":"Normal"')
+                    modified = True
+                if '"exited_cleanly":false' in content:
+                    content = content.replace('"exited_cleanly":false', '"exited_cleanly":true')
+                    modified = True
+                if modified:
+                    with open(f, "w", encoding="utf-8") as pf:
+                        pf.write(content)
+            except Exception:
+                pass
 
 
 @contextmanager
@@ -89,7 +94,12 @@ def open_session(headless: bool = False):
                 "--disable-infobars",
                 "--disable-session-crashed-bubble",
                 "--hide-crash-restore-bubble",
+                "--no-default-browser-check",
                 "--no-first-run",
+                "--password-store=basic",
+                "--use-mock-keychain",
+                "--disable-features=TranslateUI",
+                "--disable-background-networking",
                 "--start-maximized"
             ],
         )
@@ -182,8 +192,8 @@ def check_auth_status() -> Dict[str, bool]:
 def launch_assisted_login(platform: str = "linkedin"):
     """
     Abre o navegador no DISPLAY=:99 apontando para a página de login da plataforma desejada.
-    Limpa instâncias anteriores, abre a página e monitora até que o usuário conclua o login.
-    Assim que o login for detectado, aguarda a gravação dos cookies e encerra limpo.
+    Limpa instâncias travadas anteriores, abre a página e monitora a conclusão do login.
+    Mantém o navegador aberto confortavelmente para o usuário operar via noVNC.
     """
     url_map = {
         "linkedin": "https://www.linkedin.com/login",
@@ -192,7 +202,7 @@ def launch_assisted_login(platform: str = "linkedin"):
     }
     target_url = url_map.get(platform, "https://www.linkedin.com/login")
     
-    # Finaliza qualquer sessão travada anterior
+    # Finaliza qualquer sessão travada anterior para evitar erro de concorrência de perfil
     _kill_stale_chrome()
     _clear_singleton_locks()
     
@@ -201,23 +211,21 @@ def launch_assisted_login(platform: str = "linkedin"):
         page.goto(target_url)
         print(f"[Assisted Login] Navegador aberto em {target_url}. Acesse o noVNC (porta 6080) para logar.")
         
-        # Aguarda interação e detecta conclusão do login
+        # Monitora a interação por até 15 minutos (900s)
         start_time = time.time()
-        while time.time() - start_time < 600:
-            human_pause(3.0, 4.5)
+        while time.time() - start_time < 900:
+            human_pause(3.0, 5.0)
             try:
+                if page.is_closed():
+                    break
                 cur_url = (page.url or "").lower()
                 if platform == "linkedin":
                     if "/feed" in cur_url or "/in/" in cur_url or "/mynetwork" in cur_url:
                         print("[Assisted Login] ✅ Login no LinkedIn concluído com sucesso!")
-                        human_pause(3.0, 5.0)
-                        break
                 elif platform == "gupy":
                     if "portal.gupy.io" in cur_url and "/login" not in cur_url:
                         content = page.content().lower()
-                        if "minhas candidaturas" in content or "sair" in content or "meu perfil" in content:
+                        if "minhas candidaturas" in content or "sair" in content or "meu perfil" in content or "vagas" in content:
                             print("[Assisted Login] ✅ Login na Gupy concluído com sucesso!")
-                            human_pause(3.0, 5.0)
-                            break
             except Exception:
                 break
