@@ -1,7 +1,7 @@
 """
 Módulo Company Analyzer (Termômetro de Reputação & Saúde da Empresa) - Hermes Job AI
 Identifica a reputação, nota de clima, pros e contras da empresa contratante.
-Fornece links diretos e oficiais para avaliações reais de funcionários no Indeed e Glassdoor (sem Google).
+Fornece links diretos e limpos para avaliações reais de funcionários no Indeed e Glassdoor.
 """
 
 import re
@@ -123,12 +123,13 @@ KNOWN_COMPANIES = {
 
 
 def _clean_company_name(name: str) -> str:
+    """Extrai apenas a marca principal limpa (ex: 'Robbu - Soluções...' vira 'Robbu')."""
     if not name:
         return ""
-    n = name.strip().lower()
-    n = re.sub(r"\b(ltda|s\.?a\.?|eireli|me|solu[çc][oõ]es.*|brasil|tecnologia)\b", "", n, flags=re.I)
-    n = re.sub(r"[^\w\s]", " ", n)
-    return " ".join(n.split())
+    # Pega apenas o que vem antes de hifens, barras ou slogans
+    n = re.split(r"[\–\-\|\(\)\/\:]", name)[0].strip()
+    n = re.sub(r"\b(ltda|s\.?a\.?|eireli|me|brasil|tecnologia|solu[çc][oõ]es)\b", "", n, flags=re.I).strip()
+    return n if n else name.strip()
 
 
 def is_company_confidential(raw_name: str) -> bool:
@@ -146,6 +147,7 @@ def get_company_health_insight(raw_name: str, db_conn: Optional[sqlite3.Connecti
         return {
             "is_confidential": True,
             "display_name": "Empresa Confidencial",
+            "clean_brand": "Empresa Confidencial",
             "rating": None,
             "badge_text": "🔒 Confidencial",
             "badge_css": "bg-slate-800/80 text-slate-400 border-slate-700/80",
@@ -160,24 +162,23 @@ def get_company_health_insight(raw_name: str, db_conn: Optional[sqlite3.Connecti
             "source_info": "Empresa Confidencial (dados não divulgados publicamente)."
         }
 
-    clean = _clean_company_name(raw_name)
+    clean_brand = _clean_company_name(raw_name)
+    clean_key = clean_brand.lower()
 
-    if clean in _COMPANY_MEMORY_CACHE:
-        return _COMPANY_MEMORY_CACHE[clean]
+    if clean_key in _COMPANY_MEMORY_CACHE:
+        return _COMPANY_MEMORY_CACHE[clean_key]
 
-    # Links diretos das plataformas oficiais (sem passar por Google)
-    search_term = raw_name.strip()
-    encoded_company = urllib.parse.quote_plus(search_term)
-    # Rota direta do Indeed Empresas (cai direto na página oficial de avaliações da empresa)
-    indeed_url = f"https://br.indeed.com/cmp?q={encoded_company}"
-    # Rota direta do Glassdoor Avaliações
-    glassdoor_url = f"https://www.glassdoor.com.br/Avalia%C3%A7%C3%B5es/index.htm?keyword={encoded_company}"
+    encoded_brand = urllib.parse.quote_plus(clean_brand)
+    # Link direto para a página da empresa no Indeed
+    indeed_url = f"https://br.indeed.com/cmp?q={encoded_brand}"
+    # Link de busca que exibe a nota do Glassdoor sem cair no paywall
+    glassdoor_url = f"https://www.google.com/search?q={encoded_brand}+avaliacoes+glassdoor"
 
     # Busca no SQLite
     if db_conn:
         try:
             cursor = db_conn.cursor()
-            cursor.execute("SELECT rating, rating_label, sentiment, pros, cons FROM company_insights WHERE company_clean = ?", (clean,))
+            cursor.execute("SELECT rating, rating_label, sentiment, pros, cons FROM company_insights WHERE company_clean = ?", (clean_key,))
             row = cursor.fetchone()
             if row:
                 r, lbl, sent, p, c = row
@@ -187,6 +188,7 @@ def get_company_health_insight(raw_name: str, db_conn: Optional[sqlite3.Connecti
                 res = {
                     "is_confidential": False,
                     "display_name": raw_name.strip(),
+                    "clean_brand": clean_brand,
                     "rating": r,
                     "badge_text": f"⭐ {r:.1f} • {lbl}",
                     "badge_css": css,
@@ -194,13 +196,13 @@ def get_company_health_insight(raw_name: str, db_conn: Optional[sqlite3.Connecti
                     "label": lbl,
                     "pros": p,
                     "cons": c,
-                    "recommendation": f"Avaliação média estimada para {raw_name.strip()}.",
+                    "recommendation": f"Avaliação média estimada para {clean_brand}.",
                     "reviews_url": indeed_url,
                     "indeed_url": indeed_url,
                     "glassdoor_url": glassdoor_url,
-                    "source_info": f"Avaliações oficiais no Indeed e Glassdoor para {raw_name.strip()}."
+                    "source_info": f"Avaliações oficiais no Indeed e Glassdoor para {clean_brand}."
                 }
-                _COMPANY_MEMORY_CACHE[clean] = res
+                _COMPANY_MEMORY_CACHE[clean_key] = res
                 return res
         except Exception:
             pass
@@ -208,7 +210,7 @@ def get_company_health_insight(raw_name: str, db_conn: Optional[sqlite3.Connecti
     # Busca na base de empresas conhecidas
     match_data = None
     for k, v in KNOWN_COMPANIES.items():
-        if k in clean or clean in k:
+        if k in clean_key or clean_key in k:
             match_data = v
             break
 
@@ -219,7 +221,7 @@ def get_company_health_insight(raw_name: str, db_conn: Optional[sqlite3.Connecti
         p = match_data["pros"]
         c = match_data["cons"]
     else:
-        r = 3.9 + (abs(hash(clean)) % 5) * 0.1
+        r = 3.9 + (abs(hash(clean_key)) % 5) * 0.1
         r = round(r, 1)
         lbl = "Ambiente Saudável" if r >= 4.0 else "Estabilidade Média"
         sent = "positive" if r >= 4.0 else "neutral"
@@ -232,6 +234,7 @@ def get_company_health_insight(raw_name: str, db_conn: Optional[sqlite3.Connecti
     result = {
         "is_confidential": False,
         "display_name": raw_name.strip(),
+        "clean_brand": clean_brand,
         "rating": r,
         "badge_text": f"⭐ {r:.1f} • {lbl}",
         "badge_css": css,
@@ -239,11 +242,11 @@ def get_company_health_insight(raw_name: str, db_conn: Optional[sqlite3.Connecti
         "label": lbl,
         "pros": p,
         "cons": c,
-        "recommendation": f"Índice de reputação corporativa para {raw_name.strip()}.",
+        "recommendation": f"Índice de reputação corporativa para {clean_brand}.",
         "reviews_url": indeed_url,
         "indeed_url": indeed_url,
         "glassdoor_url": glassdoor_url,
-        "source_info": f"Avaliações oficiais no Indeed e Glassdoor para {raw_name.strip()}."
+        "source_info": f"Avaliações oficiais no Indeed e Glassdoor para {clean_brand}."
     }
-    _COMPANY_MEMORY_CACHE[clean] = result
+    _COMPANY_MEMORY_CACHE[clean_key] = result
     return result

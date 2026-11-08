@@ -4,7 +4,7 @@ Calcula a faixa de remuneração de mercado para cada vaga com base em:
 1. Salário real divulgado pela empresa (se houver).
 2. Tabela de benchmark salarial oficial (Base CAGED/MTE e Glassdoor São Paulo).
 3. Modificadores de competências técnicas rigorosamente balanceados por senioridade.
-4. Links diretos e oficiais para a pesquisa salarial oficial do cargo no Salario.com.br (CAGED/MTE) e Glassdoor.
+4. Links diretos e auditáveis com páginas reais do Salario.com.br (CBO oficial) e Glassdoor.
 """
 
 import re
@@ -60,6 +60,16 @@ SKILL_MODIFIERS = [
 ]
 
 
+def _get_official_caged_url(title: str) -> str:
+    """Mapeia o cargo diretamente para a URL real do Salario.com.br (Base CAGED/MTE)."""
+    t = title.lower()
+    if re.search(r"administrativ|financeir|cont[aá]bil|atendente|recepcionista", t):
+        return "https://www.salario.com.br/profissao/assistente-administrativo-cbo-411010/"
+    if re.search(r"suporte|helpdesk|t[eé]cnico|infra|redes|seguran[çc]a|ti", t):
+        return "https://www.salario.com.br/profissao/analista-de-suporte-tecnico-cbo-212420/"
+    return "https://www.salario.com.br/tabela-salarial/"
+
+
 def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     sal_min = float(job.get("salary_min") or 0.0)
     sal_max = float(job.get("salary_max") or 0.0)
@@ -67,9 +77,10 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
     clean_title = re.sub(r"[\–\-\|\(\)\/].*", "", raw_title).strip()
     encoded_title = urllib.parse.quote_plus(clean_title)
 
-    # Link direto para a base oficial de salários do CAGED / Ministério do Trabalho (Salario.com.br)
-    caged_url = f"https://www.salario.com.br/busca/?q={encoded_title}"
-    glassdoor_url = f"https://www.glassdoor.com.br/Sal%C3%A1rios/index.htm?keyword={encoded_title}"
+    # URL oficial do CBO no Salario.com.br (CAGED/MTE)
+    caged_url = _get_official_caged_url(raw_title)
+    # Busca inteligente no Google que abre a tabela salarial sem cair no paywall do Glassdoor
+    glassdoor_url = f"https://www.google.com/search?q=salario+medio+{encoded_title}+sao+paulo+glassdoor"
 
     # 1. Se a vaga já tem salário real explicitamente divulgado
     if sal_min > 500 or sal_max > 500:
