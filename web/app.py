@@ -33,6 +33,7 @@ from core.notifier import test_telegram_connection
 from core.profiles_manager import list_profiles, get_profile, save_profile, get_resume_path
 from core.visual_copilot import answer_job_question
 from core.resume_optimizer import optimize_resume_for_target
+from core.ats_lab import analyze_standalone_resume
 from core.cover_letter import generate_cover_letter
 from core.backup_manager import create_backup, list_backups
 from core.profiles_manager import save_resume_file
@@ -1075,3 +1076,34 @@ async def api_list_backups(request: Request):
     if not get_current_user(request):
         return JSONResponse({"error": "Não autorizado"}, status_code=401)
     return {"backups": list_backups()}
+
+
+# ==========================================
+# LABORATÓRIO ATS AVULSO (SANDBOX INDEPENDENTE)
+# ==========================================
+@app.post("/api/ats-lab/analyze")
+async def api_ats_lab_analyze(
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    raw_text: Optional[str] = Form(None),
+    target_role: Optional[str] = Form(None)
+):
+    """Analisa um currículo avulso em sandbox (PDF ou texto) sem alterar o perfil permanente do robô."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    
+    pdf_bytes = None
+    filename = None
+    if file and file.filename:
+        pdf_bytes = await file.read()
+        filename = file.filename
+
+    res = analyze_standalone_resume(
+        pdf_bytes=pdf_bytes,
+        raw_text=raw_text,
+        target_role=target_role,
+        filename=filename
+    )
+    if res.get("success"):
+        return res
+    return JSONResponse(res, status_code=400)

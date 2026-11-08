@@ -183,18 +183,17 @@ ESTRUTURA JSON EXIGIDA:
 """
 
     try:
-        response_text = llm.generate_content(prompt)
-        # Limpeza de markdown caso venha com ```json ... ```
-        clean_text = response_text.strip()
-        if clean_text.startswith("```json"):
-            clean_text = clean_text[7:]
-        elif clean_text.startswith("```"):
-            clean_text = clean_text[3:]
-        if clean_text.endswith("```"):
-            clean_text = clean_text[:-3]
-        clean_text = clean_text.strip()
-
-        data = json.loads(clean_text)
+        data = llm.generate_json(prompt, smart=False, temperature=0.25)
+        if not data or not isinstance(data, dict):
+            response_text = llm.generate(prompt, smart=False, temperature=0.25)
+            clean_text = response_text.strip()
+            if clean_text.startswith("```json"):
+                clean_text = clean_text[7:]
+            elif clean_text.startswith("```"):
+                clean_text = clean_text[3:]
+            if clean_text.endswith("```"):
+                clean_text = clean_text[:-3]
+            data = json.loads(clean_text.strip())
     except Exception as e:
         print(f"[ResumeOptimizer ⚠️] Erro na geração ou parsing JSON da IA: {e}")
         # Fallback estruturado básico

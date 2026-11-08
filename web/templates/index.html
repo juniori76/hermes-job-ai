@@ -1228,6 +1228,200 @@
     <!-- ================= ABA 3: ANÁLISE DE CURRÍCULO ATS ================= -->
     <div id="content-curriculo" class="hidden space-y-6">
 
+      <!-- ================= SELETOR DE SUB-ABAS DE CURRÍCULO ================= -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/90 p-2 rounded-2xl border border-slate-800 shadow-xl">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="switchCurriculoSubTab('lab')" id="subtab-lab" 
+                  class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-indigo-600 shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-flask-vial text-amber-300"></i> 🔬 Laboratório ATS (Testar Vários Currículos)
+          </button>
+          <button type="button" onclick="switchCurriculoSubTab('mestre')" id="subtab-mestre" 
+                  class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-medium text-xs text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-shield-halved text-emerald-400"></i> 🛡️ Currículo Oficial do Robô (Radar 24/7)
+          </button>
+        </div>
+        <div class="text-[11px] text-slate-400 px-2 py-1 bg-slate-950/60 rounded-xl border border-slate-800 text-center sm:text-right">
+          <i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i>
+          O Laboratório é 100% isolado e <strong>não altera o robô de vagas</strong>.
+        </div>
+      </div>
+
+      <!-- ================= PAINEL 1: LABORATÓRIO ATS (TESTADOR AVULSO & SANDBOX) ================= -->
+      <div id="subcontent-lab" class="space-y-6">
+        <div class="bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 md:p-8 backdrop-blur-xl relative shadow-2xl space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-slate-800">
+            <div>
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider mb-2">
+                <i class="fa-solid fa-flask-vial"></i> Ferramenta Sandbox Independente
+              </div>
+              <h2 class="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+                Auditoria & Testador de Currículos ATS
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
+                Envie <strong>quantos currículos diferentes quiser</strong> (seus, de amigos ou de candidatos). A IA analisa a nota de 0 a 100%, aponta gargalos e dá sugestões práticas de alteração sem mexer nas vagas do robô.
+              </p>
+            </div>
+            
+            <button type="button" onclick="resetAtsLab()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition flex items-center gap-2 active:scale-95 shrink-0">
+              <i class="fa-solid fa-rotate-left"></i> Limpar / Novo Teste
+            </button>
+          </div>
+
+          <!-- Formulário de Envio do Testador -->
+          <div id="lab-input-section" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div class="lg:col-span-5 space-y-4">
+              <!-- Modo de Entrada: Arquivo PDF ou Texto -->
+              <div class="flex items-center gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                <button type="button" onclick="setLabInputMode('file')" id="lab-mode-file" class="flex-1 py-2 rounded-lg text-xs font-bold text-white bg-indigo-600 transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-file-pdf"></i> Arquivo PDF
+                </button>
+                <button type="button" onclick="setLabInputMode('text')" id="lab-mode-text" class="flex-1 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-paste"></i> Colar Texto
+                </button>
+              </div>
+
+              <!-- Dropzone para PDF -->
+              <div id="lab-box-file" class="space-y-2">
+                <input type="file" id="lab-file-input" accept=".pdf" class="hidden" onchange="onLabPdfSelected(this)">
+                <div onclick="document.getElementById('lab-file-input').click()" 
+                     id="lab-dropzone-click"
+                     class="border-2 border-dashed border-indigo-500/40 hover:border-indigo-400 bg-slate-950/70 hover:bg-slate-950/90 rounded-2xl p-6 text-center cursor-pointer transition space-y-2 group">
+                  <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 group-hover:scale-110 flex items-center justify-center mx-auto text-xl transition">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                  </div>
+                  <p class="text-xs font-bold text-white group-hover:text-indigo-300">Clique para selecionar o PDF do Currículo</p>
+                  <p class="text-[11px] text-slate-400">Suporta qualquer arquivo .pdf com texto selecionável</p>
+                </div>
+
+                <!-- Preview do arquivo selecionado -->
+                <div id="lab-file-preview" class="hidden bg-emerald-950/30 border border-emerald-500/40 p-3 rounded-2xl flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-2 overflow-hidden">
+                    <i class="fa-solid fa-file-pdf text-emerald-400 text-lg shrink-0"></i>
+                    <span id="lab-file-name" class="text-xs font-bold text-white truncate">curriculo.pdf</span>
+                  </div>
+                  <button type="button" onclick="clearLabPdf()" class="text-slate-400 hover:text-rose-400 text-xs p-1">✕</button>
+                </div>
+              </div>
+
+              <!-- Textarea para Colar Texto -->
+              <div id="lab-box-text" class="hidden space-y-1">
+                <label class="block text-xs font-bold text-slate-300 mb-1">Cole o texto do currículo:</label>
+                <textarea id="lab-raw-text" rows="6" placeholder="Cole aqui o resumo, experiências e competências..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-3 text-xs text-white outline-none"></textarea>
+              </div>
+
+              <!-- Cargo Alvo Pretendido -->
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">
+                  Cargo Alvo Pretendido <span class="text-slate-500 font-normal text-[11px]">(Opcional)</span>:
+                </label>
+                <input type="text" id="lab-target-role" placeholder="Ex: Auxiliar Administrativo, Analista de Suporte, Recepção..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-3 text-xs text-white outline-none">
+                <span class="text-[10px] text-slate-500">Se deixar em branco, a IA deduzirá a área mais forte a partir das experiências.</span>
+              </div>
+
+              <!-- Botão Disparar Análise -->
+              <button type="button" id="btn-run-ats-lab" onclick="runAtsLabAnalysis()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-indigo-600 to-purple-600 hover:from-amber-400 hover:to-purple-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/25 transition active:scale-95">
+                <i class="fa-solid fa-bolt text-amber-300"></i> Analisar Currículo e Calcular Nota ATS
+              </button>
+            </div>
+
+            <!-- Coluna Direita: Estado Inicial ou Loading -->
+            <div class="lg:col-span-7 bg-slate-950/70 border border-slate-800/80 rounded-2xl p-6 min-h-[360px] flex flex-col justify-center">
+              
+              <div id="lab-empty-state" class="text-center py-10 space-y-3">
+                <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-3xl mx-auto">
+                  <i class="fa-solid fa-microchip"></i>
+                </div>
+                <h3 class="text-base font-bold text-white">Nenhum currículo em análise no momento</h3>
+                <p class="text-xs text-slate-400 max-w-md mx-auto">
+                  Selecione um arquivo PDF ao lado ou cole o texto para receber nota ATS, pontos fortes, falhas que reprovam robôs e sugestões de correção.
+                </p>
+              </div>
+
+              <div id="lab-loading-state" class="hidden text-center py-12 space-y-4 animate-pulse">
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-amber-400"></i>
+                <div>
+                  <h4 class="text-sm font-bold text-white">Auditando currículo com Gemini Flash...</h4>
+                  <p class="text-xs text-slate-400 mt-1">Verificando formatação, palavras-chave e aderência aos robôs da Gupy e LinkedIn</p>
+                </div>
+              </div>
+
+              <!-- Card de Resultado da Análise -->
+              <div id="lab-result-state" class="hidden space-y-5">
+                <!-- Cabeçalho com Score ATS -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl">
+                  <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider" id="lab-res-role-label">Cargo Identificado</span>
+                    <h3 class="text-base font-black text-white" id="lab-res-role">Assistente Administrativo</h3>
+                    <p class="text-xs text-indigo-400 font-semibold mt-0.5" id="lab-res-level">Nível Pleno</p>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class="text-right">
+                      <span class="text-[10px] uppercase font-bold text-slate-400 block">Score de Força ATS</span>
+                      <span id="lab-res-score-badge" class="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400">Muito Bom</span>
+                    </div>
+                    <div id="lab-res-score-number" class="text-4xl font-black text-emerald-400">85%</div>
+                  </div>
+                </div>
+
+                <!-- Veredicto Executivo -->
+                <div class="p-3.5 bg-slate-900/60 border border-slate-800 rounded-xl text-xs text-slate-300">
+                  <span class="text-amber-400 font-bold block mb-1">🧠 Veredicto dos Robôs de RH:</span>
+                  <p id="lab-res-verdict" class="leading-relaxed"></p>
+                </div>
+
+                <!-- 2 Colunas: Pontos Fortes vs Falhas Críticas -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div class="p-4 bg-emerald-950/20 border border-emerald-500/30 rounded-2xl space-y-2">
+                    <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <i class="fa-solid fa-circle-check"></i> Pontos Fortes:
+                    </h4>
+                    <ul id="lab-res-strengths" class="space-y-1.5 text-xs text-slate-300"></ul>
+                  </div>
+
+                  <div class="p-4 bg-rose-950/20 border border-rose-500/30 rounded-2xl space-y-2">
+                    <h4 class="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <i class="fa-solid fa-triangle-exclamation"></i> Falhas que Podem Reprovar:
+                    </h4>
+                    <ul id="lab-res-weaknesses" class="space-y-1.5 text-xs text-slate-300"></ul>
+                  </div>
+                </div>
+
+                <!-- Sugestões de Melhoria e Palavras-Chave -->
+                <div class="p-4 bg-indigo-950/20 border border-indigo-500/30 rounded-2xl space-y-2">
+                  <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-lightbulb text-amber-300"></i> Sugestões Práticas de Alteração:
+                  </h4>
+                  <ul id="lab-res-suggestions" class="space-y-1.5 text-xs text-slate-300"></ul>
+                </div>
+
+                <!-- Palavras-chave Recomendadas -->
+                <div id="lab-res-keywords-box" class="space-y-1.5">
+                  <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Palavras-chave que faltam no currículo:</span>
+                  <div id="lab-res-keywords" class="flex flex-wrap gap-1.5"></div>
+                </div>
+
+                <!-- Resumo Profissional Reescrito -->
+                <div class="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-2">
+                  <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <i class="fa-solid fa-pen-nib"></i> Resumo Profissional Sugerido para Copiar:
+                    </h4>
+                    <button type="button" onclick="copyLabSuggestedSummary()" class="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold transition flex items-center gap-1">
+                      <i class="fa-solid fa-copy"></i> Copiar
+                    </button>
+                  </div>
+                  <textarea id="lab-res-summary-text" readonly rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 outline-none leading-relaxed"></textarea>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= PAINEL 2: CURRÍCULO MESTRE OFICIAL (RADAR 24/7) ================= -->
+      <div id="subcontent-mestre" class="hidden space-y-6">
+
       <!-- ===== OTIMIZADOR ATS 100% & GERADOR DE CURRÍCULOS ===== -->
       <div class="bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-slate-800">
@@ -3606,6 +3800,184 @@ async function changePassword() {
         btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Salvar e Analisar com IA';
         loading.classList.add('hidden');
       }
+    }
+
+
+    // ==========================================
+    // SUB-ABAS DO CURRÍCULO (LABORATÓRIO VS MESTRE)
+    // ==========================================
+    function switchCurriculoSubTab(tab) {
+      const btnLab = document.getElementById('subtab-lab');
+      const btnMestre = document.getElementById('subtab-mestre');
+      const paneLab = document.getElementById('subcontent-lab');
+      const paneMestre = document.getElementById('subcontent-mestre');
+
+      if (tab === 'lab') {
+        paneLab.classList.remove('hidden');
+        paneMestre.classList.add('hidden');
+        btnLab.className = 'flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-indigo-600 shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2';
+        btnMestre.className = 'flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-medium text-xs text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center justify-center gap-2';
+      } else {
+        paneLab.classList.add('hidden');
+        paneMestre.classList.remove('hidden');
+        btnMestre.className = 'flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-white bg-indigo-600 shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 text-xs';
+        btnLab.className = 'flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-medium text-xs text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center justify-center gap-2';
+      }
+    }
+
+    let labInputMode = 'file';
+    let labSelectedPdf = null;
+
+    function setLabInputMode(mode) {
+      labInputMode = mode;
+      const btnFile = document.getElementById('lab-mode-file');
+      const btnText = document.getElementById('lab-mode-text');
+      const boxFile = document.getElementById('lab-box-file');
+      const boxText = document.getElementById('lab-box-text');
+
+      if (mode === 'file') {
+        btnFile.className = 'flex-1 py-2 rounded-lg text-xs font-bold text-white bg-indigo-600 transition flex items-center justify-center gap-1.5';
+        btnText.className = 'flex-1 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5';
+        boxFile.classList.remove('hidden');
+        boxText.classList.add('hidden');
+      } else {
+        btnText.className = 'flex-1 py-2 rounded-lg text-xs font-bold text-white bg-indigo-600 transition flex items-center justify-center gap-1.5';
+        btnFile.className = 'flex-1 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center justify-center gap-1.5';
+        boxText.classList.remove('hidden');
+        boxFile.classList.add('hidden');
+      }
+    }
+
+    function onLabPdfSelected(input) {
+      if (input.files && input.files[0]) {
+        labSelectedPdf = input.files[0];
+        document.getElementById('lab-file-name').textContent = labSelectedPdf.name + ` (${Math.round(labSelectedPdf.size / 1024)} KB)`;
+        document.getElementById('lab-dropzone-click').classList.add('hidden');
+        document.getElementById('lab-file-preview').classList.remove('hidden');
+      }
+    }
+
+    function clearLabPdf() {
+      labSelectedPdf = null;
+      document.getElementById('lab-file-input').value = '';
+      document.getElementById('lab-dropzone-click').classList.remove('hidden');
+      document.getElementById('lab-file-preview').classList.add('hidden');
+    }
+
+    function resetAtsLab() {
+      clearLabPdf();
+      document.getElementById('lab-raw-text').value = '';
+      document.getElementById('lab-target-role').value = '';
+      document.getElementById('lab-empty-state').classList.remove('hidden');
+      document.getElementById('lab-loading-state').classList.add('hidden');
+      document.getElementById('lab-result-state').classList.add('hidden');
+    }
+
+    async function runAtsLabAnalysis() {
+      const targetRole = document.getElementById('lab-target-role').value.trim();
+      const rawText = document.getElementById('lab-raw-text').value.trim();
+
+      if (labInputMode === 'file' && !labSelectedPdf) {
+        alert("Por favor, selecione um arquivo PDF para testar no laboratório.");
+        return;
+      }
+      if (labInputMode === 'text' && !rawText) {
+        alert("Por favor, cole o texto do currículo no campo de texto.");
+        return;
+      }
+
+      const emptyState = document.getElementById('lab-empty-state');
+      const loadingState = document.getElementById('lab-loading-state');
+      const resultState = document.getElementById('lab-result-state');
+      const btn = document.getElementById('btn-run-ats-lab');
+
+      emptyState.classList.add('hidden');
+      resultState.classList.add('hidden');
+      loadingState.classList.remove('hidden');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Auditando com IA...';
+
+      const fd = new FormData();
+      if (labInputMode === 'file' && labSelectedPdf) {
+        fd.append('file', labSelectedPdf);
+      }
+      if (rawText) {
+        fd.append('raw_text', rawText);
+      }
+      if (targetRole) {
+        fd.append('target_role', targetRole);
+      }
+
+      try {
+        const res = await fetch('/api/ats-lab/analyze', {
+          method: 'POST',
+          body: fd
+        });
+        const data = await res.json();
+        loadingState.classList.add('hidden');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-bolt text-amber-300"></i> Analisar Currículo e Calcular Nota ATS';
+
+        if (res.ok && data.success && data.data) {
+          const d = data.data;
+          const score = d.ats_score || 75;
+
+          document.getElementById('lab-res-score-number').textContent = `${score}%`;
+          const scoreBadge = document.getElementById('lab-res-score-badge');
+          if (score >= 80) {
+            scoreBadge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+            scoreBadge.textContent = '⭐⭐ Forte Aderência';
+          } else if (score >= 60) {
+            scoreBadge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30';
+            scoreBadge.textContent = '⭐ Aderência Moderada';
+          } else {
+            scoreBadge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30';
+            scoreBadge.textContent = '⚠️ Risco de Reprovação ATS';
+          }
+
+          document.getElementById('lab-res-role').textContent = d.cargo_principal_identificado || targetRole || 'Geral';
+          document.getElementById('lab-res-level').textContent = `Nível: ${d.nivel_identificado || 'Não especificado'}`;
+          document.getElementById('lab-res-verdict').textContent = d.veredicto_geral || 'Currículo analisado com sucesso.';
+
+          // Pontos fortes
+          const strList = document.getElementById('lab-res-strengths');
+          strList.innerHTML = (d.pontos_fortes || []).map(p => `<li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-emerald-400 mt-1"></i><span>${p}</span></li>`).join('');
+
+          // Falhas
+          const weakList = document.getElementById('lab-res-weaknesses');
+          weakList.innerHTML = (d.falhas_criticas || []).map(w => `<li class="flex items-start gap-1.5"><i class="fa-solid fa-xmark text-rose-400 mt-1"></i><span>${w}</span></li>`).join('');
+
+          // Sugestões
+          const sugList = document.getElementById('lab-res-suggestions');
+          sugList.innerHTML = (d.sugestoes_de_melhoria || []).map(s => `<li class="flex items-start gap-1.5"><i class="fa-solid fa-arrow-right text-indigo-400 mt-1"></i><span>${s}</span></li>`).join('');
+
+          // Palavras-chave faltantes
+          const kwBox = document.getElementById('lab-res-keywords');
+          kwBox.innerHTML = (d.palavras_chave_ausentes || []).map(k => `<span class="text-[10px] font-mono bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md">+ ${k}</span>`).join('');
+
+          // Resumo profissional
+          document.getElementById('lab-res-summary-text').value = d.resumo_profissional_sugerido || '';
+
+          resultState.classList.remove('hidden');
+          showToast('✅ Análise do currículo concluída!', 'green');
+        } else {
+          alert('Erro na análise: ' + (data.error || 'Falha ao processar arquivo'));
+          emptyState.classList.remove('hidden');
+        }
+      } catch (err) {
+        loadingState.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-bolt text-amber-300"></i> Analisar Currículo e Calcular Nota ATS';
+        alert('Erro ao conectar com o servidor: ' + err.message);
+      }
+    }
+
+    function copyLabSuggestedSummary() {
+      const txt = document.getElementById('lab-res-summary-text');
+      txt.select();
+      navigator.clipboard.writeText(txt.value);
+      showToast('📋 Resumo sugerido copiado para a área de transferência!', 'purple');
     }
 
 </script>
