@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hermes Job AI - Centro de Comando de Carreiras</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #0b0f19; color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif; }
+    .glass-card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glass-input { background: #070a13; border: 1px solid #1e293b; color: white; border-radius: 0.75rem; }
+    .glass-input:focus { border-color: #6366f1; outline: none; }
+  </style>
+</head>
+<body class="min-h-screen p-3 md:p-6">
+
+  <!-- ================= TOP HEADER ================= -->
+  <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-6 pb-6 border-b border-slate-800/80 gap-4">
+    <div class="flex items-center gap-3">
+      <div class="bg-gradient-to-tr from-indigo-600 to-violet-500 text-white p-3.5 rounded-2xl shadow-lg shadow-indigo-500/25">
+        <i class="fa-solid fa-robot text-2xl"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+          Hermes Job AI
+          <span class="text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> 24/7 Ativo
+          </span>
+        </h1>
+        <p class="text-xs text-slate-400">Servidor Linux: 192.168.0.123:8090 | Diadema - SP (Residência Base)</p>
+      </div>
+    </div>
+
+    <!-- Navegação em Abas Modernas -->
+    <div class="flex items-center gap-3">
+      <nav class="flex items-center gap-1 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 text-sm overflow-x-auto max-w-full">
+        <button onclick="switchTab('vagas')" id="tab-vagas" class="px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-briefcase"></i> Central de Vagas
+        </button>
+        <button onclick="switchTab('copilot')" id="tab-copilot" class="px-4 py-2 rounded-xl font-medium text-amber-300 hover:text-white transition flex items-center gap-2 whitespace-nowrap bg-amber-500/10 border border-amber-500/20">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Copiloto IA (Ctrl+V)
+        </button>
+        <button onclick="switchTab('regras')" id="tab-regras" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-location-crosshairs text-amber-400"></i> Modalidades, Km & Salário
+        </button>
+        <button onclick="switchTab('curriculo')" id="tab-curriculo" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-file-waveform text-indigo-400"></i> Análise de Currículo ATS
+        </button>
+        <button onclick="switchTab('sessoes')" id="tab-sessoes" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-user-lock text-emerald-400"></i> Plataformas & IA
+        </button>
+        <button onclick="switchTab('admin')" id="tab-admin" class="px-4 py-2 rounded-xl font-medium text-purple-300 hover:text-white transition flex items-center gap-2 whitespace-nowrap bg-purple-500/10 border border-purple-500/20">
+          <i class="fa-solid fa-users-gear text-purple-400"></i> Gestão de Perfis & Família
+        </button>
+      </nav>
+
+      <!-- Botão de Sair (Logout) -->
+      <a href="/logout" title="Encerrar Sessão" class="bg-slate-900/90 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 p-3 rounded-2xl border border-slate-800 transition flex items-center justify-center">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </a>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto space-y-6">
+
+    <!-- ================= ABA 1: CENTRAL DE VAGAS ================= -->
+    <div id="content-vagas" class="space-y-6">
+
+      <!-- ===== SELETOR DE MODO DE OPERAÇÃO ===== -->
+      <div class="glass-card p-5 rounded-3xl">
+        <div class="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2 mb-0.5">
+              <i class="fa-solid fa-sliders text-indigo-400"></i> Modo de Operação
+            </h2>
+            <p class="text-xs text-slate-400" id="mode-description">Selecione como o Hermes deve agir ao encontrar vagas compatíveis.</p>
+          </div>
+          <div class="flex gap-2 flex-wrap" id="mode-selector">
+            <!-- Modo Avaliação -->
+            <button onclick="setOperationMode('review')" id="btn-mode-review"
+              class="mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 border-blue-500 bg-blue-500/20 text-blue-300">
+              <i class="fa-solid fa-eye"></i> 🔵 Avaliação
+            </button>
+            <!-- Modo Inteligente -->
+            <button onclick="setOperationMode('smart')" id="btn-mode-smart"
+              class="mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 border-slate-700 bg-transparent text-slate-400 hover:border-purple-500 hover:text-purple-300">
+              <i class="fa-solid fa-brain"></i> 🟣 Inteligente
+            </button>
+            <!-- Modo Automático -->
+            <button onclick="setOperationMode('auto')" id="btn-mode-auto"
+              class="mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 border-slate-700 bg-transparent text-slate-400 hover:border-emerald-500 hover:text-emerald-300">
+              <i class="fa-solid fa-robot"></i> 🟢 Automático
+            </button>
+          </div>
+        </div>
+        <!-- Legenda dinâmica do modo -->
+        <div class="mt-3 p-3 rounded-xl text-xs" id="mode-info-box" style="display:none;"></div>
+      </div>
+      
+      <!-- Barra Superior de Parâmetros Atuais -->
+      <div class="glass-card p-5 rounded-3xl">
+        <div class="flex flex-col lg:flex-row items-center justify-between gap-4">
+          <div class="flex-1 w-full flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
+              <i class="fa-solid fa-home text-emerald-400"></i>
+              <span>Origem: <strong>{{ profile.candidato.cidade }} - {{ profile.candidato.estado }}</strong></span>
+            </div>
+            <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
+              <i class="fa-solid fa-car-side text-indigo-400"></i>
+              <span>Híbrido: até <strong>{{ profile.preferencias_de_vaga.modalidades.hibrido.distancia_maxima_km if profile.preferencias_de_vaga.modalidades else 30 }}km</strong></span>
+            </div>
+            <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
+              <i class="fa-solid fa-building text-amber-400"></i>
+              <span>Presencial: até <strong>{{ profile.preferencias_de_vaga.modalidades.presencial.distancia_maxima_km if profile.preferencias_de_vaga.modalidades else 15 }}km</strong></span>
+            </div>
+            <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
+              <i class="fa-solid fa-money-bill-wave text-emerald-400"></i>
+              <span>Mín. CLT: <strong>R$ {{ profile.preferencias_de_vaga.financeiro.salario_minimo_clt if profile.preferencias_de_vaga.financeiro else 3500 }}</strong></span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 w-full lg:w-auto justify-end">
+            <div class="flex items-center gap-1.5 w-full sm:w-auto">
+              <input type="text" id="live-search-cargo" placeholder="Pesquisar cargo novo (ex: suporte de redes)..." 
+                     class="bg-slate-950 border border-slate-700 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none w-48 md:w-64">
+              <button onclick="searchLiveCargo()" title="Dispara busca imediata deste cargo nas 5 plataformas" 
+                      class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 whitespace-nowrap">
+                <i class="fa-solid fa-bolt text-amber-300"></i> Buscar
+              </button>
+            </div>
+            
+            <button onclick="triggerAction('/api/scan', 'Varredura disparada em todas as plataformas!')" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-700 flex items-center gap-2 transition shadow-sm">
+              <i class="fa-solid fa-satellite-dish text-indigo-400"></i> Varrer Vagas
+            </button>
+            <button onclick="triggerAction('/api/evaluate', 'Classificação ATS e Filtro Geográfico iniciados!')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-lg shadow-indigo-600/30">
+              <i class="fa-solid fa-brain"></i> Ranquear com IA
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Métricas Clicáveis -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div onclick="filterFromMetric('all')" title="Clique para ver todas as vagas do radar" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-slate-500 transition group select-none">
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-slate-400 group-hover:text-slate-200 font-semibold uppercase tracking-wider">Oportunidades no Radar</p>
+            <i class="fa-solid fa-radar text-xs text-slate-500 group-hover:text-indigo-400 transition"></i>
+          </div>
+          <p class="text-3xl font-black text-white mt-1">{{ total_jobs }}</p>
+        </div>
+        <div onclick="filterFromMetric('approved')" title="Clique para filtrar apenas vagas aprovadas (≥ 75%)" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-emerald-500 transition group select-none border border-emerald-500/20">
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-emerald-400 group-hover:text-emerald-300 font-semibold uppercase tracking-wider">Aprovadas (Km, Salário & ATS ≥ 75%)</p>
+            <i class="fa-solid fa-circle-check text-xs text-emerald-500"></i>
+          </div>
+          <p class="text-3xl font-black text-emerald-400 mt-1">{{ high_match_jobs }}</p>
+        </div>
+        <div onclick="filterFromMetric('applied')" title="Clique para filtrar candidaturas realizadas" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-indigo-500 transition group select-none border border-indigo-500/20">
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-indigo-400 group-hover:text-indigo-300 font-semibold uppercase tracking-wider">Candidaturas Realizadas</p>
+            <i class="fa-solid fa-paper-plane text-xs text-indigo-500"></i>
+          </div>
+          <p class="text-3xl font-black text-indigo-400 mt-1">{{ applied_jobs }}</p>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros Avançados -->
+      <div class="glass-card p-5 rounded-3xl space-y-3">
+        <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
+            <input type="text" id="filter-search" oninput="applyAllJobFilters()" 
+                   placeholder="Buscar por cargo, empresa, tecnologia ou cidade (ex: Simpress, MikroTik, Diadema)..." 
+                   class="w-full pl-9 pr-4 py-2.5 text-xs glass-input rounded-xl text-white">
+          </div>
+
+          <div class="flex items-center gap-3 justify-between md:justify-end">
+            <span class="text-xs text-slate-400 font-medium whitespace-nowrap">
+              Exibindo <span id="filtered-count" class="text-white font-bold">{{ jobs|length }}</span> de <span class="text-indigo-400 font-bold">{{ total_jobs }}</span> vagas
+            </span>
+            <button onclick="resetJobFilters()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl border border-slate-700 transition flex items-center gap-1.5 whitespace-nowrap">
+              <i class="fa-solid fa-filter-circle-xmark"></i> Limpar Filtros
+            </button>
+            <button onclick="cleanRejectedJobs()" title="Remove vagas rejeitadas do banco para despoluir a visualização" class="text-xs bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 px-3 py-2 rounded-xl border border-rose-800/80 transition flex items-center gap-1.5 whitespace-nowrap">
+              <i class="fa-solid fa-trash-can"></i> Limpar Descartadas
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Score / Status ATS</label>
+            <select id="filter-score" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200 font-medium">
+              <option value="approved" selected>⭐ Aprovadas (Score ≥ 75%)</option>
+              <option value="top">🔥 Top Score (Score ≥ 85%)</option>
+              <option value="all">Todas as Vagas</option>
+              <option value="top">🔥 Top Score (Score ≥ 85%)</option>
+              <option value="pending">⏳ Aguardando IA</option>
+              <option value="applied">✅ Candidatadas / Realizadas</option>
+              <option value="dry_run">🧪 Simuladas (Dry-Run)</option>
+              <option value="rejected">❌ Rejeitadas</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Data / Recência</label>
+            <select id="filter-recency" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200">
+              <option value="all">Todas as Datas</option>
+              <option value="2h">🔥 Urgente (&lt; 2h)</option>
+              <option value="6h">⚡ Recente (&lt; 6h)</option>
+              <option value="24h">🕒 Hoje (&lt; 24h)</option>
+              <option value="3d">📅 Últimos 3 dias</option>
+              <option value="7d">🗓️ Últimos 7 dias</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Modalidade</label>
+            <select id="filter-modality" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200">
+              <option value="all">Todas as Modalidades</option>
+              <option value="remote">🏠 Remoto</option>
+              <option value="presential">🏢 Presencial / Híbrido</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Plataforma</label>
+            <select id="filter-platform" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200">
+              <option value="all">Todas as Plataformas</option>
+              <option value="gupy">Gupy</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="indeed">Indeed</option>
+              <option value="glassdoor">Glassdoor</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela / Cards de Vagas -->
+      <div class="glass-card rounded-3xl overflow-hidden shadow-2xl divide-y divide-slate-800/60">
+        <div class="p-5 flex justify-between items-center bg-slate-950/40">
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-indigo-400"></i> Vagas Triadas
+          </h2>
+          <span class="text-xs text-slate-400">Filtro de Localização + Cérebro ATS</span>
+        </div>
+
+        {% if jobs %}
+          {% for job in jobs %}
+          <div class="job-card p-5 hover:bg-slate-800/30 transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+               data-job-id="{{ job.id }}"
+               data-title="{{ job.title | lower }}"
+               data-company="{{ job.company | lower }}"
+               data-location="{{ (job.location or '') | lower }}"
+               data-keywords="{{ (job.keywords_found or '') | lower }}"
+               data-score="{{ job.match_score if job.match_score is not none else -1 }}"
+               data-status="{{ job.status or 'discovered' }}"
+               data-age-hours="{{ job.age_hours if job.age_hours is not none else 9999 }}"
+               data-remote="{{ '1' if job.is_remote else '0' }}"
+               data-platform="{{ (job.site or '') | lower }}">
+            <div class="flex-1">
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <h3 class="text-base font-bold text-white hover:text-indigo-400 transition">
+                  <a href="{{ job.job_url }}" target="_blank">{{ job.title }}</a>
+                </h3>
+
+                {% if job.match_score is not none %}
+                  <span class="text-xs font-black px-2.5 py-0.5 rounded-lg 
+                    {% if job.match_score >= 80 %} bg-emerald-500/20 text-emerald-400 border border-emerald-500/30
+                    {% elif job.match_score >= 60 %} bg-amber-500/20 text-amber-400 border border-amber-500/30
+                    {% else %} bg-rose-500/20 text-rose-400 border border-rose-500/30 {% endif %}">
+                    Score: {{ job.match_score }}%
+                  </span>
+                {% else %}
+                  <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-lg">Aguardando Avaliação</span>
+                {% endif %}
+
+                <!-- Badge de Idade / Recência da Vaga -->
+                {% if job.badge_text %}
+                  <span class="text-xs px-2.5 py-0.5 rounded-lg border {{ job.badge_css }} flex items-center gap-1">
+                    <i class="{{ job.badge_icon }}"></i> {{ job.badge_text }}
+                  </span>
+                {% endif %}
+
+                {% if job.is_remote %}
+                  <span class="text-[11px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-md font-medium">Remoto</span>
+                {% endif %}
+
+                <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">{{ job.site }}</span>
+              </div>
+
+              <p class="text-xs text-slate-400 mt-1">
+                <strong class="text-slate-200">{{ job.company }}</strong> • <i class="fa-solid fa-location-dot text-indigo-400"></i> {{ job.location }} • Publicado: {{ job.created_at[:10] }}
+              </p>
+
+              {% if job.match_reasons %}
+                <p class="text-xs text-slate-300 mt-2 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+                  <span class="text-indigo-400 font-bold">🧠 Diagnóstico:</span> {{ job.match_reasons }}
+                </p>
+              {% endif %}
+
+              {% if job.keywords_found %}
+                <div class="flex flex-wrap gap-1 mt-2">
+                  {% for kw in job.keywords_found.split(',') %}
+                    <span class="text-[10px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded border border-slate-700 font-mono">{{ kw.strip() }}</span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Botões de Ação Direta (Candidatura & Descarte Rápido) -->
+            <div class="flex items-center gap-2 self-end md:self-center flex-wrap justify-end">
+              <!-- Botão 1: Abrir link da vaga -->
+              <a href="{{ job.job_url }}" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl border border-slate-700 transition flex items-center gap-1.5 font-semibold shadow-sm">
+                <i class="fa-solid fa-arrow-up-right-from-square text-indigo-400"></i> Abrir Vaga
+              </a>
+
+              <!-- Botão 2: Flag Já Me Candidatei -->
+              {% if job.status in ['applied', 'success'] %}
+                <span class="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 shadow-sm">
+                  <i class="fa-solid fa-circle-check text-emerald-400"></i> Candidatado
+                </span>
+              {% else %}
+                <button onclick="markAsApplied('{{ job.id }}')" title="Marca como candidatada e remove da fila pendente" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl font-bold transition shadow-sm flex items-center gap-1.5 active:scale-95">
+                  <i class="fa-solid fa-check-double"></i> Já Me Candidatei
+                </button>
+              {% endif %}
+
+              <!-- Botão 3: Descartar / Limpar da Fila -->
+              <button onclick="markAsDiscarded('{{ job.id }}')" title="Descarta esta vaga (não faz sentido para mim)" class="text-xs bg-slate-800/80 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 px-3 py-2 rounded-xl border border-slate-700/80 hover:border-rose-800/60 transition flex items-center gap-1.5 active:scale-95">
+                <i class="fa-solid fa-ban"></i> Descartar
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="p-16 text-center text-slate-500 text-sm">
+            Nenhuma oportunidade capturada ainda. Clique em "Varrer Vagas" para buscar no LinkedIn, Gupy e Indeed!
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ================= ABA 2: REGRAS DE MODALIDADE, KM & SALÁRIO ================= -->
+    
+    <!-- ABA: COPILOTO IA VISUAL (CTRL+V / PRINTS) -->
+    <div id="content-copilot" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
+        <div class="absolute -right-20 -top-20 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-800/80">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider mb-2">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Copiloto Anti-Saco-Cheio de Formulários
+            </div>
+            <h2 class="text-2xl font-black text-white flex items-center gap-3">
+              Copiloto IA de Candidatura (Visual Copilot)
+            </h2>
+            <p class="text-slate-400 text-sm mt-1 max-w-2xl">
+              Tirou print de uma pergunta difícil, teste técnico ou formulário chato na Gupy, LinkedIn ou site de empresa? 
+              Basta dar <strong>Ctrl + V</strong> aqui. A IA analisa a tela e formula a resposta ideal fundamentada no seu currículo para você <strong>apenas copiar e colar</strong>.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3 bg-slate-950/80 border border-slate-800 p-2 rounded-2xl">
+            <span class="text-xs font-bold text-slate-400 pl-2">Perfil:</span>
+            <select id="copilot-profile" class="bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-indigo-500">
+              <option value="eduardo" selected>👤 Eduardo (Infra, Redes & Projetos)</option>
+              <option value="esposa">👤 Esposa (Área Operacional / Admin)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- DROPZONE / PASTE AREA -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-6 space-y-4">
+            <div 
+              id="copilot-dropzone" 
+              onclick="document.getElementById('copilot-file-input').click()"
+              class="border-2 border-dashed border-indigo-500/40 hover:border-indigo-400/80 bg-slate-950/60 hover:bg-slate-950/90 rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[260px] group"
+            >
+              <input type="file" id="copilot-file-input" accept="image/*" class="hidden" onchange="handleCopilotFileSelect(event)">
+              
+              <div id="dropzone-empty-state" class="flex flex-col items-center">
+                <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 group-hover:bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-3xl mb-4 transition">
+                  <i class="fa-solid fa-paste"></i>
+                </div>
+                <h3 class="text-base font-bold text-white mb-1">
+                  Pressione <kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700 text-indigo-300 font-mono text-xs">Ctrl + V</kbd> para colar o print aqui
+                </h3>
+                <p class="text-xs text-slate-400 max-w-sm mt-1">
+                  Ou clique para selecionar uma imagem salva do seu computador
+                </p>
+                <div class="mt-4 flex items-center gap-2 text-xs text-slate-400 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800">
+                  <i class="fa-solid fa-camera text-indigo-400"></i> Atalho Windows: <strong>Win + Shift + S</strong>
+                </div>
+              </div>
+
+              <!-- PREVIEW QUANDO TEM IMAGEM -->
+              <div id="dropzone-preview-state" class="hidden w-full flex flex-col items-center">
+                <div class="relative max-h-56 overflow-hidden rounded-xl border border-indigo-500/40 mb-3 shadow-lg">
+                  <img id="copilot-preview-img" src="" alt="Print da Pergunta" class="max-h-52 w-auto object-contain rounded-lg">
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-circle-check"></i> Imagem pronta para análise
+                  </span>
+                  <button type="button" onclick="clearCopilotImage(event)" class="text-xs text-red-400 hover:text-red-300 underline ml-2">
+                    Remover
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- CAMPO DE TEXTO OPCIONAL -->
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
+                Pergunta em Texto ou Observação Adicional (Opcional):
+              </label>
+              <textarea 
+                id="copilot-text" 
+                rows="3" 
+                placeholder="Ex: 'Por que devemos te contratar?' ou 'Qual sua pretensão salarial?' (se não quiser colar print, pode digitar aqui)..." 
+                class="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-400 outline-none transition"
+              ></textarea>
+            </div>
+
+            <button 
+              id="copilot-submit-btn" 
+              onclick="submitCopilotQuestion()" 
+              class="w-full py-3.5 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 transition flex items-center justify-center gap-2 text-sm"
+            >
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Resposta com IA do Hermes
+            </button>
+          </div>
+
+          <!-- COLUNA DA DIREITA: RESPOSTA GERADA -->
+          <div class="lg:col-span-6 flex flex-col">
+            <div class="bg-slate-950/90 border border-slate-800 rounded-2xl p-5 flex-1 flex flex-col min-h-[380px]">
+              <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800/80">
+                <div class="flex items-center gap-2">
+                  <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Resposta Pronta para Envio</h4>
+                </div>
+                <button 
+                  id="copilot-copy-btn" 
+                  onclick="copyCopilotAnswer()" 
+                  class="hidden px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-lg shadow-emerald-600/20 active:scale-95"
+                >
+                  <i class="fa-regular fa-copy"></i> Copiar Resposta
+                </button>
+              </div>
+
+              <!-- PLACEHOLDER INICIAL -->
+              <div id="copilot-empty-result" class="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-400">
+                <i class="fa-solid fa-robot text-4xl mb-3 text-slate-400"></i>
+                <p class="text-sm font-medium text-slate-400">Aguardando print ou pergunta...</p>
+                <p class="text-xs text-slate-400 max-w-xs mt-1">Cole a tela da vaga para ver a resposta formulada com base no seu currículo e projetos reais.</p>
+              </div>
+
+              <!-- LOADING SPINNER -->
+              <div id="copilot-loading" class="hidden flex-1 flex flex-col items-center justify-center text-center p-6 text-indigo-400">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3"></i>
+                <p class="text-sm font-bold text-white">Analisando imagem com Gemini Flash...</p>
+                <p class="text-xs text-slate-400 mt-1">Lendo pergunta e consultando seu histórico de experiências...</p>
+              </div>
+
+              <!-- TEXTO DA RESPOSTA -->
+              <div id="copilot-answer-container" class="hidden flex-1 overflow-y-auto max-h-[460px] pr-2">
+                <div id="copilot-answer-text" class="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans bg-slate-900/60 p-4 rounded-xl border border-slate-800"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="content-regras" class="hidden space-y-6">
+      
+      <!-- Cartão de Localização Residencial -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+          <i class="fa-solid fa-map-location-dot text-indigo-400"></i> Sua Residência Base (Ponto de Partida)
+        </h3>
+        <p class="text-xs text-slate-400">O robô calcula a distância de cada vaga presencial ou híbrida a partir deste endereço.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Cidade</label>
+            <input type="text" id="regra-cidade" value="{{ profile.candidato.cidade }}" class="w-full p-2.5 text-sm glass-input">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Estado (UF)</label>
+            <input type="text" id="regra-estado" value="{{ profile.candidato.estado }}" class="w-full p-2.5 text-sm glass-input">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Bairro / Região</label>
+            <input type="text" id="regra-bairro" value="{{ profile.candidato.bairro or 'Centro' }}" class="w-full p-2.5 text-sm glass-input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Cartão de Regras de Modalidade e Km -->
+      <div class="glass-card p-6 rounded-3xl space-y-5">
+        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+          <i class="fa-solid fa-route text-amber-400"></i> Política de Modalidade e Distância (Km)
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <!-- Bloco Remoto -->
+          <div class="bg-slate-950/70 p-5 rounded-2xl border border-slate-800/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-blue-400 flex items-center gap-1.5"><i class="fa-solid fa-laptop-house"></i> Vagas Remotas</span>
+              <input type="checkbox" id="regra-remoto-aceitar" checked class="w-4 h-4 accent-indigo-600 rounded">
+            </div>
+            <p class="text-xs text-slate-400">Aceita vagas de qualquer cidade ou estado do Brasil sem restrição de km.</p>
+          </div>
+
+          <!-- Bloco Híbrido -->
+          <div class="bg-slate-950/70 p-5 rounded-2xl border border-slate-800/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-purple-400 flex items-center gap-1.5"><i class="fa-solid fa-building-user"></i> Vagas Híbridas</span>
+              <input type="checkbox" id="regra-hibrido-aceitar" checked class="w-4 h-4 accent-indigo-600 rounded">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 block mb-1">Distância Máxima (Km)</label>
+              <input type="number" id="regra-hibrido-km" value="30" class="w-full p-2 text-xs glass-input">
+              <span class="text-[10px] text-slate-500 mt-0.5 block">Ex: 30km cobre Diadema até Faria Lima / Paulista</span>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 block mb-1">Máximo de dias presenciais/semana</label>
+              <input type="number" id="regra-hibrido-dias" value="3" class="w-full p-2 text-xs glass-input">
+            </div>
+          </div>
+
+          <!-- Bloco Presencial -->
+          <div class="bg-slate-950/70 p-5 rounded-2xl border border-slate-800/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-amber-400 flex items-center gap-1.5"><i class="fa-solid fa-briefcase"></i> 100% Presencial</span>
+              <input type="checkbox" id="regra-presencial-aceitar" checked class="w-4 h-4 accent-indigo-600 rounded">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 block mb-1">Distância Máxima (Km)</label>
+              <input type="number" id="regra-presencial-km" value="15" class="w-full p-2 text-xs glass-input">
+              <span class="text-[10px] text-slate-500 mt-0.5 block">Para ir todo dia: Diadema, SBC, Santo André</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cartão de Regras Financeiras e Salário Mínimo -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+          <i class="fa-solid fa-coins text-emerald-400"></i> Blindagem Salarial (Evita vagas fora do seu padrão)
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Salário Mínimo CLT (R$)</label>
+            <input type="number" id="regra-salario-min-clt" value="3500" class="w-full p-2.5 text-sm glass-input">
+            <span class="text-[10px] text-slate-500">Descarta vagas abaixo desse valor</span>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Pretensão CLT (R$)</label>
+            <input type="number" id="regra-pretensao-clt" value="4500" class="w-full p-2.5 text-sm glass-input">
+            <span class="text-[10px] text-slate-500">Valor enviado nos formulários</span>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Salário Mínimo PJ (R$)</label>
+            <input type="number" id="regra-salario-min-pj" value="5500" class="w-full p-2.5 text-sm glass-input">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-400 block mb-1">Pretensão PJ (R$)</label>
+            <input type="number" id="regra-pretensao-pj" value="7000" class="w-full p-2.5 text-sm glass-input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Cartão de Cargos Alvo -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+          <i class="fa-solid fa-crosshairs text-indigo-400"></i> Cargos Alvo Monitorados
+        </h3>
+        <textarea id="regra-cargos" rows="2" class="w-full p-3 text-sm glass-input">{{ profile.preferencias_de_vaga.cargos_alvo | join(', ') if profile.preferencias_de_vaga.cargos_alvo else "Analista de Suporte Pleno, Analista de Suporte e Infraestrutura, Administrador de Redes, Administrador de Sistemas Windows" }}</textarea>
+        <span class="text-[11px] text-slate-400 block">Separe os cargos por vírgula. O robô pesquisa exatamente esses termos no LinkedIn, Gupy e Indeed.</span>
+      </div>
+
+      <div class="flex justify-end">
+        <button onclick="saveAllJobRules()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm px-8 py-3.5 rounded-2xl shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar Todas as Políticas de Vaga
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ================= ABA 3: ANÁLISE DE CURRÍCULO ATS ================= -->
+    <div id="content-curriculo" class="hidden space-y-6">
+      <div class="glass-card p-6 rounded-3xl">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-slate-800">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-file-waveform text-indigo-400"></i> Diagnóstico de Currículo ATS & Perfil
+            </h2>
+            <p class="text-xs text-slate-400">Como os robôs de RH (Gupy, Kenoby, Workday) e recrutadores avaliam seu perfil.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <input type="file" id="resume-file-input" accept=".pdf" class="hidden" onchange="uploadResumeFile(this)">
+            <button onclick="document.getElementById('resume-file-input').click()" class="bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-sky-600/20">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Enviar Novo PDF
+            </button>
+            <button onclick="triggerProfileSync()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-600/20">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Sincronizar Perfil
+            </button>
+            <button onclick="fetchResumeDiagnostic()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-indigo-600/20">
+              <i class="fa-solid fa-arrows-rotate"></i> Recalcular Diagnóstico
+            </button>
+          </div>
+        </div>
+
+        <!-- Dropzone de Upload de Currículo -->
+        <div onclick="document.getElementById('resume-file-input').click()" 
+             class="mb-6 bg-slate-950/40 p-4 rounded-2xl border border-dashed border-slate-700 hover:border-indigo-500/60 transition cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-3 group">
+          <div class="flex items-center gap-3">
+            <div class="bg-indigo-500/10 group-hover:bg-indigo-500/20 text-indigo-400 p-3 rounded-xl transition">
+              <i class="fa-solid fa-file-pdf text-2xl"></i>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-white">Currículo Ativo no Servidor: <span class="text-indigo-400 font-mono">curriculo.pdf</span></p>
+              <p class="text-[11px] text-slate-400">Clique para selecionar e enviar o seu novo PDF (ex: curriculo_eduardo_junior.pdf da Área de Trabalho)</p>
+            </div>
+          </div>
+          <span class="text-xs bg-slate-800 group-hover:bg-indigo-600 text-slate-200 group-hover:text-white px-3.5 py-2 rounded-xl border border-slate-700 group-hover:border-indigo-500 transition font-bold whitespace-nowrap">
+            <i class="fa-solid fa-upload mr-1"></i> Selecionar Arquivo
+          </span>
+        </div>
+
+        <div id="resume-loading" class="hidden p-12 text-center text-indigo-400 animate-pulse text-sm">
+          <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i><br>
+          Extraindo texto do PDF e consultando o Gemini Flash...
+        </div>
+
+        <div id="resume-report" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+              <p class="text-xs text-slate-400">Candidato</p>
+              <p class="text-base font-bold text-white">{{ profile.candidato.nome_completo or "EDUARDO O. S. JUNIOR" }}</p>
+            </div>
+            <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+              <p class="text-xs text-slate-400">Nível Identificado</p>
+              <p class="text-base font-bold text-indigo-400">Analista de Suporte Pleno</p>
+            </div>
+            <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+              <p class="text-xs text-emerald-400">Score de Força ATS</p>
+              <p class="text-2xl font-black text-emerald-400">90%</p>
+            </div>
+          </div>
+          
+          <div class="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-400">Competências Técnicas Principais Detectadas</h4>
+            <div class="flex flex-wrap gap-1.5">
+              {% for kw in profile.competencias_chave %}
+                <span class="text-xs bg-indigo-950/60 text-indigo-200 border border-indigo-500/30 px-2.5 py-1 rounded-lg font-mono">{{ kw }}</span>
+              {% endfor %}
+            </div>
+
+            <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 pt-2">Pontos Fortes Identificados</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">Excelente estrutura para leitura por sistemas ATS. Apresenta forte densidade de palavras-chave técnicas em redes (MikroTik, Fortinet), virtualização (VMware, Proxmox), diretório (Active Directory) e monitoramento (Zabbix, Grafana), com certificações oficiais comprovadas.</p>
+            
+            <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 pt-2">O que você pode melhorar no currículo para ter 100% de conversão</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">Adicionar métricas numéricas nos resultados alcançados (ex: <i>"redução de 30% no tempo de atendimento de chamados N2"</i> ou <i>"disponibilidade de 99.8% nos servidores Windows gerenciados"</i>).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= ABA 4: PLATAFORMAS & IA ================= -->
+    <div id="content-sessoes" class="hidden space-y-6">
+      <!-- ===== CONTAS, SESSÃO REAL & noVNC BROWSER ===== -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-browser text-sky-400"></i> Sessão Real do Navegador & Login Assistido (noVNC)
+            </h3>
+            <p class="text-xs text-slate-400">Acesse a tela do navegador dentro do servidor Linux para logar no LinkedIn e Gupy com segurança.</p>
+          </div>
+          <button onclick="checkAuthStatusNow()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 border border-slate-700">
+            <i class="fa-solid fa-rotate"></i> Verificar Logins
+          </button>
+        </div>
+
+        <!-- Cards de Status de Login -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- LinkedIn Card -->
+          <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="bg-sky-500/10 text-sky-400 p-3 rounded-xl">
+                <i class="fa-brands fa-linkedin text-2xl"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-white">LinkedIn</p>
+                <p id="status-linkedin" class="text-[11px] text-slate-400">Verificando sessão...</p>
+              </div>
+            </div>
+            <button id="btn-login-linkedin" onclick="startAssistedLogin('linkedin')" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Logar
+            </button>
+          </div>
+
+          <!-- Gupy Card -->
+          <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="bg-indigo-500/10 text-indigo-400 p-3 rounded-xl">
+                <i class="fa-solid fa-briefcase text-2xl"></i>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-white">Portal Gupy</p>
+                <p id="status-gupy" class="text-[11px] text-slate-400">Verificando sessão...</p>
+              </div>
+            </div>
+            <button id="btn-login-gupy" onclick="startAssistedLogin('gupy')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Logar
+            </button>
+          </div>
+        </div>
+
+        <!-- Visualizador noVNC Embutido -->
+        <div class="mt-4 border border-slate-800 rounded-2xl p-4 bg-slate-950/50 space-y-3">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
+              <i class="fa-solid fa-desktop text-emerald-400"></i> Interface Gráfica Remota (noVNC :6080)
+            </span>
+            <div class="flex gap-2">
+              <button onclick="toggleVncFrame()" id="btn-toggle-vnc" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg font-bold transition">
+                Abrir Visualizador no Painel
+              </button>
+              <a href="http://192.168.0.123:6080/vnc.html?autoconnect=true&resize=remote" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg font-bold transition border border-slate-700 flex items-center gap-1">
+                <i class="fa-solid fa-external-link"></i> Abrir em Nova Aba
+              </a>
+            </div>
+          </div>
+          <div id="vnc-container" class="hidden rounded-xl overflow-hidden border border-slate-800">
+            <iframe id="vnc-frame" src="" class="w-full h-[650px] border-0 bg-black"></iframe>
+          </div>
+        </div>
+      </div>
+
+      
+      <!-- Chaves de API e Fallback -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+          <i class="fa-solid fa-server text-indigo-400"></i> Motores de IA Ativos (Pool de Alta Disponibilidade)
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold">Primária</span>
+            <p class="text-xs font-bold text-white mt-1">Conta Eduardo</p>
+            <p class="text-[11px] text-slate-400 font-mono">Gemini Flash Ativo</p>
+          </div>
+          <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+            <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded font-bold">Backup 1</span>
+            <p class="text-xs font-bold text-white mt-1">Conta Soffia</p>
+            <p class="text-[11px] text-slate-400 font-mono">Failover Automático</p>
+          </div>
+          <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
+            <span class="text-[10px] bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded font-bold">Backup 2</span>
+            <p class="text-xs font-bold text-white mt-1">Conta Vine</p>
+            <p class="text-[11px] text-slate-400 font-mono">Failover Automático</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alterar Senha de Acesso -->
+      <div class="glass-card p-6 rounded-3xl space-y-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-key text-amber-400"></i> Alterar Senha de Acesso ao Painel
+        </h3>
+        <p class="text-xs text-slate-400">
+          Modifique sua senha de login com segurança.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center gap-3 max-w-md">
+          <input type="password" id="new-password-input" placeholder="Nova senha segura..." class="w-full p-2.5 text-xs glass-input">
+          <button onclick="changePassword()" class="w-full sm:w-auto whitespace-nowrap bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition">
+            Atualizar Senha
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== TELEGRAM INTEGRATION ===== -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-brands fa-telegram text-sky-400"></i> Notificações via Telegram
+          <span id="tg-status-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Não configurado</span>
+        </h3>
+        <p class="text-xs text-slate-400">
+          Configure seu Bot do Telegram para receber alertas de vagas com score alto diretamente no celular.
+          No modo <strong class="text-purple-300">Inteligente</strong> o Hermes envia alertas. No modo <strong class="text-emerald-300">Automático</strong> ele também se candidata.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-400 font-semibold block mb-1">Token do Bot</label>
+            <input type="text" id="tg-token-input" placeholder="123456789:AAF..." class="w-full p-2.5 text-xs glass-input font-mono">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 font-semibold block mb-1">Chat ID (seu ID pessoal)</label>
+            <input type="text" id="tg-chatid-input" placeholder="ex: 123456789" class="w-full p-2.5 text-xs glass-input font-mono">
+          </div>
+        </div>
+
+        <div class="text-xs text-slate-500 bg-slate-950/60 rounded-xl p-3 border border-slate-800 space-y-1">
+          <p>📌 <strong class="text-slate-300">Como obter:</strong></p>
+          <p>1. Fale com <code class="text-sky-400">@BotFather</code> no Telegram → /newbot → copie o <strong>Token</strong></p>
+          <p>2. Fale com <code class="text-sky-400">@userinfobot</code> no Telegram → copie seu <strong>Chat ID</strong></p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2">
+          <button onclick="saveTelegramConfig()" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar Configuração
+          </button>
+          <button onclick="testTelegramConnection()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition border border-slate-700">
+            <i class="fa-solid fa-paper-plane"></i> Testar Conexão
+          </button>
+        </div>
+
+        <!-- Thresholds de Score -->
+        <div class="border-t border-slate-800 pt-4 mt-2">
+          <h4 class="text-xs font-bold text-slate-300 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-gauge text-indigo-400"></i> Thresholds de Score (Alertas & Auto)
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="text-xs text-slate-400 font-semibold block mb-1">🟣 Score mín. para Alertar (Smart)</label>
+              <input type="number" id="thresh-smart" value="80" min="50" max="100" class="w-full p-2.5 text-xs glass-input">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 font-semibold block mb-1">🟢 Score mín. para Candidatar (Auto)</label>
+              <input type="number" id="thresh-auto" value="85" min="60" max="100" class="w-full p-2.5 text-xs glass-input">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 font-semibold block mb-1">🤖 Limite de Candidaturas/Dia (Auto)</label>
+              <input type="number" id="thresh-daily" value="10" min="1" max="30" class="w-full p-2.5 text-xs glass-input">
+            </div>
+          </div>
+          <button onclick="saveThresholds()" class="mt-3 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition">
+            <i class="fa-solid fa-save mr-1"></i> Salvar Thresholds
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  
+    <!-- ABA: GESTÃO DE PERFIS & FAMÍLIA (ADMIN) -->
+    <div id="content-admin" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-800/80">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">
+              <i class="fa-solid fa-shield-halved"></i> Administração Central Hermes
+            </div>
+            <h2 class="text-2xl font-black text-white flex items-center gap-3">
+              Gestão de Perfis & Acessos da Família
+            </h2>
+            <p class="text-slate-400 text-sm mt-1 max-w-2xl">
+              Crie logins independentes para quem mora com você, personalize os cargos pretendidos de cada um, 
+              atualize dados de contato e faça upload dos currículos em PDF.
+            </p>
+          </div>
+
+          <button 
+            onclick="openCreateUserModal()" 
+            class="px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-purple-600/25 transition active:scale-95"
+          >
+            <i class="fa-solid fa-user-plus"></i> Novo Membro / Login
+          </button>
+        </div>
+
+        <!-- LISTA DE CARDS DE PERFIS -->
+        <div id="admin-profiles-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="col-span-full text-center py-12 text-slate-500">
+            <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+            <p class="text-sm">Carregando perfis cadastrados...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CRIAR NOVO USUÁRIO -->
+    <div id="modal-create-user" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative">
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+          <h3 class="text-lg font-black text-white flex items-center gap-2">
+            <i class="fa-solid fa-user-plus text-purple-400"></i> Criar Novo Perfil da Família
+          </h3>
+          <button onclick="closeCreateUserModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+        </div>
+
+        <form id="form-create-user" onsubmit="submitCreateUser(event)" class="space-y-4 text-sm">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">Nome Completo *</label>
+            <input type="text" id="new-user-fullname" required placeholder="Ex: Maria da Silva" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Usuário de Login *</label>
+              <input type="text" id="new-user-login" required placeholder="ex: esposa" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Senha Inicial *</label>
+              <input type="password" id="new-user-pass" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">Cargos Pretendidos (separados por vírgula) *</label>
+            <input type="text" id="new-user-roles" required placeholder="Ex: Assistente Administrativo, Analista Financeiro, Atendimento" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Cidade / Estado</label>
+              <input type="text" id="new-user-city" value="Diadema, SP" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Distância Máxima (Km)</label>
+              <input type="number" id="new-user-km" value="30" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+          </div>
+
+          <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
+            <button type="button" onclick="closeCreateUserModal()" class="px-4 py-2 text-slate-400 hover:text-white font-medium">Cancelar</button>
+            <button type="submit" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg shadow-purple-600/30 transition">Criar Perfil</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: EDITAR DADOS DO PERFIL -->
+    <div id="modal-edit-profile" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl relative">
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+          <h3 class="text-lg font-black text-white flex items-center gap-2">
+            <i class="fa-solid fa-user-pen text-indigo-400"></i> Editar Dados do Perfil
+          </h3>
+          <button onclick="closeEditProfileModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+        </div>
+
+        <form id="form-edit-profile" onsubmit="submitEditProfile(event)" class="space-y-4 text-sm">
+          <input type="hidden" id="edit-user-id">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">Nome Completo</label>
+            <input type="text" id="edit-user-fullname" required class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">E-mail</label>
+              <input type="email" id="edit-user-email" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Telefone / WhatsApp</label>
+              <input type="text" id="edit-user-phone" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">Cargos Pretendidos (separados por vírgula)</label>
+            <textarea id="edit-user-roles" rows="2" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"></textarea>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Cidade</label>
+              <input type="text" id="edit-user-city" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Salário Mínimo (R$)</label>
+              <input type="number" id="edit-user-salary" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Distância Máxima (Km)</label>
+              <input type="number" id="edit-user-km" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">URL do LinkedIn (Opcional)</label>
+            <input type="url" id="edit-user-linkedin" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+          </div>
+
+          <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
+            <button type="button" onclick="closeEditProfileModal()" class="px-4 py-2 text-slate-400 hover:text-white font-medium">Cancelar</button>
+            <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition">Salvar Alterações</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    </main>
+
+  <script>
+    function switchTab(tab) {
+      ['vagas', 'copilot', 'regras', 'curriculo', 'sessoes', 'admin'].forEach(t => {
+        const el = document.getElementById('content-' + t);
+        const btn = document.getElementById('tab-' + t);
+        if (t === tab) {
+          el.classList.remove('hidden');
+          btn.className = 'px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2 whitespace-nowrap';
+        } else {
+          el.classList.add('hidden');
+          btn.className = 'px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap';
+        }
+      });
+    }
+
+    async function triggerAction(endpoint, msg) {
+      try {
+        const res = await fetch(endpoint, { method: 'POST' });
+        if (res.ok) {
+          alert(msg);
+          setTimeout(() => window.location.reload(), 2500);
+        }
+      } catch (e) {
+        alert('Erro: ' + e);
+      }
+    }
+
+    async function updateJobStatus(jobId, newStatus) {
+      try {
+        await fetch(`/api/jobs/${jobId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        window.location.reload();
+      } catch (e) {
+        alert('Erro: ' + e);
+      }
+    }
+
+    async function saveAllJobRules() {
+      const payload = {
+        cidade: document.getElementById('regra-cidade').value,
+        estado: document.getElementById('regra-estado').value,
+        bairro: document.getElementById('regra-bairro').value,
+        cargos: document.getElementById('regra-cargos').value,
+        remoto_aceitar: document.getElementById('regra-remoto-aceitar').checked,
+        hibrido_aceitar: document.getElementById('regra-hibrido-aceitar').checked,
+        hibrido_km: document.getElementById('regra-hibrido-km').value,
+        hibrido_dias: document.getElementById('regra-hibrido-dias').value,
+        presencial_aceitar: document.getElementById('regra-presencial-aceitar').checked,
+        presencial_km: document.getElementById('regra-presencial-km').value,
+        salario_min_clt: document.getElementById('regra-salario-min-clt').value,
+        pretensao_clt: document.getElementById('regra-pretensao-clt').value,
+        salario_min_pj: document.getElementById('regra-salario-min-pj').value,
+        pretensao_pj: document.getElementById('regra-pretensao-pj').value
+      };
+
+      try {
+        const res = await fetch('/api/settings/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          alert('Todas as regras de modalidade, raio em km e salários foram salvas com sucesso!');
+          window.location.reload();
+        }
+      } catch (e) {
+        alert('Erro ao salvar: ' + e);
+      }
+    }
+
+    async function uploadResumeFile() {
+      const file = document.getElementById('resume-file-input').files[0];
+      if (!file) return alert('Selecione um PDF.');
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/settings/upload-resume', { method: 'POST', body: fd });
+      if (res.ok) { 
+        alert('Currículo enviado com sucesso! Clique em "Sincronizar Perfil com IA" para ler os novos dados.'); 
+        window.location.reload(); 
+      }
+    }
+
+    async function triggerProfileSync() {
+      if (!confirm('Deseja que a IA extraia todas as competências e experiências do PDF e atualize seu perfil?')) return;
+      document.getElementById('resume-loading').classList.remove('hidden');
+      document.getElementById('resume-report').classList.add('hidden');
+      try {
+        const res = await fetch('/api/profile/sync', { method: 'POST' });
+        const data = await res.json();
+        document.getElementById('resume-loading').classList.add('hidden');
+        document.getElementById('resume-report').classList.remove('hidden');
+        if (data.status === 'success') {
+          alert('Perfil sincronizado com sucesso a partir do seu PDF!');
+          window.location.reload();
+        } else {
+          alert('Aviso: ' + data.message);
+        }
+      } catch (e) {
+        document.getElementById('resume-loading').classList.add('hidden');
+        document.getElementById('resume-report').classList.remove('hidden');
+        alert('Erro ao sincronizar perfil: ' + e);
+      }
+    }
+
+        async function applyJob(jobId) {
+      if (!confirm('Deseja iniciar a candidatura automática real via Playwright para esta vaga? O robô preencherá o formulário e anexará seu currículo.')) return;
+      showToast('🚀 Iniciando candidatura automática via Playwright...', 'green');
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/apply`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ Candidatura em execução em background!', 'green');
+        } else {
+          alert('Aviso: ' + (data.message || data.error));
+        }
+      } catch (e) {
+        alert('Erro ao disparar candidatura: ' + e);
+      }
+    }
+
+    async function dryRunJob(jobId) {
+      showToast('🧪 Iniciando simulação (preencher + screenshot sem enviar)...', 'purple');
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/dry-run`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('📸 Simulação rodando! O print será salvo em data/screenshots.', 'purple');
+        }
+      } catch (e) {
+        alert('Erro ao disparar simulação: ' + e);
+      }
+    }
+
+async function changePassword() {
+      const p = document.getElementById('new-password-input').value.trim();
+      if (!p || p.length < 6) return alert('Digite uma senha com no mínimo 6 caracteres.');
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_password: p })
+      });
+      if (res.ok) {
+        alert('Senha alterada com sucesso! Guarde sua nova senha.');
+        document.getElementById('new-password-input').value = '';
+      } else {
+        alert('Erro ao alterar senha.');
+      }
+    }
+
+    async function fetchResumeDiagnostic() {
+      document.getElementById('resume-loading').classList.remove('hidden');
+      document.getElementById('resume-report').classList.add('hidden');
+      try {
+        const res = await fetch('/api/resume/analysis');
+        const data = await res.json();
+        document.getElementById('resume-loading').classList.add('hidden');
+        document.getElementById('resume-report').classList.remove('hidden');
+        window.location.reload();
+      } catch (e) {
+        document.getElementById('resume-loading').classList.add('hidden');
+        document.getElementById('resume-report').classList.remove('hidden');
+        alert('Erro ao consultar IA: ' + e);
+      }
+    }
+
+    // ======================================================
+    // FASE 4 — Modo de Operação & Telegram
+    // ======================================================
+
+    const MODE_INFO = {
+      review: {
+        label: '🔵 Modo Avaliação',
+        desc: 'O Hermes apenas monitora e classifica vagas. Você decide tudo manualmente. Nenhuma ação automática é realizada.',
+        boxClass: 'bg-blue-500/10 text-blue-300 border border-blue-500/20',
+        btnActive: 'border-blue-500 bg-blue-500/20 text-blue-300',
+        btnInactive: 'border-slate-700 bg-transparent text-slate-400'
+      },
+      smart: {
+        label: '🟣 Modo Inteligente',
+        desc: 'O Hermes envia alertas via Telegram quando encontra vagas com score alto (≥80%). Você aprova ou rejeita pelo chat. A candidatura só é enviada com sua aprovação.',
+        boxClass: 'bg-purple-500/10 text-purple-300 border border-purple-500/20',
+        btnActive: 'border-purple-500 bg-purple-500/20 text-purple-300',
+        btnInactive: 'border-slate-700 bg-transparent text-slate-400'
+      },
+      auto: {
+        label: '🟢 Modo Automático',
+        desc: 'O Hermes monitora, alerta via Telegram E se candidata automaticamente nas vagas com score ≥85%. Você é notificado de cada candidatura. Respeita o limite diário configurado.',
+        boxClass: 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20',
+        btnActive: 'border-emerald-500 bg-emerald-500/20 text-emerald-300',
+        btnInactive: 'border-slate-700 bg-transparent text-slate-400'
+      }
+    };
+
+    let currentMode = 'review';
+
+    async function loadCurrentSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        const s = await res.json();
+        currentMode = s.operation_mode || 'review';
+        applyModeUI(currentMode);
+
+        // Thresholds
+        if (document.getElementById('thresh-smart')) {
+          document.getElementById('thresh-smart').value = s.smart_score_threshold || 80;
+          document.getElementById('thresh-auto').value = s.auto_score_threshold || 85;
+          document.getElementById('thresh-daily').value = s.auto_apply_daily_limit || 10;
+        }
+
+        // Status badge Telegram
+        const badge = document.getElementById('tg-status-badge');
+        if (badge) {
+          if (s.telegram_enabled) {
+            badge.textContent = '✅ Configurado';
+            badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/30';
+          } else {
+            badge.textContent = 'Não configurado';
+            badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
+          }
+          if (s.telegram_chat_id) {
+            document.getElementById('tg-chatid-input').value = s.telegram_chat_id;
+          }
+        }
+      } catch(e) { console.warn('Erro ao carregar settings:', e); }
+    }
+
+    function applyModeUI(mode) {
+      const info = MODE_INFO[mode] || MODE_INFO['review'];
+      // Atualiza botões
+      ['review', 'smart', 'auto'].forEach(m => {
+        const btn = document.getElementById('btn-mode-' + m);
+        if (!btn) return;
+        const modeInfo = MODE_INFO[m];
+        if (m === mode) {
+          btn.className = `mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 ${modeInfo.btnActive}`;
+        } else {
+          btn.className = `mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 ${modeInfo.btnInactive} hover:text-white`;
+        }
+      });
+      // Atualiza caixa de info
+      const box = document.getElementById('mode-info-box');
+      if (box) {
+        box.className = `mt-3 p-3 rounded-xl text-xs ${info.boxClass}`;
+        box.innerHTML = `<strong>${info.label}:</strong> ${info.desc}`;
+        box.style.display = 'block';
+      }
+      // Atualiza descrição curta
+      const desc = document.getElementById('mode-description');
+      if (desc) desc.textContent = info.desc.substring(0, 80) + '…';
+    }
+
+    async function setOperationMode(mode) {
+      try {
+        const res = await fetch('/api/settings/mode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode })
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentMode = mode;
+          applyModeUI(mode);
+          const labels = { review: 'Avaliação', smart: 'Inteligente', auto: 'Automático' };
+          // Toast simples
+          showToast(`✅ Modo alterado para ${labels[mode]}`, mode === 'review' ? 'blue' : mode === 'smart' ? 'purple' : 'green');
+        }
+      } catch(e) { alert('Erro ao salvar modo: ' + e); }
+    }
+
+    async function saveTelegramConfig() {
+      const token = document.getElementById('tg-token-input').value.trim();
+      const chat_id = document.getElementById('tg-chatid-input').value.trim();
+      if (!token || !chat_id) return alert('Preencha o Token e o Chat ID.');
+      const res = await fetch('/api/settings/telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, chat_id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('✅ Telegram salvo com sucesso!', 'sky');
+        loadCurrentSettings();
+      } else {
+        alert('Erro ao salvar Telegram: ' + JSON.stringify(data));
+      }
+    }
+
+    async function testTelegramConnection() {
+      const token = document.getElementById('tg-token-input').value.trim();
+      const chat_id = document.getElementById('tg-chatid-input').value.trim();
+      if (!token || !chat_id) return alert('Preencha o Token e o Chat ID antes de testar.');
+      showToast('⏳ Enviando mensagem de teste…', 'slate');
+      const res = await fetch('/api/settings/telegram/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, chat_id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('📱 Mensagem enviada! Verifique seu Telegram.', 'sky');
+      } else {
+        alert('❌ Falha no Telegram:\n' + data.message);
+      }
+    }
+
+    async function saveThresholds() {
+      const payload = {
+        smart_score_threshold: parseInt(document.getElementById('thresh-smart').value),
+        auto_score_threshold: parseInt(document.getElementById('thresh-auto').value),
+        auto_apply_daily_limit: parseInt(document.getElementById('thresh-daily').value)
+      };
+      const res = await fetch('/api/settings/thresholds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) showToast('✅ Thresholds salvos!', 'indigo');
+    }
+
+    // Toast notification helper
+    function showToast(msg, color = 'indigo') {
+      const colorMap = {
+        indigo: 'bg-indigo-600 text-white', blue: 'bg-blue-600 text-white',
+        purple: 'bg-purple-600 text-white', green: 'bg-emerald-600 text-white',
+        sky: 'bg-sky-600 text-white', slate: 'bg-slate-700 text-white'
+      };
+      const toast = document.createElement('div');
+      toast.className = `fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl font-bold text-sm shadow-2xl transition-all ${colorMap[color] || colorMap.indigo}`;
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
+    }
+
+    // Carrega settings ao iniciar a página
+    document.addEventListener('DOMContentLoaded', () => { loadCurrentSettings(); checkAuthStatusNow(); setInterval(checkAuthStatusNow, 6000); });
+
+    async function checkAuthStatusNow() {
+      const elIn = document.getElementById('status-linkedin');
+      const elGu = document.getElementById('status-gupy');
+      const btnIn = document.getElementById('btn-login-linkedin');
+      const btnGu = document.getElementById('btn-login-gupy');
+      try {
+        const res = await fetch('/api/auth/browser-status');
+        const data = await res.json();
+        if (elIn) {
+          elIn.innerHTML = data.linkedin ? '<span class="text-emerald-400 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Conectado (Sessão Ativa)</span>' : '<span class="text-rose-400 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-xmark"></i> Desconectado</span>';
+        }
+        if (btnIn) {
+          if (data.linkedin) {
+            btnIn.className = 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5';
+            btnIn.innerHTML = '<i class="fa-solid fa-check"></i> Conectado';
+          } else {
+            btnIn.className = 'bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5';
+            btnIn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Logar';
+          }
+        }
+        if (elGu) {
+          elGu.innerHTML = data.gupy ? '<span class="text-emerald-400 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Conectado (Sessão Ativa)</span>' : '<span class="text-rose-400 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-xmark"></i> Desconectado</span>';
+        }
+        if (btnGu) {
+          if (data.gupy) {
+            btnGu.className = 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5';
+            btnGu.innerHTML = '<i class="fa-solid fa-check"></i> Conectado';
+          } else {
+            btnGu.className = 'bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5';
+            btnGu.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Logar';
+          }
+        }
+      } catch (e) {
+        if (elIn && !elIn.innerHTML.includes('Conectado')) elIn.textContent = 'Erro ao verificar';
+        if (elGu && !elGu.innerHTML.includes('Conectado')) elGu.textContent = 'Erro ao verificar';
+      }
+    }
+    async function startAssistedLogin(platform) {
+      showToast('🌐 Abrindo navegador para login assistido...', 'sky');
+      toggleVncFrame(true);
+      try {
+        await fetch(`/api/auth/assisted-login?platform=${platform}`, { method: 'POST' });
+      } catch (e) {
+        console.warn('Login assistido disparado');
+      }
+    }
+
+    function toggleVncFrame(forceOpen = false) {
+      const container = document.getElementById('vnc-container');
+      const frame = document.getElementById('vnc-frame');
+      const btn = document.getElementById('btn-toggle-vnc');
+      if (!container || !frame) return;
+      const isOpen = !container.classList.contains('hidden');
+      if (isOpen && !forceOpen) {
+        container.classList.add('hidden');
+        frame.src = '';
+        btn.textContent = 'Abrir Visualizador no Painel';
+      } else {
+        container.classList.remove('hidden');
+        frame.src = 'http://192.168.0.123:6080/vnc.html?autoconnect=true&resize=remote';
+        btn.textContent = 'Recolher Visualizador';
+      }
+    }
+
+
+  
+    // ==========================================
+    // COPILOTO IA VISUAL (CTRL+V / PRINTS)
+    // ==========================================
+    let copilotCurrentBase64 = null;
+
+    // Escuta evento global de Paste (Ctrl+V)
+    window.addEventListener('paste', function(e) {
+      // Se não houver itens na área de transferência, ignora
+      if (!e.clipboardData || !e.clipboardData.items) return;
+      
+      for (let item of e.clipboardData.items) {
+        if (item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            setCopilotImage(event.target.result);
+            // Muda para a aba do Copiloto automaticamente para facilitar!
+            switchTab('copilot');
+          };
+          reader.readAsDataURL(blob);
+          break;
+        }
+      }
+    });
+
+    function setCopilotImage(dataUrl) {
+      copilotCurrentBase64 = dataUrl;
+      const previewImg = document.getElementById('copilot-preview-img');
+      const emptyState = document.getElementById('dropzone-empty-state');
+      const previewState = document.getElementById('dropzone-preview-state');
+      
+      previewImg.src = dataUrl;
+      emptyState.classList.add('hidden');
+      previewState.classList.remove('hidden');
+    }
+
+    function clearCopilotImage(event) {
+      if (event) event.stopPropagation();
+      copilotCurrentBase64 = null;
+      document.getElementById('copilot-file-input').value = '';
+      document.getElementById('dropzone-empty-state').classList.remove('hidden');
+      document.getElementById('dropzone-preview-state').classList.add('hidden');
+    }
+
+    function handleCopilotFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        setCopilotImage(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function submitCopilotQuestion() {
+      const username = document.getElementById('copilot-profile').value;
+      const textQuestion = document.getElementById('copilot-text').value;
+      
+      if (!copilotCurrentBase64 && (!textQuestion || !textQuestion.trim())) {
+        alert("Por favor, cole um print da tela (Ctrl + V) ou digite a pergunta antes de enviar.");
+        return;
+      }
+
+      const emptyEl = document.getElementById('copilot-empty-result');
+      const loadingEl = document.getElementById('copilot-loading');
+      const containerEl = document.getElementById('copilot-answer-container');
+      const textEl = document.getElementById('copilot-answer-text');
+      const copyBtn = document.getElementById('copilot-copy-btn');
+      const submitBtn = document.getElementById('copilot-submit-btn');
+
+      emptyEl.classList.add('hidden');
+      containerEl.classList.add('hidden');
+      copyBtn.classList.add('hidden');
+      loadingEl.classList.remove('hidden');
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50');
+
+      try {
+        const payload = {
+          username: username,
+          text_question: textQuestion || null,
+          image_base64: copilotCurrentBase64 || null
+        };
+
+        const res = await fetch('/api/copilot/answer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        loadingEl.classList.add('hidden');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50');
+
+        if (data.success) {
+          textEl.textContent = data.copy_text || data.answer_markdown;
+          containerEl.classList.remove('hidden');
+          copyBtn.classList.remove('hidden');
+        } else {
+          emptyEl.classList.remove('hidden');
+          alert("Erro: " + (data.error || "Não foi possível gerar a resposta."));
+        }
+      } catch (err) {
+        loadingEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50');
+        alert("Erro na conexão com o servidor: " + err.message);
+      }
+    }
+
+    function copyCopilotAnswer() {
+      const textEl = document.getElementById('copilot-answer-text');
+      const copyBtn = document.getElementById('copilot-copy-btn');
+      if (!textEl || !textEl.textContent) return;
+
+      navigator.clipboard.writeText(textEl.textContent).then(() => {
+        const originalHtml = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+        copyBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+        copyBtn.classList.add('bg-indigo-600');
+        setTimeout(() => {
+          copyBtn.innerHTML = originalHtml;
+          copyBtn.classList.remove('bg-indigo-600');
+          copyBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+        }, 2500);
+      }).catch(err => {
+        alert("Erro ao copiar para a área de transferência: " + err);
+      });
+    }
+
+  
+    // ==========================================
+    // GESTÃO ADMINISTRATIVA DE PERFIS E LOGINS
+    // ==========================================
+    let cachedAdminProfiles = [];
+
+    async function loadAdminProfiles() {
+      const grid = document.getElementById('admin-profiles-grid');
+      try {
+        const res = await fetch('/api/admin/profiles-full');
+        const data = await res.json();
+        cachedAdminProfiles = data.profiles || [];
+        renderAdminProfiles(cachedAdminProfiles);
+      } catch (err) {
+        grid.innerHTML = `<div class="col-span-full text-center text-red-400 py-6">Erro ao carregar perfis: ${err.message}</div>`;
+      }
+    }
+
+    function renderAdminProfiles(profiles) {
+      const grid = document.getElementById('admin-profiles-grid');
+      if (!profiles || profiles.length === 0) {
+        grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-6">Nenhum perfil cadastrado.</div>';
+        return;
+      }
+
+      grid.innerHTML = profiles.map(p => {
+        const isMaster = p.id === 'eduardo';
+        const rolesList = (p.cargos_alvo || []).map(r => `<span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-xs border border-slate-700">${r}</span>`).join(' ');
+        
+        return `
+          <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition flex flex-col justify-between shadow-xl">
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-2xl ${isMaster ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30' : 'bg-purple-600/20 text-purple-400 border border-purple-500/30'} flex items-center justify-center text-xl font-black">
+                    ${isMaster ? '<i class="fa-solid fa-crown"></i>' : '<i class="fa-solid fa-user"></i>'}
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-white text-base">${p.display_name}</h3>
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                      <span>Login: <code class="text-purple-300 font-mono">@${p.id}</code></span>
+                      ${isMaster ? '<span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold">ADMIN MASTER</span>' : ''}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  ${p.has_resume 
+                    ? '<span class="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center gap-1"><i class="fa-solid fa-file-pdf"></i> Currículo OK</span>'
+                    : '<span class="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Sem Currículo</span>'
+                  }
+                </div>
+              </div>
+
+              <!-- DADOS DO PERFIL -->
+              <div class="space-y-2 text-xs text-slate-400 my-4 bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+                <div class="flex justify-between">
+                  <span>Localização:</span>
+                  <strong class="text-slate-200">${p.cidade || 'Diadema'}, ${p.estado || 'SP'} (Raio: ${p.distancia_km || 30}km)</strong>
+                </div>
+                <div class="flex justify-between">
+                  <span>Salário Mínimo:</span>
+                  <strong class="text-emerald-400">R$ ${(p.salario_min || 3000).toLocaleString('pt-BR')}</strong>
+                </div>
+                ${p.email ? `<div class="flex justify-between"><span>E-mail:</span><strong class="text-slate-200">${p.email}</strong></div>` : ''}
+              </div>
+
+              <!-- CARGOS PRETENDIDOS -->
+              <div class="mb-4">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">Cargos de Interesse:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  ${rolesList || '<span class="text-xs text-slate-500">Nenhum cargo definido</span>'}
+                </div>
+              </div>
+            </div>
+
+            <!-- BOTÕES DE AÇÃO -->
+            <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <button 
+                  onclick="openEditProfileModal('${p.id}')" 
+                  class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5"
+                >
+                  <i class="fa-solid fa-pen-to-square"></i> Editar
+                </button>
+
+                <!-- BOTÃO UPLOAD CURRÍCULO -->
+                <label class="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 hover:text-white text-xs font-bold cursor-pointer transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-upload"></i> Subir PDF
+                  <input type="file" accept=".pdf" class="hidden" onchange="uploadResumeForUser(event, '${p.id}')">
+                </label>
+              </div>
+
+              ${!isMaster ? `
+                <button 
+                  onclick="deleteUserAccount('${p.id}')" 
+                  class="px-2.5 py-1.5 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition text-xs font-bold"
+                  title="Excluir Perfil"
+                >
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Modal Criar Usuário
+    function openCreateUserModal() {
+      document.getElementById('modal-create-user').classList.remove('hidden');
+    }
+    function closeCreateUserModal() {
+      document.getElementById('modal-create-user').classList.add('hidden');
+    }
+    async function submitCreateUser(e) {
+      e.preventDefault();
+      const payload = {
+        display_name: document.getElementById('new-user-fullname').value,
+        username: document.getElementById('new-user-login').value,
+        password: document.getElementById('new-user-pass').value,
+        cargos_alvo: document.getElementById('new-user-roles').value,
+        cidade: document.getElementById('new-user-city').value,
+        distancia_km: parseInt(document.getElementById('new-user-km').value) || 30
+      };
+
+      try {
+        const res = await fetch('/api/admin/users/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeCreateUserModal();
+          alert("Perfil criado com sucesso!");
+          loadAdminProfiles();
+        } else {
+          alert("Erro: " + (data.error || "Falha ao criar usuário"));
+        }
+      } catch (err) {
+        alert("Erro de conexão: " + err.message);
+      }
+    }
+
+    // Modal Editar Perfil
+    function openEditProfileModal(userId) {
+      const p = cachedAdminProfiles.find(x => x.id === userId);
+      if (!p) return;
+
+      document.getElementById('edit-user-id').value = p.id;
+      document.getElementById('edit-user-fullname').value = p.display_name || '';
+      document.getElementById('edit-user-email').value = p.email || '';
+      document.getElementById('edit-user-phone').value = p.telefone || '';
+      document.getElementById('edit-user-roles').value = (p.cargos_alvo || []).join(', ');
+      document.getElementById('edit-user-city').value = p.cidade || 'Diadema';
+      document.getElementById('edit-user-salary').value = p.salario_min || 3000;
+      document.getElementById('edit-user-km').value = p.distancia_km || 30;
+      document.getElementById('edit-user-linkedin').value = p.linkedin_url || '';
+
+      document.getElementById('modal-edit-profile').classList.remove('hidden');
+    }
+    function closeEditProfileModal() {
+      document.getElementById('modal-edit-profile').classList.add('hidden');
+    }
+    async function submitEditProfile(e) {
+      e.preventDefault();
+      const userId = document.getElementById('edit-user-id').value;
+      const payload = {
+        username: userId,
+        nome_completo: document.getElementById('edit-user-fullname').value,
+        email: document.getElementById('edit-user-email').value,
+        telefone: document.getElementById('edit-user-phone').value,
+        cargos_alvo: document.getElementById('edit-user-roles').value,
+        cidade: document.getElementById('edit-user-city').value,
+        salario_min: parseFloat(document.getElementById('edit-user-salary').value) || 3000,
+        distancia_km: parseInt(document.getElementById('edit-user-km').value) || 30,
+        linkedin_url: document.getElementById('edit-user-linkedin').value
+      };
+
+      try {
+        const res = await fetch('/api/admin/profiles/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeEditProfileModal();
+          alert("Perfil atualizado com sucesso!");
+          loadAdminProfiles();
+        } else {
+          alert("Erro: " + (data.error || "Falha ao salvar dados"));
+        }
+      } catch (err) {
+        alert("Erro de conexão: " + err.message);
+      }
+    }
+
+    // Upload de Currículo PDF para Perfil Específico
+    async function uploadResumeForUser(e, userId) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('username', userId);
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/api/admin/profiles/upload-resume', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Currículo de ${userId} enviado com sucesso!`);
+          loadAdminProfiles();
+        } else {
+          alert("Erro ao enviar: " + (data.error || "Formato inválido"));
+        }
+      } catch (err) {
+        alert("Erro de conexão: " + err.message);
+      }
+    }
+
+    // Excluir Perfil
+    async function deleteUserAccount(userId) {
+      if (!confirm(`Deseja realmente excluir o perfil de @${userId}?`)) return;
+
+      try {
+        const res = await fetch('/api/admin/users/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: userId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert("Perfil excluído com sucesso.");
+          loadAdminProfiles();
+        } else {
+          alert("Erro: " + (data.error || "Não foi possível excluir"));
+        }
+      } catch (err) {
+        alert("Erro de conexão: " + err.message);
+      }
+    }
+
+    // Ao mudar para a aba admin, carrega automaticamente os perfis
+    const originalSwitchTab = window.switchTab;
+    window.switchTab = function(tab) {
+      originalSwitchTab(tab);
+      if (tab === 'admin') {
+        loadAdminProfiles();
+      }
+    };
+
+  
+    // ==========================================
+    // SISTEMA DE FILTRAGEM DINÂMICA DE VAGAS
+    // ==========================================
+    function applyAllJobFilters() {
+      const search = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
+      const scoreFilter = document.getElementById('filter-score')?.value || 'approved';
+      const recencyFilter = document.getElementById('filter-recency')?.value || 'all';
+      const modalityFilter = document.getElementById('filter-modality')?.value || 'all';
+      const platformFilter = document.getElementById('filter-platform')?.value || 'all';
+
+      const cards = document.querySelectorAll('.job-card');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const title = card.getAttribute('data-title') || '';
+        const company = card.getAttribute('data-company') || '';
+        const location = card.getAttribute('data-location') || '';
+        const keywords = card.getAttribute('data-keywords') || '';
+        const score = parseFloat(card.getAttribute('data-score')) || -1;
+        const status = card.getAttribute('data-status') || '';
+        const ageHours = parseFloat(card.getAttribute('data-age-hours')) || 9999;
+        const isRemote = card.getAttribute('data-remote') === '1';
+        const platform = card.getAttribute('data-platform') || '';
+
+        // 1. Busca por Texto
+        let matchSearch = true;
+        if (search) {
+          matchSearch = title.includes(search) || company.includes(search) || location.includes(search) || keywords.includes(search);
+        }
+
+        // 2. Filtro de Score / Status
+        let matchScore = true;
+        if (scoreFilter === 'approved') {
+          matchScore = (score >= 75) || (status === 'approve' || status === 'approved');
+        } else if (scoreFilter === 'top') {
+          matchScore = score >= 85;
+        } else if (scoreFilter === 'pending') {
+          matchScore = (score < 0 || status === 'discovered');
+        } else if (scoreFilter === 'applied') {
+          matchScore = (status === 'applied' || status === 'success');
+        } else if (scoreFilter === 'dry_run') {
+          matchScore = (status === 'dry_run');
+        } else if (scoreFilter === 'rejected') {
+          matchScore = (status === 'reject' || status === 'rejected');
+        }
+
+        // 3. Filtro de Recência
+        let matchRecency = true;
+        if (recencyFilter === '2h') matchRecency = ageHours <= 2;
+        else if (recencyFilter === '6h') matchRecency = ageHours <= 6;
+        else if (recencyFilter === '24h') matchRecency = ageHours <= 24;
+        else if (recencyFilter === '3d') matchRecency = ageHours <= 72;
+        else if (recencyFilter === '7d') matchRecency = ageHours <= 168;
+
+        // 4. Modalidade
+        let matchModality = true;
+        if (modalityFilter === 'remote') matchModality = isRemote;
+        else if (modalityFilter === 'presential') matchModality = !isRemote;
+
+        // 5. Plataforma
+        let matchPlatform = true;
+        if (platformFilter !== 'all') {
+          matchPlatform = platform.includes(platformFilter);
+        }
+
+        if (matchSearch && matchScore && matchRecency && matchModality && matchPlatform) {
+          card.style.display = '';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      const countEl = document.getElementById('filtered-count');
+      if (countEl) countEl.textContent = visibleCount;
+      updatePillsVisual(scoreFilter);
+    }
+
+    function setScorePill(val) {
+      const sel = document.getElementById('filter-score');
+      if (sel) {
+        sel.value = val;
+        applyAllJobFilters();
+      }
+    }
+
+    function updatePillsVisual(currentVal) {
+      ['approved', 'top', 'pending', 'all'].forEach(k => {
+        const p = document.getElementById('pill-' + k);
+        if (!p) return;
+        if (k === currentVal) {
+          p.className = 'px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5';
+        } else {
+          p.className = 'px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-900 text-slate-400 border border-slate-800 hover:text-white transition flex items-center gap-1.5';
+        }
+      });
+    }
+
+    function filterFromMetric(type) {
+      const scoreSelect = document.getElementById('filter-score');
+      if (type === 'all') scoreSelect.value = 'all';
+      else if (type === 'approved') scoreSelect.value = 'approved';
+      else if (type === 'applied') scoreSelect.value = 'applied';
+      applyAllJobFilters();
+    }
+
+    function resetJobFilters() {
+      document.getElementById('filter-search').value = '';
+      document.getElementById('filter-score').value = 'approved';
+      document.getElementById('filter-recency').value = 'all';
+      document.getElementById('filter-modality').value = 'all';
+      document.getElementById('filter-platform').value = 'all';
+      applyAllJobFilters();
+    }
+
+    async function cleanRejectedJobs() {
+      if (!confirm("Deseja realmente apagar do banco de dados todas as vagas descartadas pela IA?")) return;
+      try {
+        const res = await fetch('/api/jobs/clean-rejected', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          alert(data.message);
+          window.location.reload();
+        } else {
+          alert("Erro: " + (data.error || "Falha ao limpar"));
+        }
+      } catch (err) {
+        alert("Erro de conexão: " + err.message);
+      }
+    }
+
+    // Inicializa o filtro imediatamente ao carregar a página
+    document.addEventListener('DOMContentLoaded', function() {
+      applyAllJobFilters();
+    });
+
+  
+    // ==========================================
+    // AÇÕES RÁPIDAS DE FILA (CANDIDATAR & DESCARTAR)
+    // ==========================================
+    async function markAsApplied(jobId) {
+      const card = document.querySelector(`[data-job-id="${jobId}"]`);
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'applied' })
+        });
+        if (res.ok) {
+          if (card) {
+            card.setAttribute('data-status', 'applied');
+            card.style.transition = 'all 0.35s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(40px)';
+            setTimeout(() => {
+              card.remove();
+              applyAllJobFilters();
+            }, 350);
+          }
+          showToast('✅ Vaga marcada como candidatada com sucesso!', 'green');
+
+          // Incrementa contador de candidaturas realizadas
+          const metricEls = document.querySelectorAll('.glass-card p.text-3xl');
+          if (metricEls && metricEls.length >= 3) {
+            const cur = parseInt(metricEls[2].textContent.trim()) || 0;
+            metricEls[2].textContent = cur + 1;
+          }
+        }
+      } catch (err) {
+        alert("Erro ao registrar candidatura: " + err.message);
+      }
+    }
+
+    async function markAsDiscarded(jobId) {
+      const card = document.querySelector(`[data-job-id="${jobId}"]`);
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'rejected' })
+        });
+        if (res.ok) {
+          if (card) {
+            card.setAttribute('data-status', 'rejected');
+            card.style.transition = 'all 0.35s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(-40px)';
+            setTimeout(() => {
+              card.remove();
+              applyAllJobFilters();
+            }, 350);
+          }
+          showToast('🗑️ Vaga descartada da fila!', 'slate');
+        }
+      } catch (err) {
+        alert("Erro ao descartar vaga: " + err.message);
+      }
+    }
+
+  
+    async function searchLiveCargo() {
+      const input = document.getElementById('live-search-cargo');
+      const term = input ? input.value : '';
+      if (!term || !term.trim()) {
+        alert("Digite um termo para pesquisar (ex: suporte de redes, mikrotik, linux)");
+        return;
+      }
+      try {
+        const res = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ term: term.trim() })
+        });
+        const data = await res.json();
+        showToast(data.message || 'Busca iniciada nas 5 plataformas!', 'indigo');
+        input.value = '';
+      } catch (e) {
+        alert("Erro ao disparar busca: " + e.message);
+      }
+    }
+
+  </script>
+</body>
+</html>

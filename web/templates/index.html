@@ -5,7 +5,11 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0f19">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hermes Jobs">
   <title>Hermes Job AI - Centro de Comando de Carreiras</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,6 +18,13 @@
     .glass-card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
     .glass-input { background: #070a13; border: 1px solid #1e293b; color: white; border-radius: 0.75rem; }
     .glass-input:focus { border-color: #6366f1; outline: none; }
+    html { -webkit-tap-highlight-color: transparent; }
+    @media (max-width: 768px) {
+      body { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)) !important; }
+    }
+    .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0.5rem); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
 <body class="min-h-screen p-3 md:p-6">
@@ -36,8 +47,8 @@
     </div>
 
     <!-- Navegação em Abas Modernas -->
-    <div class="flex items-center gap-3">
-      <nav class="flex items-center gap-1 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 text-sm overflow-x-auto max-w-full">
+    <div class="flex items-center gap-2 sm:gap-3 w-full md:w-auto justify-between md:justify-end">
+      <nav class="hidden md:flex items-center gap-1 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 text-sm overflow-x-auto max-w-full">
         <button onclick="switchTab('vagas')" id="tab-vagas" class="px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-briefcase"></i> Central de Vagas
         </button>
@@ -79,20 +90,20 @@
             </h2>
             <p class="text-xs text-slate-400" id="mode-description">Selecione como o Hermes deve agir ao encontrar vagas compatíveis.</p>
           </div>
-          <div class="flex gap-2 flex-wrap" id="mode-selector">
+          <div class="grid grid-cols-3 gap-1.5 w-full sm:w-auto" id="mode-selector">
             <!-- Modo Avaliação -->
             <button onclick="setOperationMode('review')" id="btn-mode-review"
-              class="mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 border-blue-500 bg-blue-500/20 text-blue-300">
+              class="mode-btn px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-bold border-2 transition flex items-center justify-center gap-1 sm:gap-2 border-blue-500 bg-blue-500/20 text-blue-300 active:scale-95">
               <i class="fa-solid fa-eye"></i> 🔵 Avaliação
             </button>
             <!-- Modo Inteligente -->
             <button onclick="setOperationMode('smart')" id="btn-mode-smart"
-              class="mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 border-slate-700 bg-transparent text-slate-400 hover:border-purple-500 hover:text-purple-300">
+              class="mode-btn px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-bold border-2 transition flex items-center justify-center gap-1 sm:gap-2 border-slate-700 bg-transparent text-slate-400 hover:border-purple-500 hover:text-purple-300 active:scale-95">
               <i class="fa-solid fa-brain"></i> 🟣 Inteligente
             </button>
             <!-- Modo Automático -->
             <button onclick="setOperationMode('auto')" id="btn-mode-auto"
-              class="mode-btn px-5 py-2.5 rounded-2xl text-sm font-bold border-2 transition flex items-center gap-2 border-slate-700 bg-transparent text-slate-400 hover:border-emerald-500 hover:text-emerald-300">
+              class="mode-btn px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-bold border-2 transition flex items-center justify-center gap-1 sm:gap-2 border-slate-700 bg-transparent text-slate-400 hover:border-emerald-500 hover:text-emerald-300 active:scale-95">
               <i class="fa-solid fa-robot"></i> 🟢 Automático
             </button>
           </div>
@@ -103,8 +114,8 @@
       
       <!-- Barra Superior de Parâmetros Atuais -->
       <div class="glass-card p-5 rounded-3xl">
-        <div class="flex flex-col lg:flex-row items-center justify-between gap-4">
-          <div class="flex-1 w-full flex flex-wrap items-center gap-3">
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto">
             <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
               <i class="fa-solid fa-home text-emerald-400"></i>
               <span>Origem: <strong>{{ profile.candidato.cidade }} - {{ profile.candidato.estado }}</strong></span>
@@ -123,28 +134,30 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-2 w-full lg:w-auto justify-end">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto justify-end">
             <div class="flex items-center gap-1.5 w-full sm:w-auto">
               <input type="text" id="live-search-cargo" placeholder="Pesquisar cargo novo (ex: suporte de redes)..." 
-                     class="bg-slate-950 border border-slate-700 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none w-48 md:w-64">
+                     class="bg-slate-950 border border-slate-700 focus:border-indigo-500 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 outline-none flex-1 sm:w-60">
               <button onclick="searchLiveCargo()" title="Dispara busca imediata deste cargo nas 5 plataformas" 
-                      class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 whitespace-nowrap">
+                      class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 whitespace-nowrap active:scale-95">
                 <i class="fa-solid fa-bolt text-amber-300"></i> Buscar
               </button>
             </div>
             
-            <button onclick="triggerAction('/api/scan', 'Varredura disparada em todas as plataformas!')" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-700 flex items-center gap-2 transition shadow-sm">
-              <i class="fa-solid fa-satellite-dish text-indigo-400"></i> Varrer Vagas
-            </button>
-            <button onclick="triggerAction('/api/evaluate', 'Classificação ATS e Filtro Geográfico iniciados!')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-lg shadow-indigo-600/30">
-              <i class="fa-solid fa-brain"></i> Ranquear com IA
-            </button>
+            <div class="grid grid-cols-2 gap-2 w-full sm:w-auto">
+              <button onclick="triggerAction('/api/scan', 'Varredura disparada em todas as plataformas!')" class="bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-2.5 rounded-xl text-xs font-bold border border-slate-700 flex items-center justify-center gap-1.5 transition shadow-sm active:scale-95">
+                <i class="fa-solid fa-satellite-dish text-indigo-400"></i> Varrer
+              </button>
+              <button onclick="triggerAction('/api/evaluate', 'Classificação ATS e Filtro Geográfico iniciados!')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-lg shadow-indigo-600/30 active:scale-95">
+                <i class="fa-solid fa-brain"></i> Ranquear
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Métricas Clicáveis -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-3 gap-2 sm:gap-4">
         <div onclick="filterFromMetric('all')" title="Clique para ver todas as vagas do radar" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-slate-500 transition group select-none">
           <div class="flex items-center justify-between">
             <p class="text-xs text-slate-400 group-hover:text-slate-200 font-semibold uppercase tracking-wider">Oportunidades no Radar</p>
@@ -313,9 +326,9 @@
             </div>
 
             <!-- Botões de Ação Direta (Candidatura & Descarte Rápido) -->
-            <div class="flex items-center gap-2 self-end md:self-center flex-wrap justify-end">
+            <div class="w-full md:w-auto mt-3 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-800/60 grid grid-cols-3 md:flex items-center gap-2 justify-end">
               <!-- Botão 1: Abrir link da vaga -->
-              <a href="{{ job.job_url }}" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl border border-slate-700 transition flex items-center gap-1.5 font-semibold shadow-sm">
+              <a href="{{ job.job_url }}" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 sm:px-3 py-2.5 sm:py-2 rounded-xl border border-slate-700 transition flex items-center justify-center gap-1.5 font-semibold shadow-sm active:scale-95 text-center">
                 <i class="fa-solid fa-arrow-up-right-from-square text-indigo-400"></i> Abrir Vaga
               </a>
 
@@ -325,13 +338,13 @@
                   <i class="fa-solid fa-circle-check text-emerald-400"></i> Candidatado
                 </span>
               {% else %}
-                <button onclick="markAsApplied('{{ job.id }}')" title="Marca como candidatada e remove da fila pendente" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl font-bold transition shadow-sm flex items-center gap-1.5 active:scale-95">
+                <button onclick="markAsApplied('{{ job.id }}')" title="Marca como candidatada e remove da fila pendente" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-2 sm:px-3.5 py-2.5 sm:py-2 rounded-xl font-bold transition shadow-sm flex items-center justify-center gap-1.5 active:scale-95 text-center">
                   <i class="fa-solid fa-check-double"></i> Já Me Candidatei
                 </button>
               {% endif %}
 
               <!-- Botão 3: Descartar / Limpar da Fila -->
-              <button onclick="markAsDiscarded('{{ job.id }}')" title="Descarta esta vaga (não faz sentido para mim)" class="text-xs bg-slate-800/80 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 px-3 py-2 rounded-xl border border-slate-700/80 hover:border-rose-800/60 transition flex items-center gap-1.5 active:scale-95">
+              <button onclick="markAsDiscarded('{{ job.id }}')" title="Descarta esta vaga (não faz sentido para mim)" class="text-xs bg-slate-800/80 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 px-2 sm:px-3 py-2.5 sm:py-2 rounded-xl border border-slate-700/80 hover:border-rose-800/60 transition flex items-center justify-center gap-1.5 active:scale-95 text-center">
                 <i class="fa-solid fa-ban"></i> Descartar
               </button>
             </div>
@@ -387,17 +400,19 @@
               <input type="file" id="copilot-file-input" accept="image/*" class="hidden" onchange="handleCopilotFileSelect(event)">
               
               <div id="dropzone-empty-state" class="flex flex-col items-center">
-                <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 group-hover:bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-3xl mb-4 transition">
-                  <i class="fa-solid fa-paste"></i>
+                <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 group-hover:bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl mb-3 transition">
+                  <i class="fa-solid fa-camera"></i>
                 </div>
-                <h3 class="text-base font-bold text-white mb-1">
-                  Pressione <kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700 text-indigo-300 font-mono text-xs">Ctrl + V</kbd> para colar o print aqui
+                <h3 class="text-sm sm:text-base font-bold text-white mb-1 text-center">
+                  <span class="hidden md:inline">Pressione <kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700 text-indigo-300 font-mono text-xs">Ctrl + V</kbd> para colar o print</span>
+                  <span class="md:hidden">Toque aqui para escolher o Print da pergunta</span>
                 </h3>
-                <p class="text-xs text-slate-400 max-w-sm mt-1">
-                  Ou clique para selecionar uma imagem salva do seu computador
+                <p class="text-xs text-slate-400 max-w-sm mt-1 text-center">
+                  <span class="hidden md:inline">Ou clique para selecionar uma imagem salva do computador</span>
+                  <span class="md:hidden">Tire um print no celular e envie direto da sua galeria</span>
                 </p>
-                <div class="mt-4 flex items-center gap-2 text-xs text-slate-400 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800">
-                  <i class="fa-solid fa-camera text-indigo-400"></i> Atalho Windows: <strong>Win + Shift + S</strong>
+                <div class="mt-3 flex items-center gap-2 text-xs text-indigo-300 bg-indigo-950/80 px-4 py-2.5 rounded-xl border border-indigo-800 font-bold active:scale-95 shadow-sm">
+                  <i class="fa-solid fa-images text-amber-400"></i> Escolher Print da Galeria
                 </div>
               </div>
 
@@ -891,8 +906,8 @@
     </div>
 
     <!-- MODAL: CRIAR NOVO USUÁRIO -->
-    <div id="modal-create-user" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative">
+    <div id="modal-create-user" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto safe-bottom">
         <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
           <h3 class="text-lg font-black text-white flex items-center gap-2">
             <i class="fa-solid fa-user-plus text-purple-400"></i> Criar Novo Perfil da Família
@@ -939,8 +954,8 @@
     </div>
 
     <!-- MODAL: EDITAR DADOS DO PERFIL -->
-    <div id="modal-edit-profile" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl relative">
+    <div id="modal-edit-profile" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto safe-bottom">
         <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
           <h3 class="text-lg font-black text-white flex items-center gap-2">
             <i class="fa-solid fa-user-pen text-indigo-400"></i> Editar Dados do Perfil
@@ -1002,14 +1017,24 @@
       ['vagas', 'copilot', 'regras', 'curriculo', 'sessoes', 'admin'].forEach(t => {
         const el = document.getElementById('content-' + t);
         const btn = document.getElementById('tab-' + t);
+        const mBtn = document.getElementById('mobile-tab-' + t);
+        
         if (t === tab) {
-          el.classList.remove('hidden');
-          btn.className = 'px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2 whitespace-nowrap';
+          if (el) el.classList.remove('hidden');
+          if (btn) btn.className = 'px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2 whitespace-nowrap';
+          if (mBtn) {
+            mBtn.className = 'flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-indigo-400 font-bold transition active:scale-95 bg-indigo-500/10';
+          }
         } else {
-          el.classList.add('hidden');
-          btn.className = 'px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap';
+          if (el) el.classList.add('hidden');
+          if (btn) btn.className = 'px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap';
+          if (mBtn) {
+            mBtn.className = 'flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-slate-400 transition active:scale-95';
+          }
         }
       });
+      // Rola suave para o topo ao trocar de aba no celular
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     async function triggerAction(endpoint, msg) {
@@ -2014,5 +2039,30 @@ async function changePassword() {
     }
 
   </script>
+
+  <!-- ================= BARRA DE NAVEGAÇÃO INFERIOR PARA CELULAR (MOBILE DOCKED NAV) ================= -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/90 py-1 px-1 flex justify-around items-center shadow-2xl safe-bottom">
+    <button onclick="switchTab('vagas')" id="mobile-tab-vagas" class="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-indigo-400 font-bold transition active:scale-95">
+      <i class="fa-solid fa-briefcase text-base mb-1"></i>
+      <span class="text-[10px]">Vagas</span>
+    </button>
+    <button onclick="switchTab('copilot')" id="mobile-tab-copilot" class="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-slate-400 transition active:scale-95">
+      <i class="fa-solid fa-wand-magic-sparkles text-base mb-1 text-amber-400"></i>
+      <span class="text-[10px]">Copiloto</span>
+    </button>
+    <button onclick="switchTab('admin')" id="mobile-tab-admin" class="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-slate-400 transition active:scale-95">
+      <i class="fa-solid fa-users-gear text-base mb-1 text-purple-400"></i>
+      <span class="text-[10px]">Família</span>
+    </button>
+    <button onclick="switchTab('curriculo')" id="mobile-tab-curriculo" class="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-slate-400 transition active:scale-95">
+      <i class="fa-solid fa-file-waveform text-base mb-1 text-indigo-400"></i>
+      <span class="text-[10px]">ATS</span>
+    </button>
+    <button onclick="switchTab('regras')" id="mobile-tab-regras" class="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-slate-400 transition active:scale-95">
+      <i class="fa-solid fa-sliders text-base mb-1 text-emerald-400"></i>
+      <span class="text-[10px]">Ajustes</span>
+    </button>
+  </nav>
+
 </body>
 </html>
