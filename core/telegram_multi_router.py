@@ -86,12 +86,13 @@ def list_all_bindings() -> Dict[str, str]:
     return data.get("user_to_chat", {})
 
 
-def route_job_to_user(job: Dict[str, Any]) -> str:
+def route_job_to_user(job: Dict[str, Any], profiles: Optional[List[Dict]] = None) -> str:
     """
     Analisa o título e a descrição da vaga e determina qual usuário/candidato
     tem o perfil com maior afinidade para esta oportunidade.
     """
-    profiles = list_profiles()
+    if profiles is None:
+        profiles = list_profiles()
     if not profiles:
         return "eduardo"
 
@@ -101,29 +102,42 @@ def route_job_to_user(job: Dict[str, Any]) -> str:
     full_text = f"{title} {keywords} {desc}"
 
     best_user = "eduardo"
-    best_score = -1
+    best_score = 0
 
     for p in profiles:
         u_id = p["id"]
         cargos = p.get("cargos_alvo") or p.get("target_roles") or []
         score = 0
         for cargo in cargos:
-            cargo_lower = cargo.lower()
+            cargo_lower = cargo.lower().strip()
+            if not cargo_lower:
+                continue
             # Match exato no título
             if cargo_lower in title:
-                score += 20
+                score += 30
             # Palavras individuais do cargo no título
             for part in cargo_lower.split():
                 if len(part) > 3 and part in title:
-                    score += 6
+                    score += 8
                 elif len(part) > 3 and part in full_text:
-                    score += 1
+                    score += 2
 
         if score > best_score:
             best_score = score
             best_user = u_id
 
-    # Se pontuou zero para todos os perfis, atribui ao perfil padrão eduardo
+    # Se não pontuou com nenhum cargo específico, verifica termos-chave do tipo de função
+    if best_score == 0:
+        admin_keywords = ["administrativo", "administrativa", "atendimento", "recepcionista", "auxiliar de escritório", "secretaria", "financeiro", "contas a pagar"]
+        if any(ak in title for ak in admin_keywords):
+            for p in profiles:
+                if p["id"] in ["rute", "vine"]:
+                    return p["id"]
+        ti_keywords = ["suporte", "redes", "infraestrutura", "windows server", "linux", "analista de ti", "helpdesk", "field service", "mikrotik", "cisco"]
+        if any(tk in title for tk in ti_keywords):
+            return "eduardo"
+        return "eduardo"
+
     return best_user
 
 

@@ -97,29 +97,59 @@ def init_db():
             FROM jobs
             WHERE status IN ('applied', 'success');
         """)
+
+        # Migração: Coluna target_user para isolamento estrito por perfil
+        try:
+            cursor.execute("ALTER TABLE jobs ADD COLUMN target_user TEXT DEFAULT 'eduardo';")
+        except Exception:
+            pass
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_target_user ON jobs(target_user);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_score ON jobs(match_score);")
+
+        # Atualiza vagas antigas sem target_user definido
+        try:
+            cursor.execute("SELECT id, title, description, keywords_found FROM jobs WHERE target_user IS NULL OR target_user = '';")
+            unrouted = cursor.fetchall()
+            if unrouted:
+                from core.profiles_manager import list_profiles
+                from core.telegram_multi_router import route_job_to_user
+                cached_profiles = list_profiles()
+                for r in unrouted:
+                    jid, jtitle, jdesc, jkw = r["id"], r["title"], r["description"], r["keywords_found"]
+                    assigned_u = route_job_to_user({"title": jtitle, "description": jdesc, "keywords_found": jkw}, cached_profiles)
+                    cursor.execute("UPDATE jobs SET target_user = ? WHERE id = ?", (assigned_u, jid))
+        except Exception as e:
+            print(f"[DB Migration ⚠️] Erro ao rotear vagas: {e}")
         
         conn.commit()
 
 
 def save_jobs(jobs_list: List[Dict[str, Any]]) -> int:
-    """Salva uma lista de vagas no banco ignorando duplicatas por URL."""
+    """Salva uma lista de vagas no banco ignorando duplicatas por URL e vinculando ao perfil apropriado."""
     if not jobs_list:
         return 0
         
     inserted_count = 0
+    from core.profiles_manager import list_profiles
+    from core.telegram_multi_router import route_job_to_user
+    cached_profiles = list_profiles()
+
     with get_connection() as conn:
         cursor = conn.cursor()
         for job in jobs_list:
             try:
+                if not job.get("target_user"):
+                    job["target_user"] = route_job_to_user(job, cached_profiles)
                 cursor.execute("""
                     INSERT OR IGNORE INTO jobs (
                         id, site, title, company, location, job_type,
                         is_remote, job_url, description, date_posted,
-                        salary_min, salary_max
+                        salary_min, salary_max, target_user
                     ) VALUES (
                         :id, :site, :title, :company, :location, :job_type,
                         :is_remote, :job_url, :description, :date_posted,
-                        :salary_min, :salary_max
+                        :salary_min, :salary_max, :target_user
                     )
                 """, job)
                 if cursor.rowcount > 0:

@@ -414,28 +414,31 @@
         </div>
       </div>
 
-      <!-- Métricas Clicáveis -->
+      <!-- Métricas Clicáveis (Isoladas por Perfil com Total Global Informativo) -->
       <div class="grid grid-cols-3 gap-2 sm:gap-4">
-        <div onclick="filterFromMetric('all')" title="Clique para ver todas as vagas do radar" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-slate-500 transition group select-none">
+        <div onclick="filterFromMetric('all')" title="Clique para ver oportunidades do seu perfil" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-slate-500 transition group select-none">
           <div class="flex items-center justify-between">
-            <p class="text-xs text-slate-400 group-hover:text-slate-200 font-semibold uppercase tracking-wider">Oportunidades no Radar</p>
+            <p class="text-xs text-slate-400 group-hover:text-slate-200 font-semibold uppercase tracking-wider">Radar (@{{ current_user or 'eduardo' }})</p>
             <i class="fa-solid fa-radar text-xs text-slate-500 group-hover:text-indigo-400 transition"></i>
           </div>
-          <p class="text-3xl font-black text-white mt-1">{{ total_jobs }}</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <p id="stat-total-jobs" class="text-3xl font-black text-white">{{ total_jobs }}</p>
+            <span class="text-[11px] text-slate-500 font-normal">({{ global_total_jobs }} no total)</span>
+          </div>
         </div>
         <div onclick="filterFromMetric('approved')" title="Clique para filtrar apenas vagas aprovadas (≥ 75%)" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-emerald-500 transition group select-none border border-emerald-500/20">
           <div class="flex items-center justify-between">
-            <p class="text-xs text-emerald-400 group-hover:text-emerald-300 font-semibold uppercase tracking-wider">Aprovadas (Km, Salário & ATS ≥ 75%)</p>
+            <p class="text-xs text-emerald-400 group-hover:text-emerald-300 font-semibold uppercase tracking-wider">Aprovadas no Perfil</p>
             <i class="fa-solid fa-circle-check text-xs text-emerald-500"></i>
           </div>
-          <p class="text-3xl font-black text-emerald-400 mt-1">{{ high_match_jobs }}</p>
+          <p id="stat-approved-jobs" class="text-3xl font-black text-emerald-400 mt-1">{{ high_match_jobs }}</p>
         </div>
         <div onclick="filterFromMetric('applied')" title="Clique para filtrar candidaturas realizadas" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-indigo-500 transition group select-none border border-indigo-500/20">
           <div class="flex items-center justify-between">
-            <p class="text-xs text-indigo-400 group-hover:text-indigo-300 font-semibold uppercase tracking-wider">Candidaturas Realizadas</p>
+            <p class="text-xs text-indigo-400 group-hover:text-indigo-300 font-semibold uppercase tracking-wider">Minhas Candidaturas</p>
             <i class="fa-solid fa-paper-plane text-xs text-indigo-500"></i>
           </div>
-          <p class="text-3xl font-black text-indigo-400 mt-1">{{ applied_jobs }}</p>
+          <p id="stat-applied-jobs" class="text-3xl font-black text-indigo-400 mt-1">{{ applied_jobs }}</p>
         </div>
       </div>
 
@@ -528,6 +531,30 @@
         </div>
       </div>
 
+      <!-- Banner Informativo para Novos Perfis Cadastrados -->
+      {% if user_total_jobs == 0 %}
+      <div id="new-user-welcome-card" class="p-6 sm:p-8 bg-gradient-to-br from-indigo-950/40 via-slate-900 to-indigo-950/30 border border-indigo-500/30 rounded-3xl text-center space-y-3 shadow-xl">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl mx-auto shadow-inner">
+          <i class="fa-solid fa-sparkles text-amber-300"></i>
+        </div>
+        <h3 class="text-lg font-bold text-white">Nenhuma oportunidade capturada ainda para @{{ current_user }}</h3>
+        <p class="text-xs text-slate-300 max-w-xl mx-auto">
+          Este perfil é recente e ainda não tem currículo ou buscas da sua área. As vagas de outros perfis ficam separadas para não misturar profissões diferentes. Siga os passos abaixo para ativar seu radar:
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <button onclick="switchTab('curriculo')" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-indigo-600/25 active:scale-95">
+            <i class="fa-solid fa-file-arrow-up"></i> 1. Enviar Currículo (PDF)
+          </button>
+          <button onclick="switchTab('regras')" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition flex items-center gap-2 active:scale-95">
+            <i class="fa-solid fa-sliders"></i> 2. Definir Cargos e Cidade
+          </button>
+          <button onclick="searchLiveCargo()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-emerald-600/25 active:scale-95">
+            <i class="fa-solid fa-satellite-dish"></i> 3. Buscar Minhas Vagas
+          </button>
+        </div>
+      </div>
+      {% endif %}
+
       <!-- Tabela / Cards de Vagas -->
       <div class="glass-card rounded-3xl overflow-hidden shadow-2xl divide-y divide-slate-800/60">
         <div class="p-5 flex justify-between items-center bg-slate-950/40">
@@ -535,6 +562,13 @@
             <i class="fa-solid fa-list-check text-indigo-400"></i> Vagas Triadas
           </h2>
           <span class="text-xs text-slate-400">Filtro de Localização + Cérebro ATS</span>
+        </div>
+
+        <!-- Estado vazio quando o filtro não retorna vagas -->
+        <div id="no-jobs-filtered-state" class="hidden p-12 text-center text-slate-400 space-y-2">
+          <i class="fa-solid fa-filter text-3xl text-slate-600"></i>
+          <p class="text-sm font-bold text-white">Nenhuma vaga encontrada para esta seleção</p>
+          <p class="text-xs text-slate-500">Selecione <strong>"🌐 Todos os Perfis / Geral"</strong> no filtro acima para ver todas as vagas do sistema.</p>
         </div>
 
         {% if jobs %}
@@ -2500,6 +2534,16 @@ async function changePassword() {
 
       const countEl = document.getElementById('filtered-count');
       if (countEl) countEl.textContent = visibleCount;
+
+      const noJobsEl = document.getElementById('no-jobs-filtered-state');
+      if (noJobsEl) {
+        if (visibleCount === 0) {
+          noJobsEl.classList.remove('hidden');
+        } else {
+          noJobsEl.classList.add('hidden');
+        }
+      }
+
       updatePillsVisual(scoreFilter);
     }
 

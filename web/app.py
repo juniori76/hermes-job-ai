@@ -102,7 +102,7 @@ async def logout(request: Request):
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard_home(request: Request):
-    """Página principal do Dashboard (Protegida por Login)."""
+    """Página principal do Dashboard (Protegida por Login e Isolada por Perfil)."""
     user = get_current_user(request)
     if not user:
         return RedirectResponse(url="/login", status_code=302)
@@ -114,30 +114,41 @@ async def dashboard_home(request: Request):
     with get_connection() as conn:
         cursor = conn.cursor()
         
-        # Métricas gerais
+        # Métricas isoladas para o perfil do usuário logado
+        cursor.execute("SELECT COUNT(*) FROM jobs WHERE target_user = ?;", (user,))
+        user_total_jobs = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM jobs WHERE target_user = ? AND match_score >= 75;", (user,))
+        user_high_match_jobs = cursor.fetchone()[0]
+
+        # Métricas globais informativas do banco
         cursor.execute("SELECT COUNT(*) FROM jobs;")
-        total_jobs = cursor.fetchone()[0]
+        global_total_jobs = cursor.fetchone()[0]
         
         cursor.execute("SELECT COUNT(*) FROM jobs WHERE match_score >= 75;")
-        high_match_jobs = cursor.fetchone()[0]
+        global_high_match_jobs = cursor.fetchone()[0]
         
-        cursor.execute("SELECT COUNT(*) FROM applications WHERE status = 'success';")
-        applied_jobs = cursor.fetchone()[0]
-        
-        # Top 50 melhores vagas ranqueadas
+        user_apps = get_user_applications(user_id=user or "eduardo")
+
+        # Top 500 melhores vagas ranqueadas priorizando o perfil atual
         cursor.execute("""
             SELECT id, site, title, company, location, is_remote, job_url, 
-                   match_score, match_reasons, keywords_found, status, date_posted, created_at
+                   match_score, match_reasons, keywords_found, status, date_posted, created_at, target_user
             FROM jobs
             ORDER BY 
+                CASE WHEN target_user = ? THEN 0 ELSE 1 END,
                 CASE WHEN match_score IS NULL THEN 0 ELSE match_score END DESC,
                 created_at DESC
             LIMIT 500;
-        """)
+        """, (user,))
         raw_jobs = [dict(row) for row in cursor.fetchall()]
 
-        # Processa tags de antiguidade da vaga e roteamento de perfil
+        # Carrega os perfis em memória UMA ÚNICA VEZ
+        from core.profiles_manager import list_profiles
         from core.telegram_multi_router import route_job_to_user
+        cached_profiles = list_profiles()
+
+        # Processa tags de antiguidade da vaga
         jobs = []
         for j in raw_jobs:
             age = calculate_job_age_hours(j.get("date_posted") or j.get("created_at", ""))
@@ -146,18 +157,19 @@ async def dashboard_home(request: Request):
             j["badge_text"] = badge_text
             j["badge_css"] = badge_css
             j["badge_icon"] = badge_icon
-            j["target_user"] = route_job_to_user(j)
+            if not j.get("target_user"):
+                j["target_user"] = route_job_to_user(j, cached_profiles)
             jobs.append(j)
-
-        user_apps = get_user_applications(user_id=user or "eduardo")
 
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
-            "total_jobs": total_jobs,
-            "high_match_jobs": high_match_jobs,
-            "applied_jobs": len(user_apps) if user_apps else applied_jobs,
+            "total_jobs": user_total_jobs,
+            "high_match_jobs": user_high_match_jobs,
+            "global_total_jobs": global_total_jobs,
+            "user_total_jobs": user_total_jobs,
+            "applied_jobs": len(user_apps),
             "jobs": jobs,
             "applications": user_apps,
             "applications_count": len(user_apps),
@@ -165,7 +177,7 @@ async def dashboard_home(request: Request):
             "resume_exists": resume_exists,
             "gemini_key_set": gemini_key_set,
             "current_user": user,
-            "all_profiles": list_profiles()
+            "all_profiles": cached_profiles
         }
     )
 
@@ -199,13 +211,16 @@ async def save_api_key(request: Request):
 
 
 @app.post("/api/settings/upload-resume")
-async def upload_resume(file: UploadFile = File(...)):
-    """Faz upload do currículo em PDF pelo painel."""
-    os.makedirs(DATA_DIR, exist_ok=True)
-    target_path = os.path.join(DATA_DIR, "curriculo.pdf")
-    with open(target_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    return {"success": True, "filename": file.filename}
+async def upload_resume(request: Request, file: UploadFile = File(...)):
+    """Faz upload do currículo em PDF pelo painel para o perfil do usuário logado."""
+    user = get_current_user(request) or "eduardo"
+    content = await file.read()
+    save_resume_file(user, content)
+    if user == "eduardo":
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(os.path.join(DATA_DIR, "curriculo.pdf"), "wb") as buffer:
+            buffer.write(content)
+    return {"success": True, "filename": file.filename, "user": user}
 
 
 @app.post("/api/scan")
@@ -272,11 +287,10 @@ async def trigger_profile_sync(request: Request):
 
 @app.post("/api/settings/profile")
 async def update_profile_settings(request: Request):
-    """Salva todas as regras de modalidade, km, salário e cargos atualizadas pelo painel."""
+    """Salva todas as regras de modalidade, km, salário e cargos atualizadas pelo painel para o perfil logado."""
+    user = get_current_user(request) or "eduardo"
     data = await request.json()
-    profile_path = os.path.join(CONFIG_PATH, "candidate_profile.yaml")
-    
-    current = load_profile()
+    current = get_profile(user)
     candidato = current.setdefault("candidato", {})
     prefs = current.setdefault("preferencias_de_vaga", {})
     modalidades = prefs.setdefault("modalidades", {})
@@ -317,8 +331,10 @@ async def update_profile_settings(request: Request):
     if "pretensao_pj" in data:
         financeiro["pretensao_pj"] = float(data["pretensao_pj"])
 
-    with open(profile_path, "w", encoding="utf-8") as f:
-        yaml.safe_dump(current, f, allow_unicode=True)
+    save_profile(user, current)
+    if user == "eduardo":
+        with open(os.path.join(CONFIG_DIR, "candidate_profile.yaml"), "w", encoding="utf-8") as f:
+            yaml.safe_dump(current, f, allow_unicode=True)
 
     return {"success": True, "message": "Políticas de vaga, km e salários salvas com sucesso!"}
 
@@ -515,112 +531,6 @@ async def trigger_assisted_login(background_tasks: BackgroundTasks, request: Req
     background_tasks.add_task(launch_assisted_login, platform)
     return {"success": True, "message": f"Navegador aberto para {platform}. Acesse o noVNC para efetuar o login."}
 
-
-
-@app.post("/api/scan")
-async def trigger_scan(background_tasks: BackgroundTasks, request: Request = None):
-    """Dispara uma varredura de novas vagas em segundo plano."""
-    background_tasks.add_task(scan_jobs)
-    return {"message": "Varredura iniciada em segundo plano no LinkedIn, Gupy, Indeed e Glassdoor!"}
-
-
-@app.post("/api/resume/upload")
-async def upload_resume(file: UploadFile = File(...), request: Request = None):
-    """Recebe upload de novo curriculo.pdf, salva em data/curriculo.pdf e sincroniza perfil e analise ATS."""
-    if not get_current_user(request):
-        return JSONResponse({"error": "Não autorizado"}, status_code=401)
-    
-    if not file.filename.lower().endswith(".pdf"):
-        return JSONResponse({"error": "Apenas arquivos PDF (.pdf) são aceitos."}, status_code=400)
-        
-    resume_path = os.path.join(BASE_DIR, "data", "curriculo.pdf")
-    os.makedirs(os.path.dirname(resume_path), exist_ok=True)
-    
-    content = await file.read()
-    with open(resume_path, "wb") as f:
-        f.write(content)
-        
-    # Reanalisa com IA e sincroniza perfil
-    analysis = analyze_resume_with_ai()
-    sync = sync_profile_from_resume_ai()
-    
-    return {
-        "success": True,
-        "message": f"Currículo '{file.filename}' recebido e analisado pela IA com sucesso!",
-        "analysis": analysis,
-        "sync": sync
-    }
-
-
-@app.get("/api/resume/analysis")
-async def get_resume_analysis(request: Request):
-    """Retorna o diagnóstico de IA do currículo atual."""
-    if not get_current_user(request):
-        return JSONResponse({"error": "Não autorizado"}, status_code=401)
-    analysis = analyze_resume_with_ai()
-    return analysis
-
-
-@app.post("/api/profile/sync")
-async def trigger_profile_sync(request: Request):
-    """Dispara a extração profunda de dados do PDF para o candidate_profile.yaml."""
-    if not get_current_user(request):
-        return JSONResponse({"error": "Não autorizado"}, status_code=401)
-    result = sync_profile_from_resume_ai()
-    return result
-
-
-@app.post("/api/settings/profile")
-async def update_profile_settings(request: Request):
-    """Salva todas as regras de modalidade, km, salário e cargos atualizadas pelo painel."""
-    data = await request.json()
-    profile_path = os.path.join(CONFIG_PATH, "candidate_profile.yaml")
-    
-    current = load_profile()
-    candidato = current.setdefault("candidato", {})
-    prefs = current.setdefault("preferencias_de_vaga", {})
-    modalidades = prefs.setdefault("modalidades", {})
-    financeiro = prefs.setdefault("financeiro", {})
-
-    # Atualiza dados pessoais e residência
-    if "cidade" in data: candidato["cidade"] = data["cidade"].strip()
-    if "estado" in data: candidato["estado"] = data["estado"].strip()
-    if "bairro" in data: candidato["bairro"] = data["bairro"].strip()
-    if "endereco_residencia" in data: candidato["endereco_residencia"] = data["endereco_residencia"].strip()
-
-    # Atualiza cargos alvo
-    if "cargos" in data:
-        cargos = [c.strip() for c in data["cargos"].split(",") if c.strip()]
-        prefs["cargos_alvo"] = cargos
-
-    # Atualiza regras de Km e Modalidades
-    if "remoto_aceitar" in data:
-        modalidades.setdefault("remoto", {})["aceitar"] = bool(data["remoto_aceitar"])
-    if "hibrido_aceitar" in data:
-        modalidades.setdefault("hibrido", {})["aceitar"] = bool(data["hibrido_aceitar"])
-    if "hibrido_km" in data:
-        modalidades.setdefault("hibrido", {})["distancia_maxima_km"] = float(data["hibrido_km"])
-    if "hibrido_dias" in data:
-        modalidades.setdefault("hibrido", {})["dias_presenciais_maximo"] = int(data["hibrido_dias"])
-    if "presencial_aceitar" in data:
-        modalidades.setdefault("presencial", {})["aceitar"] = bool(data["presencial_aceitar"])
-    if "presencial_km" in data:
-        modalidades.setdefault("presencial", {})["distancia_maxima_km"] = float(data["presencial_km"])
-
-    # Atualiza regras financeiras
-    if "salario_min_clt" in data:
-        financeiro["salario_minimo_clt"] = float(data["salario_min_clt"])
-    if "pretensao_clt" in data:
-        financeiro["pretensao_clt"] = float(data["pretensao_clt"])
-    if "salario_min_pj" in data:
-        financeiro["salario_minimo_pj"] = float(data["salario_min_pj"])
-    if "pretensao_pj" in data:
-        financeiro["pretensao_pj"] = float(data["pretensao_pj"])
-
-    with open(profile_path, "w", encoding="utf-8") as f:
-        yaml.safe_dump(current, f, allow_unicode=True)
-
-    return {"success": True, "message": "Políticas de vaga, km e salários salvas com sucesso!"}
 
 
 # =========================================================
