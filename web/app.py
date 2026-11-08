@@ -211,16 +211,21 @@ async def save_api_key(request: Request):
 
 
 @app.post("/api/settings/upload-resume")
-async def upload_resume(request: Request, file: UploadFile = File(...)):
-    """Faz upload do currículo em PDF pelo painel para o perfil do usuário logado."""
+async def upload_resume_settings(request: Request, file: UploadFile = File(...), username: Optional[str] = Form(None)):
+    """Faz upload do curriculo em PDF pelo painel para o perfil do usuario indicado ou logado."""
     user = get_current_user(request) or "eduardo"
+    target_user = (username or user).strip().lower()
     content = await file.read()
-    save_resume_file(user, content)
-    if user == "eduardo":
+    save_resume_file(target_user, content)
+    if target_user == "eduardo":
         os.makedirs(DATA_DIR, exist_ok=True)
         with open(os.path.join(DATA_DIR, "curriculo.pdf"), "wb") as buffer:
             buffer.write(content)
-    return {"success": True, "filename": file.filename, "user": user}
+    try:
+        sync_profile_from_resume_ai(target_user)
+    except Exception as e:
+        print(f"[Upload] Erro ao sincronizar perfil de {target_user}: {e}")
+    return {"success": True, "filename": file.filename, "user": target_user}
 
 
 @app.post("/api/scan")
@@ -240,48 +245,57 @@ async def trigger_scan(background_tasks: BackgroundTasks, request: Request = Non
 
 
 @app.post("/api/resume/upload")
-async def upload_resume(file: UploadFile = File(...), request: Request = None):
-    """Recebe upload de novo curriculo.pdf, salva em data/curriculo.pdf e sincroniza perfil e analise ATS."""
-    if not get_current_user(request):
-        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+async def upload_resume(request: Request, file: UploadFile = File(...), username: Optional[str] = Form(None)):
+    """Recebe upload de novo curriculo PDF para o perfil ativo e sincroniza com a IA."""
+    user = get_current_user(request) or "eduardo"
+    target_user = (username or user).strip().lower()
     
     if not file.filename.lower().endswith(".pdf"):
-        return JSONResponse({"error": "Apenas arquivos PDF (.pdf) são aceitos."}, status_code=400)
+        return JSONResponse({"error": "Apenas arquivos PDF (.pdf) sao aceitos."}, status_code=400)
         
-    resume_path = os.path.join(BASE_DIR, "data", "curriculo.pdf")
-    os.makedirs(os.path.dirname(resume_path), exist_ok=True)
-    
     content = await file.read()
-    with open(resume_path, "wb") as f:
-        f.write(content)
+    save_resume_file(target_user, content)
+    if target_user == "eduardo":
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(os.path.join(DATA_DIR, "curriculo.pdf"), "wb") as buffer:
+            buffer.write(content)
         
-    # Reanalisa com IA e sincroniza perfil
-    analysis = analyze_resume_with_ai()
-    sync = sync_profile_from_resume_ai()
+    # Reanalisa com IA e sincroniza perfil do usuario
+    analysis = analyze_resume_with_ai(target_user)
+    sync = sync_profile_from_resume_ai(target_user)
     
     return {
         "success": True,
-        "message": f"Currículo '{file.filename}' recebido e analisado pela IA com sucesso!",
+        "message": f"Curriculo de @{target_user} ('{file.filename}') recebido e analisado pela IA com sucesso!",
         "analysis": analysis,
-        "sync": sync
+        "sync": sync,
+        "user": target_user
     }
 
 
 @app.get("/api/resume/analysis")
-async def get_resume_analysis(request: Request):
-    """Retorna o diagnóstico de IA do currículo atual."""
-    if not get_current_user(request):
-        return JSONResponse({"error": "Não autorizado"}, status_code=401)
-    analysis = analyze_resume_with_ai()
+async def get_resume_analysis(request: Request, username: Optional[str] = None):
+    """Retorna o diagnostico de IA do curriculo do usuario logado."""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Nao autorizado"}, status_code=401)
+    target_user = (username or user).strip().lower()
+    analysis = analyze_resume_with_ai(target_user)
     return analysis
 
 
 @app.post("/api/profile/sync")
 async def trigger_profile_sync(request: Request):
-    """Dispara a extração profunda de dados do PDF para o candidate_profile.yaml."""
-    if not get_current_user(request):
-        return JSONResponse({"error": "Não autorizado"}, status_code=401)
-    result = sync_profile_from_resume_ai()
+    """Dispara a extracao profunda de dados do PDF para o perfil do usuario logado."""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Nao autorizado"}, status_code=401)
+    try:
+        body = await request.json()
+        target_user = body.get("username", user).strip().lower()
+    except Exception:
+        target_user = user
+    result = sync_profile_from_resume_ai(target_user)
     return result
 
 

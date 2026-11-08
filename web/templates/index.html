@@ -260,7 +260,15 @@
     }
 
     function confirmMasterResumeUpload() {
-      if (confirm("ATENÇÃO: Você está prestes a atualizar o currículo permanente do seu perfil que o robô Hermes usa no radar 24/7.\n\nSe você deseja apenas otimizar um currículo para uma vaga específica, use a ferramenta 'Otimizador ATS' acima.\n\nDeseja continuar atualizando o perfil mestre?")) {
+      const currentUser = '{{ current_user or "eduardo" }}';
+      const displayName = '{{ profile.candidato.nome_completo or (current_user.capitalize() if current_user else "Eduardo") }}';
+      const hasResume = {{ 'true' if resume_exists else 'false' }};
+
+      const promptMsg = hasResume
+        ? `Você está prestes a substituir o currículo permanente de ${displayName} (@${currentUser}) que o robô Hermes lê para monitorar vagas.\n\nDeseja selecionar um novo arquivo PDF para substituir?`
+        : `Deseja selecionar o arquivo PDF do currículo de ${displayName} (@${currentUser}) para cadastrar no sistema?`;
+
+      if (confirm(promptMsg)) {
         document.getElementById('resume-file-input').click();
       }
     }
@@ -1138,8 +1146,9 @@
             <!-- Campo Cargo Alvo (Modo Geral) -->
             <div id="opt-input-general-box">
               <label class="block text-xs font-bold text-slate-400 mb-1">Cargo Alvo Principal:</label>
-              <input type="text" id="optimizer-target-role" placeholder="Ex: Analista de Suporte e Infraestrutura Pleno / Redes" 
-                     value="Analista de Suporte e Infraestrutura Pleno / Redes"
+              <input type="text" id="optimizer-target-role" 
+                     placeholder="Ex: {{ (profile.preferencias_de_vaga.cargos_alvo[0] if (profile and profile.preferencias_de_vaga and profile.preferencias_de_vaga.cargos_alvo) else (profile.cargos_alvo[0] if (profile and profile.cargos_alvo) else 'Assistente Administrativo')) }}" 
+                     value="{{ (profile.preferencias_de_vaga.cargos_alvo[0] if (profile and profile.preferencias_de_vaga and profile.preferencias_de_vaga.cargos_alvo) else (profile.cargos_alvo[0] if (profile and profile.cargos_alvo) else 'Assistente Administrativo')) }}"
                      class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-3 text-xs text-white outline-none">
             </div>
 
@@ -1252,57 +1261,78 @@
 
         <!-- Dropzone de Upload de Currículo Mestre -->
         <div onclick="confirmMasterResumeUpload()" 
-             class="mb-6 bg-slate-950/40 p-4 rounded-2xl border border-dashed border-slate-700 hover:border-indigo-500/60 transition cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-3 group">
+             class="mb-6 bg-slate-950/40 p-4 rounded-2xl border border-dashed {% if resume_exists %}border-slate-700 hover:border-indigo-500/60{% else %}border-amber-500/40 hover:border-amber-400 bg-amber-500/5{% endif %} transition cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-3 group">
           <div class="flex items-center gap-3">
-            <div class="bg-indigo-500/10 group-hover:bg-indigo-500/20 text-indigo-400 p-3 rounded-xl transition">
-              <i class="fa-solid fa-file-pdf text-2xl"></i>
+            <div class="{% if resume_exists %}bg-indigo-500/10 text-indigo-400{% else %}bg-amber-500/10 text-amber-400{% endif %} p-3 rounded-xl transition">
+              <i class="fa-solid {% if resume_exists %}fa-file-pdf{% else %}fa-file-circle-plus{% endif %} text-2xl"></i>
             </div>
             <div>
-              <p class="text-xs font-bold text-white">Currículo Mestre Ativo no Servidor: <span class="text-indigo-400 font-mono">curriculo.pdf</span></p>
-              <p class="text-[11px] text-slate-400">Clique para atualizar o PDF mestre do seu perfil (usado para o cálculo do radar)</p>
+              {% if resume_exists %}
+                <p class="text-xs font-bold text-white">Currículo Mestre Ativo no Servidor: <span class="text-emerald-400 font-mono">curriculo_{{ current_user }}.pdf</span> (Cadastrado)</p>
+                <p class="text-[11px] text-slate-400">Clique para substituir o PDF permanente de {{ profile.candidato.nome_completo or current_user.capitalize() }} (@{{ current_user }})</p>
+              {% else %}
+                <p class="text-xs font-bold text-amber-300">Nenhum currículo cadastrado para @{{ current_user }} ainda</p>
+                <p class="text-[11px] text-slate-300">Clique para selecionar e enviar o arquivo PDF do currículo de {{ profile.candidato.nome_completo or current_user.capitalize() }}</p>
+              {% endif %}
             </div>
           </div>
-          <span class="text-xs bg-slate-800 group-hover:bg-indigo-600 text-slate-200 group-hover:text-white px-3.5 py-2 rounded-xl border border-slate-700 group-hover:border-indigo-500 transition font-bold whitespace-nowrap">
-            <i class="fa-solid fa-upload mr-1"></i> Substituir Mestre
+          <span class="text-xs {% if resume_exists %}bg-slate-800 group-hover:bg-indigo-600 text-slate-200 group-hover:text-white border-slate-700{% else %}bg-amber-600 hover:bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-600/20{% endif %} px-3.5 py-2 rounded-xl border transition font-bold whitespace-nowrap">
+            <i class="fa-solid {% if resume_exists %}fa-upload{% else %}fa-cloud-arrow-up{% endif %} mr-1"></i> 
+            {% if resume_exists %}Substituir Mestre{% else %}Enviar PDF de {{ current_user.capitalize() }}{% endif %}
           </span>
         </div>
 
         <div id="resume-loading" class="hidden p-12 text-center text-indigo-400 animate-pulse text-sm">
           <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i><br>
-          Extraindo texto do PDF e consultando o Gemini Flash...
+          Extraindo dados do PDF com Gemini Flash para @{{ current_user }}...
         </div>
 
+        {% if resume_exists %}
         <div id="resume-report" class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
               <p class="text-xs text-slate-400">Candidato</p>
-              <p class="text-base font-bold text-white">{{ profile.candidato.nome_completo or "EDUARDO O. S. JUNIOR" }}</p>
+              <p class="text-base font-bold text-white">{{ profile.candidato.nome_completo or current_user.capitalize() }}</p>
             </div>
             <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
-              <p class="text-xs text-slate-400">Nível Identificado</p>
-              <p class="text-base font-bold text-indigo-400">Analista de Suporte Pleno</p>
+              <p class="text-xs text-slate-400">Cargo / Área Principal</p>
+              <p class="text-base font-bold text-indigo-400">{{ (profile.preferencias_de_vaga.cargos_alvo[0] if (profile and profile.preferencias_de_vaga and profile.preferencias_de_vaga.cargos_alvo) else (profile.cargos_alvo[0] if (profile and profile.cargos_alvo) else "Profissional")) }}</p>
             </div>
             <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
-              <p class="text-xs text-emerald-400">Score de Força ATS</p>
-              <p class="text-2xl font-black text-emerald-400">90%</p>
+              <p class="text-xs text-emerald-400">Status ATS</p>
+              <p class="text-2xl font-black text-emerald-400">Ativo</p>
             </div>
           </div>
           
           <div class="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 space-y-3">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-400">Competências Técnicas Principais Detectadas</h4>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-400">Competências Principais Detectadas</h4>
             <div class="flex flex-wrap gap-1.5">
-              {% for kw in profile.competencias_chave %}
-                <span class="text-xs bg-indigo-950/60 text-indigo-200 border border-indigo-500/30 px-2.5 py-1 rounded-lg font-mono">{{ kw }}</span>
-              {% endfor %}
+              {% if profile.competencias_chave %}
+                {% for kw in profile.competencias_chave %}
+                  <span class="text-xs bg-indigo-950/60 text-indigo-200 border border-indigo-500/30 px-2.5 py-1 rounded-lg font-mono">{{ kw }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="text-xs text-slate-500 italic">Competências extraídas do currículo de @{{ current_user }}.</span>
+              {% endif %}
             </div>
 
-            <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 pt-2">Pontos Fortes Identificados</h4>
-            <p class="text-xs text-slate-300 leading-relaxed">Excelente estrutura para leitura por sistemas ATS. Apresenta forte densidade de palavras-chave técnicas em redes (MikroTik, Fortinet), virtualização (VMware, Proxmox), diretório (Active Directory) e monitoramento (Zabbix, Grafana), com certificações oficiais comprovadas.</p>
-            
-            <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 pt-2">O que você pode melhorar no currículo para ter 100% de conversão</h4>
-            <p class="text-xs text-slate-300 leading-relaxed">Adicionar métricas numéricas nos resultados alcançados (ex: <i>"redução de 30% no tempo de atendimento de chamados N2"</i> ou <i>"disponibilidade de 99.8% nos servidores Windows gerenciados"</i>).</p>
+            {% if profile.candidato.resumo_profissional %}
+              <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 pt-2">Resumo Profissional Cadastrado</h4>
+              <p class="text-xs text-slate-300 leading-relaxed">{{ profile.candidato.resumo_profissional }}</p>
+            {% endif %}
           </div>
         </div>
+        {% else %}
+        <div id="no-resume-alert" class="p-8 text-center bg-slate-950/50 rounded-2xl border border-dashed border-slate-800 space-y-2">
+          <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl mx-auto">
+            <i class="fa-solid fa-file-circle-exclamation"></i>
+          </div>
+          <h4 class="text-sm font-bold text-white">Nenhum currículo cadastrado para @{{ current_user }}</h4>
+          <p class="text-xs text-slate-400 max-w-md mx-auto">
+            Envie o arquivo PDF do currículo de <strong>{{ profile.candidato.nome_completo or current_user.capitalize() }}</strong> clicando no botão acima para que a inteligência artificial leia as experiências e ative as buscas automáticas de vagas!
+          </p>
+        </div>
+        {% endif %}
       </div>
     </div>
 
@@ -1732,36 +1762,72 @@
       }
     }
 
-    async function uploadResumeFile() {
-      const file = document.getElementById('resume-file-input').files[0];
-      if (!file) return alert('Selecione um PDF.');
+    async function uploadResumeFile(input) {
+      const file = (input && input.files && input.files[0]) || document.getElementById('resume-file-input').files[0];
+      if (!file) return;
+      const currentUser = '{{ current_user or "eduardo" }}';
+      const displayName = '{{ profile.candidato.nome_completo or (current_user.capitalize() if current_user else "Eduardo") }}';
+
+      if (!confirm(`Confirmar o envio do arquivo "${file.name}" como o currículo oficial de ${displayName} (@${currentUser})?`)) {
+        if (input) input.value = '';
+        return;
+      }
+
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch('/api/settings/upload-resume', { method: 'POST', body: fd });
-      if (res.ok) { 
-        alert('Currículo enviado com sucesso! Clique em "Sincronizar Perfil com IA" para ler os novos dados.'); 
-        window.location.reload(); 
+      fd.append('username', currentUser);
+
+      const loadingEl = document.getElementById('resume-loading');
+      if (loadingEl) loadingEl.classList.remove('hidden');
+
+      try {
+        const res = await fetch('/api/settings/upload-resume', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (res.ok && data.success) {
+          alert(`✅ Currículo de @${currentUser} gravado com sucesso! A IA já sincronizou os dados do perfil.`);
+          window.location.reload();
+        } else {
+          alert('Erro ao enviar currículo: ' + (data.error || 'Falha no upload'));
+        }
+      } catch (err) {
+        if (loadingEl) loadingEl.classList.add('hidden');
+        alert('Erro de conexão ao enviar currículo: ' + err.message);
       }
     }
 
     async function triggerProfileSync() {
-      if (!confirm('Deseja que a IA extraia todas as competências e experiências do PDF e atualize seu perfil?')) return;
-      document.getElementById('resume-loading').classList.remove('hidden');
-      document.getElementById('resume-report').classList.add('hidden');
+      const currentUser = '{{ current_user or "eduardo" }}';
+      const hasResume = {{ 'true' if resume_exists else 'false' }};
+      if (!hasResume) {
+        alert(`Nenhum currículo em PDF foi enviado ainda para @${currentUser}. Por favor, clique em "Enviar PDF" primeiro.`);
+        return;
+      }
+      if (!confirm(`Deseja que a IA leia o currículo de @${currentUser} e extraia todas as competências e histórico para atualizar o perfil?`)) return;
+      
+      const loadingEl = document.getElementById('resume-loading');
+      const reportEl = document.getElementById('resume-report');
+      if (loadingEl) loadingEl.classList.remove('hidden');
+      if (reportEl) reportEl.classList.add('hidden');
+
       try {
-        const res = await fetch('/api/profile/sync', { method: 'POST' });
+        const res = await fetch('/api/profile/sync', { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: currentUser })
+        });
         const data = await res.json();
-        document.getElementById('resume-loading').classList.add('hidden');
-        document.getElementById('resume-report').classList.remove('hidden');
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (reportEl) reportEl.classList.remove('hidden');
         if (data.status === 'success') {
-          alert('Perfil sincronizado com sucesso a partir do seu PDF!');
+          alert('✅ Perfil sincronizado com sucesso com a IA!');
           window.location.reload();
         } else {
-          alert('Aviso: ' + data.message);
+          alert('Aviso: ' + (data.message || 'Não foi possível sincronizar'));
         }
       } catch (e) {
-        document.getElementById('resume-loading').classList.add('hidden');
-        document.getElementById('resume-report').classList.remove('hidden');
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (reportEl) reportEl.classList.remove('hidden');
         alert('Erro ao sincronizar perfil: ' + e);
       }
     }
