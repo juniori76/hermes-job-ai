@@ -6,7 +6,7 @@ Gera textos persuasivos sob medida para candidaturas na Gupy, LinkedIn e Indeed.
 
 from typing import Dict, Any, Optional
 from core import llm
-from core.database import get_db_connection
+from core.database import get_connection
 from core.profiles_manager import get_profile
 from core.resume_analyzer import extract_text_from_pdf
 
@@ -19,7 +19,7 @@ def generate_cover_letter(job_id: int, username: str = "eduardo", tone: str = "p
     # 1. Busca a vaga no banco de dados
     job = None
     try:
-        conn = get_db_connection()
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM jobs WHERE id = ?", (job_id,))
         row = cursor.fetchone()
