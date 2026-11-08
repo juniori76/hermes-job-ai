@@ -109,6 +109,9 @@
       }
       setTimeout(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (tab === 'historico') {
+        loadApplicationsHistory();
+      }
       }, 100);
     }
 
@@ -215,6 +218,10 @@
       <nav class="hidden md:flex items-center gap-1 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 text-sm overflow-x-auto max-w-full">
         <button onclick="switchTab('vagas')" id="tab-vagas" class="px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-briefcase"></i> Central de Vagas
+        </button>
+        <button onclick="switchTab('historico')" id="tab-historico" class="px-4 py-2 rounded-xl font-medium text-emerald-300 hover:text-white transition flex items-center gap-2 whitespace-nowrap bg-emerald-500/10 border border-emerald-500/20">
+          <i class="fa-solid fa-list-check text-emerald-400"></i> Minhas Candidaturas
+          <span id="nav-applied-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">{{ applications_count or applied_jobs or 0 }}</span>
         </button>
         <button onclick="switchTab('copilot')" id="tab-copilot" class="px-4 py-2 rounded-xl font-medium text-amber-300 hover:text-white transition flex items-center gap-2 whitespace-nowrap bg-amber-500/10 border border-amber-500/20">
           <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Copiloto IA (Ctrl+V)
@@ -541,6 +548,72 @@
             Nenhuma oportunidade capturada ainda. Clique em "Varrer Vagas" para buscar no LinkedIn, Gupy e Indeed!
           </div>
         {% endif %}
+      </div>
+    </div>
+
+    
+    <!-- ================= ABA: HISTÓRICO & PIPELINE DE CANDIDATURAS ================= -->
+    <div id="content-historico" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
+        
+        <!-- Header da Aba -->
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-2">
+              <i class="fa-solid fa-chart-line"></i> Pipeline Ativo de Carreira
+            </div>
+            <h2 class="text-2xl font-black text-white flex items-center gap-3">
+              Minhas Candidaturas & Histórico
+            </h2>
+            <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl">
+              Gerencie cada processo seletivo em andamento: marque vagas alcançadas em <strong>Entrevista</strong>, registre notas e descarte vagas onde você <strong>não foi classificado</strong>.
+            </p>
+          </div>
+
+          <!-- Filtro por Usuário no Histórico -->
+          <div class="flex items-center gap-2 bg-slate-950/80 border border-slate-800 p-2 rounded-2xl w-full sm:w-auto">
+            <span class="text-xs font-bold text-slate-400 pl-2">Candidato:</span>
+            <select id="filter-app-user" onchange="loadApplicationsHistory()" class="bg-slate-900 border border-slate-700 text-emerald-300 font-bold rounded-xl px-3 py-1.5 text-xs outline-none focus:border-emerald-500 flex-1 sm:flex-initial">
+              <option value="{{ current_user or 'eduardo' }}" selected>👤 Minhas Candidaturas (@{{ current_user or 'eduardo' }})</option>
+              <option value="all">🌐 Todos os Candidatos</option>
+              {% if all_profiles %}
+                {% for p in all_profiles %}
+                  {% if p.id != current_user %}
+                    <option value="{{ p.id }}">👤 Candidaturas de @{{ p.id }} ({{ p.display_name }})</option>
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Filtros do Funil (Pills) -->
+        <div class="flex flex-wrap items-center gap-2 pt-4 pb-2">
+          <button onclick="setAppFilterStage('all')" id="btn-stage-all" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition bg-emerald-600 border-emerald-500 text-white shadow-md active:scale-95">
+            📋 Todas (<span id="cnt-stage-all">0</span>)
+          </button>
+          <button onclick="setAppFilterStage('em_processo')" id="btn-stage-em_processo" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition bg-slate-900 border-slate-800 text-amber-300 hover:border-amber-500/40 active:scale-95">
+            ⏳ Aguardando Retorno (<span id="cnt-stage-em_processo">0</span>)
+          </button>
+          <button onclick="setAppFilterStage('entrevista')" id="btn-stage-entrevista" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition bg-slate-900 border-slate-800 text-emerald-300 hover:border-emerald-500/40 active:scale-95">
+            🎯 Entrevista Agendada (<span id="cnt-stage-entrevista">0</span>)
+          </button>
+          <button onclick="setAppFilterStage('aprovado')" id="btn-stage-aprovado" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition bg-slate-900 border-slate-800 text-purple-300 hover:border-purple-500/40 active:scale-95">
+            🏆 Proposta / Aprovado (<span id="cnt-stage-aprovado">0</span>)
+          </button>
+          <button onclick="setAppFilterStage('desclassificado')" id="btn-stage-desclassificado" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition bg-slate-900 border-slate-800 text-rose-300 hover:border-rose-500/40 active:scale-95">
+            ❌ Não Classificado (<span id="cnt-stage-desclassificado">0</span>)
+          </button>
+        </div>
+
+        <!-- Lista de Cards de Candidaturas -->
+        <div id="applications-list-container" class="space-y-3 pt-3">
+          <div class="text-center py-12 text-slate-500">
+            <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+            <p class="text-sm">Carregando histórico de candidaturas...</p>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -1363,7 +1436,7 @@
 
   <script>
     function switchTab(tab) {
-      ['vagas', 'copilot', 'regras', 'curriculo', 'sessoes', 'admin'].forEach(t => {
+      ['vagas', 'historico', 'copilot', 'regras', 'curriculo', 'sessoes', 'admin'].forEach(t => {
         const el = document.getElementById('content-' + t);
         const btn = document.getElementById('tab-' + t);
         const mBtn = document.getElementById('mobile-tab-' + t);
@@ -1384,6 +1457,9 @@
       });
       // Rola suave para o topo ao trocar de aba no celular
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (tab === 'historico') {
+        loadApplicationsHistory();
+      }
     }
 
     async function triggerAction(endpoint, msg) {
@@ -2310,36 +2386,285 @@ async function changePassword() {
     // ==========================================
     // AÇÕES RÁPIDAS DE FILA (CANDIDATAR & DESCARTAR)
     // ==========================================
+    // ==========================================
+    // PIPELINE & HISTÓRICO DE CANDIDATURAS
+    // ==========================================
+    let cachedApplications = [];
+    let currentAppFilterStage = 'all';
+
     async function markAsApplied(jobId) {
       const card = document.querySelector(`[data-job-id="${jobId}"]`);
+      const btn = event?.currentTarget || (card ? card.querySelector('button[onclick*="markAsApplied"]') : null);
+      
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Salvando...';
+      }
+
+      // Retry mechanism (2 tentativas) em caso de reinicialização transitória
+      let attempts = 0;
+      let success = false;
+      let lastErr = null;
+
+      while (attempts < 2 && !success) {
+        attempts++;
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+          const res = await fetch(`/api/jobs/${jobId}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              status: 'applied', 
+              user_id: document.getElementById('filter-user')?.value || '{{ current_user or "eduardo" }}' 
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          if (res.ok) {
+            success = true;
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${res.status}`);
+          }
+        } catch (err) {
+          lastErr = err;
+          if (attempts < 2) await new Promise(r => setTimeout(r, 900));
+        }
+      }
+
+      if (success) {
+        if (card) {
+          card.setAttribute('data-status', 'applied');
+          card.style.transition = 'all 0.35s ease';
+          card.style.opacity = '0';
+          card.style.transform = 'translateX(40px)';
+          setTimeout(() => {
+            card.remove();
+            applyAllJobFilters();
+          }, 350);
+        }
+        showToast('✅ Candidatura registrada e enviada para o seu Histórico!', 'green');
+
+        // Incrementa contadores visuais
+        const metricEls = document.querySelectorAll('.glass-card p.text-3xl');
+        if (metricEls && metricEls.length >= 3) {
+          const cur = parseInt(metricEls[2].textContent.trim()) || 0;
+          metricEls[2].textContent = cur + 1;
+        }
+
+        const navBadge = document.getElementById('nav-applied-badge');
+        if (navBadge) navBadge.textContent = (parseInt(navBadge.textContent) || 0) + 1;
+
+        const mobileBadge = document.getElementById('mobile-applied-badge');
+        if (mobileBadge) mobileBadge.textContent = (parseInt(mobileBadge.textContent) || 0) + 1;
+
+      } else {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Já Me Candidatei';
+        }
+        alert("Não foi possível salvar agora: " + (lastErr?.message || "Tente novamente"));
+      }
+    }
+
+    async function loadApplicationsHistory() {
+      const container = document.getElementById('applications-list-container');
+      const user = document.getElementById('filter-app-user')?.value || '{{ current_user or "eduardo" }}';
+      
       try {
-        const res = await fetch(`/api/jobs/${jobId}/status`, {
+        const res = await fetch(`/api/applications?user_id=${user}`);
+        const data = await res.json();
+        cachedApplications = data.applications || [];
+        updatePipelineStageCounters(cachedApplications);
+        renderApplicationsList();
+      } catch (err) {
+        container.innerHTML = `<div class="text-center text-rose-400 py-8">Erro ao carregar candidaturas: ${err.message}</div>`;
+      }
+    }
+
+    function updatePipelineStageCounters(apps) {
+      const stages = { all: apps.length, em_processo: 0, entrevista: 0, aprovado: 0, desclassificado: 0 };
+      apps.forEach(a => {
+        if (stages[a.stage] !== undefined) stages[a.stage]++;
+      });
+      Object.keys(stages).forEach(k => {
+        const el = document.getElementById('cnt-stage-' + k);
+        if (el) el.textContent = stages[k];
+      });
+    }
+
+    function setAppFilterStage(stage) {
+      currentAppFilterStage = stage;
+      ['all', 'em_processo', 'entrevista', 'aprovado', 'desclassificado'].forEach(s => {
+        const btn = document.getElementById('btn-stage-' + s);
+        if (!btn) return;
+        if (s === stage) {
+          btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold border transition bg-emerald-600 border-emerald-500 text-white shadow-md active:scale-95';
+        } else {
+          btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold border transition bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 active:scale-95';
+        }
+      });
+      renderApplicationsList();
+    }
+
+    function renderApplicationsList() {
+      const container = document.getElementById('applications-list-container');
+      const filtered = cachedApplications.filter(a => {
+        if (currentAppFilterStage === 'all') return true;
+        return a.stage === currentAppFilterStage;
+      });
+
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="text-center py-16 text-slate-500 bg-slate-950/40 border border-slate-800/60 rounded-2xl p-6">
+            <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-600"></i>
+            <h4 class="text-sm font-bold text-slate-300">Nenhuma candidatura nesta etapa</h4>
+            <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+              Quando você clicar em <strong>"Já Me Candidatei"</strong> na Central de Vagas, as oportunidades serão salvas aqui automaticamente para você acompanhar o retorno das empresas!
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(app => {
+        let badgeHtml = '';
+        if (app.stage === 'entrevista') {
+          badgeHtml = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5"><i class="fa-solid fa-award text-emerald-400"></i> Entrevista Agendada</span>';
+        } else if (app.stage === 'aprovado') {
+          badgeHtml = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1.5"><i class="fa-solid fa-trophy text-amber-400"></i> Aprovado / Proposta</span>';
+        } else if (app.stage === 'desclassificado') {
+          badgeHtml = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-300 border border-rose-500/30 flex items-center gap-1.5"><i class="fa-solid fa-xmark text-rose-400"></i> Não Classificado</span>';
+        } else {
+          badgeHtml = '<span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1.5"><i class="fa-solid fa-clock text-amber-400"></i> Em Análise / Aguardando</span>';
+        }
+
+        const dateStr = app.applied_at ? new Date(app.applied_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recente';
+
+        return `
+          <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 sm:p-5 hover:border-slate-700/80 transition shadow-lg">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">${app.job_title}</h3>
+                  ${badgeHtml}
+                  ${app.match_score ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800/80">${app.match_score}% Match</span>` : ''}
+                </div>
+                <div class="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                  <span class="font-semibold text-slate-300"><i class="fa-regular fa-building text-slate-500"></i> ${app.company}</span>
+                  <span>•</span>
+                  <span class="uppercase font-mono text-[11px] bg-slate-900 px-2 py-0.5 rounded border border-slate-800 text-slate-300">${app.site || 'Vaga'}</span>
+                  <span>•</span>
+                  <span><i class="fa-regular fa-calendar-check text-slate-500"></i> Candidatado em: <strong class="text-slate-300">${dateStr}</strong></span>
+                </div>
+                ${app.notes ? `<div class="mt-2 text-xs bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl text-amber-200/90 flex items-start gap-2"><i class="fa-solid fa-note-sticky text-amber-400 mt-0.5"></i> <span>${app.notes}</span></div>` : ''}
+              </div>
+
+              <!-- Ações Rápidas do Funil -->
+              <div class="flex flex-wrap items-center gap-2 pt-2 md:pt-0 w-full md:w-auto justify-end border-t md:border-t-0 border-slate-800/60">
+                ${app.job_url ? `
+                  <a href="${app.job_url}" target="_blank" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-200 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrow-up-right-from-square text-indigo-400"></i> Ver Vaga
+                  </a>
+                ` : ''}
+
+                <!-- Botão: Convocado para Entrevista -->
+                <button onclick="changeAppStage(${app.id}, 'entrevista')" title="Alcançado! Avancei para a etapa de entrevista" class="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
+                  <i class="fa-solid fa-award"></i> Entrevista
+                </button>
+
+                <!-- Botão: Desclassificado (Matar a vaga) -->
+                <button onclick="changeAppStage(${app.id}, 'desclassificado')" title="Não fui selecionado / Encerrar processo desta vaga" class="px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
+                  <i class="fa-solid fa-xmark"></i> Não Classificado
+                </button>
+
+                <!-- Botão: Aprovado / Proposta -->
+                <button onclick="changeAppStage(${app.id}, 'aprovado')" title="Consegui proposta / Aprovado!" class="px-3 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
+                  <i class="fa-solid fa-trophy text-amber-400"></i> Proposta
+                </button>
+
+                <!-- Botão: Anotações -->
+                <button onclick="addAppNotes(${app.id}, '${(app.notes || '').replace(/'/g, "\'")}')" title="Anotar retorno ou observação" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-amber-300 text-xs transition">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+
+                <!-- Botão: Excluir do Histórico -->
+                <button onclick="deleteAppEntry(${app.id})" title="Remover do histórico" class="p-2 rounded-xl bg-slate-900 hover:bg-rose-950/40 border border-slate-800 text-slate-500 hover:text-rose-400 text-xs transition">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function changeAppStage(appId, stage) {
+      try {
+        const res = await fetch(`/api/applications/${appId}/stage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'applied' })
+          body: JSON.stringify({ stage: stage })
         });
-        if (res.ok) {
-          if (card) {
-            card.setAttribute('data-status', 'applied');
-            card.style.transition = 'all 0.35s ease';
-            card.style.opacity = '0';
-            card.style.transform = 'translateX(40px)';
-            setTimeout(() => {
-              card.remove();
-              applyAllJobFilters();
-            }, 350);
-          }
-          showToast('✅ Vaga marcada como candidatada com sucesso!', 'green');
-
-          // Incrementa contador de candidaturas realizadas
-          const metricEls = document.querySelectorAll('.glass-card p.text-3xl');
-          if (metricEls && metricEls.length >= 3) {
-            const cur = parseInt(metricEls[2].textContent.trim()) || 0;
-            metricEls[2].textContent = cur + 1;
+        const data = await res.json();
+        if (data.success) {
+          const item = cachedApplications.find(a => a.id === appId);
+          if (item) item.stage = stage;
+          updatePipelineStageCounters(cachedApplications);
+          renderApplicationsList();
+          
+          if (stage === 'entrevista') {
+            showToast('🎯 Sensacional! Vaga avançada para Entrevista!', 'green');
+          } else if (stage === 'desclassificado') {
+            showToast('❌ Vaga marcada como não classificada (arquivada).', 'rose');
+          } else if (stage === 'aprovado') {
+            showToast('🏆 Parabéns pela conquista da proposta profissional!', 'purple');
           }
         }
       } catch (err) {
-        alert("Erro ao registrar candidatura: " + err.message);
+        alert("Erro ao atualizar status: " + err.message);
+      }
+    }
+
+    async function addAppNotes(appId, curNotes) {
+      const notes = prompt("Adicione uma anotação sobre o andamento desta vaga (ex: Entrevista agendada p/ quinta às 14h, fiz teste de lógica):", curNotes || "");
+      if (notes === null) return;
+
+      try {
+        const item = cachedApplications.find(a => a.id === appId);
+        const stage = item ? item.stage : 'em_processo';
+        const res = await fetch(`/api/applications/${appId}/stage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stage: stage, notes: notes })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (item) item.notes = notes;
+          renderApplicationsList();
+          showToast('📝 Anotação salva com sucesso!', 'slate');
+        }
+      } catch (err) {
+        alert("Erro ao salvar anotação: " + err.message);
+      }
+    }
+
+    async function deleteAppEntry(appId) {
+      if (!confirm("Deseja realmente remover esta vaga do seu histórico de candidaturas?")) return;
+      try {
+        const res = await fetch(`/api/applications/${appId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          cachedApplications = cachedApplications.filter(a => a.id !== appId);
+          updatePipelineStageCounters(cachedApplications);
+          renderApplicationsList();
+          showToast('🗑️ Vaga removida do histórico.', 'slate');
+        }
+      } catch (err) {
+        alert("Erro ao remover: " + err.message);
       }
     }
 
@@ -2398,6 +2723,11 @@ async function changePassword() {
     <button onclick="switchTab('vagas')" id="mobile-tab-vagas" class="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-indigo-400 font-bold transition active:scale-95">
       <i class="fa-solid fa-briefcase text-base mb-1"></i>
       <span class="text-[10px]">Vagas</span>
+    </button>
+    <button onclick="switchTab('historico')" id="mobile-tab-historico" class="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-emerald-400 transition active:scale-95 relative">
+      <i class="fa-solid fa-list-check text-base mb-1 text-emerald-400"></i>
+      <span class="text-[10px]">Candidaturas</span>
+      <span id="mobile-applied-badge" class="absolute top-1 right-2 w-4 h-4 rounded-full bg-emerald-500 text-slate-950 font-black text-[9px] flex items-center justify-center">{{ applications_count or applied_jobs or 0 }}</span>
     </button>
     <button onclick="switchTab('copilot')" id="mobile-tab-copilot" class="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-slate-400 transition active:scale-95">
       <i class="fa-solid fa-wand-magic-sparkles text-base mb-1 text-amber-400"></i>

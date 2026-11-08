@@ -12,7 +12,10 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from core.database import get_connection
+from core.database import (
+    get_connection, init_db, record_application,
+    get_user_applications, update_application_stage, delete_application
+)
 from core import config
 from core.radar import scan_jobs, load_profile, CONFIG_PATH
 from core.ats_brain import run_ats_evaluation_batch
@@ -40,6 +43,7 @@ app = FastAPI(title="Hermes Job AI Dashboard")
 
 @app.on_event("startup")
 async def startup_event():
+    init_db()
     start_telegram_listener()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -145,14 +149,18 @@ async def dashboard_home(request: Request):
             j["target_user"] = route_job_to_user(j)
             jobs.append(j)
 
+        user_apps = get_user_applications(user_id=user or "eduardo")
+
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "total_jobs": total_jobs,
             "high_match_jobs": high_match_jobs,
-            "applied_jobs": applied_jobs,
+            "applied_jobs": len(user_apps) if user_apps else applied_jobs,
             "jobs": jobs,
+            "applications": user_apps,
+            "applications_count": len(user_apps),
             "profile": profile,
             "resume_exists": resume_exists,
             "gemini_key_set": gemini_key_set,
@@ -324,16 +332,21 @@ async def trigger_evaluation(background_tasks: BackgroundTasks):
 
 @app.post("/api/jobs/{job_id}/status")
 async def update_status(job_id: str, request: Request):
-    """Altera o status de uma vaga (ex: 'approved', 'rejected')."""
+    """Altera o status de uma vaga (ex: 'approved', 'rejected', 'applied')."""
     data = await request.json()
     new_status = data.get("status")
+    current_u = get_current_user(request) or data.get("user_id") or "eduardo"
     
-    with get_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("UPDATE jobs SET status = ? WHERE id = ?", (new_status, job_id))
-        conn.commit()
-        
-    return {"success": True, "job_id": job_id, "new_status": new_status}
+    if new_status == "applied":
+        res = record_application(job_id=job_id, user_id=current_u, stage="em_processo")
+        return {"success": True, "job_id": job_id, "new_status": "applied", "application": res}
+    else:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE jobs SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (new_status, job_id))
+            conn.commit()
+            
+        return {"success": True, "job_id": job_id, "new_status": new_status}
 
 
 # =========================================================
@@ -610,125 +623,34 @@ async def update_profile_settings(request: Request):
     return {"success": True, "message": "Políticas de vaga, km e salários salvas com sucesso!"}
 
 
-@app.post("/api/evaluate")
-async def trigger_evaluation(background_tasks: BackgroundTasks):
-    """Dispara a avaliação de compatibilidade ATS com Gemini Flash em segundo plano."""
-    background_tasks.add_task(run_ats_evaluation_batch)
-    return {"message": "Avaliação de ATS iniciada com Gemini Flash!"}
-
-
-@app.post("/api/jobs/{job_id}/status")
-async def update_status(job_id: str, request: Request):
-    """Altera o status de uma vaga (ex: 'approved', 'rejected')."""
-    data = await request.json()
-    new_status = data.get("status")
-    
-    with get_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("UPDATE jobs SET status = ? WHERE id = ?", (new_status, job_id))
-        conn.commit()
-        
-    return {"success": True, "job_id": job_id, "new_status": new_status}
-
-
 # =========================================================
-# FASE 4 — Modos de Operação, Telegram, Aprovação Rápida
+# FASE 5 — Gestão & Histórico de Candidaturas (Funil)
 # =========================================================
 
-@app.get("/api/settings")
-async def get_settings(request: Request):
-    """Retorna as configurações atuais (modo de operação, Telegram)."""
-    if not get_current_user(request):
-        return JSONResponse({"error": "Não autorizado"}, status_code=401)
-    s = load_settings()
-    # Mascara o token do bot para segurança — retorna só se está configurado
-    return {
-        "operation_mode": s.get("operation_mode", "review"),
-        "telegram_enabled": s.get("telegram_enabled", False),
-        "telegram_chat_id": s.get("telegram_chat_id", ""),
-        "telegram_token_set": bool(s.get("telegram_bot_token")),
-        "smart_score_threshold": s.get("smart_score_threshold", 80),
-        "auto_score_threshold": s.get("auto_score_threshold", 85),
-        "auto_apply_daily_limit": s.get("auto_apply_daily_limit", 10),
-    }
+@app.get("/api/applications")
+async def api_get_applications(request: Request, user_id: Optional[str] = None, stage: Optional[str] = None):
+    """Retorna o histórico de candidaturas no pipeline com filtros."""
+    current_u = get_current_user(request) or "eduardo"
+    target_user = user_id if user_id else current_u
+    apps = get_user_applications(user_id=target_user, stage=stage)
+    return {"success": True, "applications": apps}
 
 
-@app.post("/api/settings/mode")
-async def set_mode(request: Request):
-    """Altera o modo de operação: review | smart | auto."""
-    if not get_current_user(request):
-        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+@app.post("/api/applications/{app_id}/stage")
+async def api_update_app_stage(app_id: int, request: Request):
+    """Atualiza o estágio da candidatura (ex: em_processo, entrevista, desclassificado, aprovado)."""
     data = await request.json()
-    mode = data.get("mode", "review")
-    try:
-        set_operation_mode(mode)
-        return {"success": True, "operation_mode": mode}
-    except ValueError as e:
-        return JSONResponse({"error": str(e)}, status_code=400)
+    stage = data.get("stage", "em_processo")
+    notes = data.get("notes")
+    success = update_application_stage(app_id=app_id, stage=stage, notes=notes)
+    return {"success": success, "app_id": app_id, "stage": stage}
 
 
-@app.post("/api/settings/telegram")
-async def save_telegram(request: Request):
-    """Salva ou atualiza as credenciais do Telegram."""
-    if not get_current_user(request):
-        return JSONResponse({"error": "Não autorizado"}, status_code=401)
-    data = await request.json()
-    token = data.get("token", "").strip()
-    chat_id = data.get("chat_id", "").strip()
-    update_telegram_config(token, chat_id)
-    return {"success": True, "telegram_enabled": bool(token and chat_id)}
-
-
-@app.post("/api/settings/telegram/test")
-async def test_telegram(request: Request):
-    """Envia uma mensagem de teste para verificar as credenciais do Telegram."""
-    if not get_current_user(request):
-        return JSONResponse({"error": "Não autorizado"}, status_code=401)
-    data = await request.json()
-    token = data.get("token", "").strip()
-    chat_id = data.get("chat_id", "").strip()
-    if not token or not chat_id:
-        return JSONResponse({"error": "Token e Chat ID são obrigatórios para o teste."}, status_code=400)
-    result = test_telegram_connection(token, chat_id)
-    return result
-
-
-@app.post("/api/settings/thresholds")
-async def save_thresholds(request: Request):
-    """Salva os thresholds de score para alertas e candidatura automática."""
-    if not get_current_user(request):
-        return JSONResponse({"error": "Não autorizado"}, status_code=401)
-    data = await request.json()
-    s = load_settings()
-    if "smart_score_threshold" in data:
-        s["smart_score_threshold"] = int(data["smart_score_threshold"])
-    if "auto_score_threshold" in data:
-        s["auto_score_threshold"] = int(data["auto_score_threshold"])
-    if "auto_apply_daily_limit" in data:
-        s["auto_apply_daily_limit"] = int(data["auto_apply_daily_limit"])
-    save_settings(s)
-    return {"success": True}
-
-
-@app.get("/api/jobs/{job_id}/approve_redirect")
-async def approve_redirect(job_id: str):
-    """Aprovação rápida via link do Telegram — redireciona para o painel após aprovar."""
-    with get_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("UPDATE jobs SET status = 'approved' WHERE id = ?", (job_id,))
-        conn.commit()
-    # Redireciona para o painel principal
-    return RedirectResponse(url="/?tab=vagas&highlight=" + job_id, status_code=302)
-
-
-@app.get("/api/jobs/{job_id}/reject_redirect")
-async def reject_redirect(job_id: str):
-    """Rejeição rápida via link do Telegram — redireciona para o painel após rejeitar."""
-    with get_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("UPDATE jobs SET status = 'rejected' WHERE id = ?", (job_id,))
-        conn.commit()
-    return RedirectResponse(url="/?tab=vagas", status_code=302)
+@app.delete("/api/applications/{app_id}")
+async def api_delete_application(app_id: int):
+    """Remove uma candidatura do histórico."""
+    success = delete_application(app_id)
+    return {"success": success}
 
 
 @app.get("/api/profiles")
