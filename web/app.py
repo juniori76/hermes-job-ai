@@ -850,15 +850,33 @@ async def api_admin_delete_user(request: Request):
 
 @app.post("/api/jobs/clean-rejected")
 async def api_clean_rejected_jobs(request: Request):
-    """Limpa do banco todas as vagas descartadas/rejeitadas pela IA para despoluir a visualizacao."""
+    """Limpa do banco todas as vagas descartadas/rejeitadas pela IA e presenciais fora de SP."""
     if not get_current_user(request):
         return JSONResponse({"error": "Nao autorizado"}, status_code=401)
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM jobs WHERE status in ('reject', 'rejected')")
-        deleted = cursor.rowcount
+        del1 = cursor.rowcount
+        cursor.execute("""
+            DELETE FROM jobs 
+            WHERE status NOT IN ('applied', 'success') AND is_remote = 0 AND (
+                location LIKE '% - PI%' OR location LIKE '%, PI%' OR location LIKE '%Teresina%' OR
+                location LIKE '% - BA%' OR location LIKE '%, BA%' OR location LIKE '%Salvador%' OR
+                location LIKE '% - CE%' OR location LIKE '%, CE%' OR location LIKE '%Fortaleza%' OR
+                location LIKE '% - PE%' OR location LIKE '%, PE%' OR location LIKE '%Recife%' OR
+                location LIKE '% - RJ%' OR location LIKE '%, RJ%' OR
+                location LIKE '% - MG%' OR location LIKE '%, MG%' OR
+                location LIKE '% - PR%' OR location LIKE '%, PR%' OR
+                location LIKE '% - RS%' OR location LIKE '%, RS%' OR
+                location LIKE '% - SC%' OR location LIKE '%, SC%' OR
+                location LIKE '% - GO%' OR location LIKE '%, GO%' OR
+                location LIKE '% - DF%' OR location LIKE '%, DF%' OR location LIKE '%Brasília%'
+            )
+        """)
+        del2 = cursor.rowcount
         conn.commit()
-    return {"success": True, "message": f"{deleted} vagas rejeitadas foram removidas do banco."}
+    total_deleted = del1 + del2
+    return {"success": True, "message": f"{total_deleted} vagas descartadas ou fora da região foram removidas com sucesso."}
 
 
 @app.post("/api/resume/optimize")

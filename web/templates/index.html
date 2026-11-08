@@ -363,6 +363,9 @@
             <span class="text-xs text-slate-400 font-medium whitespace-nowrap">
               Exibindo <span id="filtered-count" class="text-white font-bold">{{ jobs|length }}</span> de <span class="text-indigo-400 font-bold">{{ total_jobs }}</span> vagas
             </span>
+            <button onclick="applyAllJobFilters()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap shadow-md shadow-indigo-600/30 active:scale-95">
+              <i class="fa-solid fa-filter"></i> Aplicar Filtros
+            </button>
             <button onclick="resetJobFilters()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl border border-slate-700 transition flex items-center gap-1.5 whitespace-nowrap">
               <i class="fa-solid fa-filter-circle-xmark"></i> Limpar Filtros
             </button>
@@ -380,8 +383,8 @@
               <option value="all">🌐 Todos os Perfis / Geral</option>
               {% if all_profiles %}
                 {% for p in all_profiles %}
-                  {% if p.id != current_user %}
-                    <option value="{{ p.id }}">👤 Vagas de @{{ p.id }} ({{ p.display_name }})</option>
+                  {% if p.id != current_user and p.id != 'esposa' %}
+                    <option value="{{ p.id }}">👤 Vagas de @{{ p.id }} ({{ p.display_name or p.name or p.id }})</option>
                   {% endif %}
                 {% endfor %}
               {% endif %}
@@ -575,8 +578,8 @@
               <option value="all">🌐 Todos os Candidatos</option>
               {% if all_profiles %}
                 {% for p in all_profiles %}
-                  {% if p.id != current_user %}
-                    <option value="{{ p.id }}">👤 Candidaturas de @{{ p.id }} ({{ p.display_name }})</option>
+                  {% if p.id != current_user and p.id != 'esposa' %}
+                    <option value="{{ p.id }}">👤 Candidaturas de @{{ p.id }} ({{ p.display_name or p.name or p.id }})</option>
                   {% endif %}
                 {% endfor %}
               {% endif %}
@@ -584,8 +587,48 @@
           </div>
         </div>
 
+        <!-- Resumo Estatístico do Funil de Candidaturas -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 pb-2">
+          <div class="bg-slate-950/70 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center text-lg font-black shrink-0 border border-slate-700">
+              <i class="fa-solid fa-paper-plane text-slate-300"></i>
+            </div>
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Total Enviadas</span>
+              <span id="stat-total-apps" class="text-xl font-black text-white">0</span>
+            </div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg font-black shrink-0 border border-amber-500/25">
+              <i class="fa-solid fa-hourglass-half text-amber-400"></i>
+            </div>
+            <div>
+              <span class="text-[10px] font-bold text-amber-400 block uppercase tracking-wider">Em Análise</span>
+              <span id="stat-em-processo-apps" class="text-xl font-black text-amber-300">0</span>
+            </div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg font-black shrink-0 border border-emerald-500/25">
+              <i class="fa-solid fa-bullseye text-emerald-400"></i>
+            </div>
+            <div>
+              <span class="text-[10px] font-bold text-emerald-400 block uppercase tracking-wider">Entrevistas</span>
+              <span id="stat-entrevistas-apps" class="text-xl font-black text-emerald-300">0</span>
+            </div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-lg font-black shrink-0 border border-purple-500/25">
+              <i class="fa-solid fa-trophy text-amber-400"></i>
+            </div>
+            <div>
+              <span class="text-[10px] font-bold text-purple-300 block uppercase tracking-wider">Propostas</span>
+              <span id="stat-aprovadas-apps" class="text-xl font-black text-purple-300">0</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Filtros do Funil (Pills) -->
-        <div class="flex flex-wrap items-center gap-2 pt-4 pb-2">
+        <div class="flex flex-wrap items-center gap-2 pt-2 pb-2">
           <button onclick="setAppFilterStage('all')" id="btn-stage-all" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition bg-emerald-600 border-emerald-500 text-white shadow-md active:scale-95">
             📋 Todas (<span id="cnt-stage-all">0</span>)
           </button>
@@ -1784,7 +1827,7 @@ async function changePassword() {
     }
 
     // Carrega settings ao iniciar a página
-    document.addEventListener('DOMContentLoaded', () => { loadCurrentSettings(); });
+    document.addEventListener('DOMContentLoaded', () => { loadCurrentSettings(); applyAllJobFilters(); });
 
     async function checkAuthStatusNow() {
       const elIn = document.getElementById('status-linkedin');
@@ -2248,6 +2291,7 @@ async function changePassword() {
     // ==========================================
     function applyAllJobFilters() {
       const search = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
+      const filterUser = document.getElementById('filter-user')?.value || '{{ current_user or "eduardo" }}';
       const scoreFilter = document.getElementById('filter-score')?.value || 'approved';
       const recencyFilter = document.getElementById('filter-recency')?.value || 'all';
       const modalityFilter = document.getElementById('filter-modality')?.value || 'all';
@@ -2493,6 +2537,14 @@ async function changePassword() {
         const el = document.getElementById('cnt-stage-' + k);
         if (el) el.textContent = stages[k];
       });
+      const tTot = document.getElementById('stat-total-apps');
+      if (tTot) tTot.textContent = stages.all;
+      const tProc = document.getElementById('stat-em-processo-apps');
+      if (tProc) tProc.textContent = stages.em_processo;
+      const tEnt = document.getElementById('stat-entrevistas-apps');
+      if (tEnt) tEnt.textContent = stages.entrevista;
+      const tApr = document.getElementById('stat-aprovadas-apps');
+      if (tApr) tApr.textContent = stages.aprovado;
     }
 
     function setAppFilterStage(stage) {

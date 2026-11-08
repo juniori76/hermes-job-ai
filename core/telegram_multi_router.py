@@ -105,17 +105,17 @@ def route_job_to_user(job: Dict[str, Any]) -> str:
 
     for p in profiles:
         u_id = p["id"]
-        cargos = p.get("cargos_alvo", [])
+        cargos = p.get("cargos_alvo") or p.get("target_roles") or []
         score = 0
         for cargo in cargos:
             cargo_lower = cargo.lower()
             # Match exato no título
             if cargo_lower in title:
-                score += 15
+                score += 20
             # Palavras individuais do cargo no título
             for part in cargo_lower.split():
                 if len(part) > 3 and part in title:
-                    score += 5
+                    score += 6
                 elif len(part) > 3 and part in full_text:
                     score += 1
 
@@ -123,6 +123,7 @@ def route_job_to_user(job: Dict[str, Any]) -> str:
             best_score = score
             best_user = u_id
 
+    # Se pontuou zero para todos os perfis, atribui ao perfil padrão eduardo
     return best_user
 
 

@@ -16,6 +16,42 @@ from core.profiles_manager import get_profile, list_profiles
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config")
 
+NON_LOCAL_MARKERS = [
+    " - pi", ", pi", "/pi", " pi ", "teresina", "piauí", "piaui",
+    " - ce", ", ce", "/ce", " ce ", "fortaleza", "ceará", "ceara",
+    " - ba", ", ba", "/ba", " ba ", "salvador", "bahia",
+    " - pe", ", pe", "/pe", " pe ", "recife", "pernambuco",
+    " - ma", ", ma", "/ma", " ma ", "são luís", "maranhão",
+    " - rn", ", rn", "/rn", " rn ", "natal",
+    " - pb", ", pb", "/pb", " pb ", "joão pessoa",
+    " - se", ", se", "/se", " se ", "aracaju", "sergipe",
+    " - al", ", al", "/al", " al ", "maceió", "alagoas",
+    " - rj", ", rj", "/rj", " rj ", "rio de janeiro",
+    " - mg", ", mg", "/mg", " mg ", "belo horizonte", "minas gerais",
+    " - pr", ", pr", "/pr", " pr ", "curitiba", "paraná", "parana",
+    " - rs", ", rs", "/rs", " rs ", "porto alegre", "rio grande do sul",
+    " - sc", ", sc", "/sc", " sc ", "florianópolis", "santa catarina",
+    " - go", ", go", "/go", " go ", "goiânia", "goias",
+    " - df", ", df", "/df", " df ", "brasília", "distrito federal",
+    " - mt", ", mt", "/mt", " mt ", "cuiabá", "mato grosso",
+    " - ms", ", ms", "/ms", " ms ", "campo grande",
+    " - am", ", am", "/am", " am ", "manaus", "amazonas",
+    " - pa", ", pa", "/pa", " pa ", "belém", "pará"
+]
+
+def is_location_feasible(loc_str: str, is_remote: bool, title: str = "", desc: str = "") -> bool:
+    """Freio de Ingestão: Descarta vagas presenciais fora do estado de SP para não gastar tokens com IA."""
+    if is_remote:
+        return True
+    text_check = f"{title} {desc}".lower()
+    if "remoto" in text_check or "home office" in text_check or "teletrabalho" in text_check:
+        return True
+    loc_lower = (loc_str or "").lower()
+    for marker in NON_LOCAL_MARKERS:
+        if marker in loc_lower:
+            return False
+    return True
+
 
 def load_profile(username: str = "eduardo") -> Dict[str, Any]:
     """Carrega o perfil do candidato específico ou padrão."""
@@ -95,9 +131,8 @@ def scan_jobs(results_wanted_per_term: int = 15, custom_cargos: Optional[List[st
                 if any(fs in loc_lower for fs in foreign_signals) and not is_rem:
                     continue
 
-                # Garante que seja no Brasil ou 100% Remoto
-                is_brazil = any(bz in loc_lower for bz in ["brasil", "brazil", "sp", "são paulo", "sao paulo", "diadema", "abc", "santo andré", "são bernardo", "grande são paulo", "remote", "remoto"])
-                if not is_brazil and not is_rem:
+                # Freio de Ingestão: Descarta presenciais fora de SP ou internacionais
+                if not is_location_feasible(loc_str, is_rem, str(row.get("title", "")), str(row.get("description", ""))):
                     continue
 
                 vaga = {
@@ -128,9 +163,10 @@ def scan_jobs(results_wanted_per_term: int = 15, custom_cargos: Optional[List[st
             print(f"[Hermes Radar] 🟣 Consultando portal Gupy para: '{cargo}'...")
             gupy_jobs = search_gupy_jobs(job_name=cargo, limit=15)
             if gupy_jobs:
-                novas_gupy = save_jobs(gupy_jobs)
+                gupy_filtradas = [j for j in gupy_jobs if is_location_feasible(j.get("location", ""), j.get("is_remote", False), j.get("title", ""), j.get("description", ""))]
+                novas_gupy = save_jobs(gupy_filtradas)
                 total_novas += novas_gupy
-                print(f"[Hermes Radar] ✅ Gupy '{cargo}': {len(gupy_jobs)} encontradas, {novas_gupy} novas salvas.")
+                print(f"[Hermes Radar] ✅ Gupy '{cargo}': {len(gupy_filtradas)} válidas na região, {novas_gupy} novas salvas.")
         except Exception as eg:
             print(f"[Hermes Radar ⚠️] Erro na busca Gupy: {eg}")
 
@@ -139,9 +175,10 @@ def scan_jobs(results_wanted_per_term: int = 15, custom_cargos: Optional[List[st
             print(f"[Hermes Radar] 🔵 Consultando Vagas.com.br para: '{cargo}'...")
             vagas_jobs = search_vagas_com(term=cargo, limit=15)
             if vagas_jobs:
-                novas_v = save_jobs(vagas_jobs)
+                vagas_filtradas = [j for j in vagas_jobs if is_location_feasible(j.get("location", ""), j.get("is_remote", False), j.get("title", ""), j.get("description", ""))]
+                novas_v = save_jobs(vagas_filtradas)
                 total_novas += novas_v
-                print(f"[Hermes Radar] ✅ Vagas.com '{cargo}': {len(vagas_jobs)} encontradas, {novas_v} novas salvas.")
+                print(f"[Hermes Radar] ✅ Vagas.com '{cargo}': {len(vagas_filtradas)} válidas na região, {novas_v} novas salvas.")
         except Exception as ev:
             print(f"[Hermes Radar ⚠️] Erro na busca Vagas.com: {ev}")
 
@@ -150,9 +187,10 @@ def scan_jobs(results_wanted_per_term: int = 15, custom_cargos: Optional[List[st
             print(f"[Hermes Radar] 🟠 Consultando InfoJobs Brasil para: '{cargo}'...")
             info_jobs = search_infojobs(term=cargo, limit=15)
             if info_jobs:
-                novas_i = save_jobs(info_jobs)
+                info_filtradas = [j for j in info_jobs if is_location_feasible(j.get("location", ""), j.get("is_remote", False), j.get("title", ""), j.get("description", ""))]
+                novas_i = save_jobs(info_filtradas)
                 total_novas += novas_i
-                print(f"[Hermes Radar] ✅ InfoJobs '{cargo}': {len(info_jobs)} encontradas, {novas_i} novas salvas.")
+                print(f"[Hermes Radar] ✅ InfoJobs '{cargo}': {len(info_filtradas)} válidas na região, {novas_i} novas salvas.")
         except Exception as ei:
             print(f"[Hermes Radar ⚠️] Erro na busca InfoJobs: {ei}")
 

@@ -65,11 +65,32 @@ def estimate_distance_to_candidate(job_location: str, candidate_city: str = "Dia
         if polo_name in loc_lower:
             return haversine_distance_km(cand_coord, polo_coord)
 
-    # Se mencionar outro estado evidente (ex: RJ, RS, SC, MG, PR, BA)
-    outros_estados = [" rio de janeiro", " rj", " curitiba", " pr", " porto alegre", " rs", " florian", " sc", " belo horizonte", " mg", " salvador", " ba"]
+    # Se mencionar outro estado ou capital fora de SP (ex: PI, BA, CE, PE, RJ, MG, etc.)
+    outros_estados = [
+        " pi", " - pi", ", pi", "/pi", "teresina", "piauí", "piaui",
+        " ce", " - ce", ", ce", "/ce", "fortaleza", "ceará", "ceara",
+        " ba", " - ba", ", ba", "/ba", "salvador", "bahia",
+        " pe", " - pe", ", pe", "/pe", "recife", "pernambuco",
+        " ma", " - ma", ", ma", "/ma", "são luís", "maranhão",
+        " rn", " - rn", ", rn", "/rn", "natal",
+        " pb", " - pb", ", pb", "/pb", "joão pessoa",
+        " se", " - se", ", se", "/se", "aracaju", "sergipe",
+        " al", " - al", ", al", "/al", "maceió", "alagoas",
+        " rj", " - rj", ", rj", "/rj", "rio de janeiro",
+        " mg", " - mg", ", mg", "/mg", "belo horizonte", "minas gerais",
+        " pr", " - pr", ", pr", "/pr", "curitiba", "paraná", "parana",
+        " rs", " - rs", ", rs", "/rs", "porto alegre", "rio grande do sul",
+        " sc", " - sc", ", sc", "/sc", "florianópolis", "santa catarina",
+        " go", " - go", ", go", "/go", "goiânia", "goias",
+        " df", " - df", ", df", "/df", "brasília", "distrito federal",
+        " mt", " - mt", ", mt", "/mt", "cuiabá", "mato grosso",
+        " ms", " - ms", ", ms", "/ms", "campo grande",
+        " am", " - am", ", am", "/am", "manaus", "amazonas",
+        " pa", " - pa", ", pa", "/pa", "belém", "pará"
+    ]
     for uf in outros_estados:
         if uf in loc_lower:
-            return 450.0 # Claramente interestadual
+            return 1200.0 # Claramente interestadual fora de SP
 
     return 25.0 # Média para Grande SP genérico
 

@@ -60,11 +60,20 @@ def list_profiles() -> List[Dict[str, Any]]:
                 profiles.append({
                     "id": name,
                     "name": display_name,
+                    "display_name": display_name,
+                    "cargos_alvo": cargos,
                     "target_roles": cargos,
                     "has_resume": resume_exists
                 })
             except Exception:
-                profiles.append({"id": name, "name": name.capitalize(), "target_roles": [], "has_resume": False})
+                profiles.append({
+                    "id": name,
+                    "name": name.capitalize(),
+                    "display_name": name.capitalize(),
+                    "cargos_alvo": [],
+                    "target_roles": [],
+                    "has_resume": False
+                })
                 
     return profiles
 
