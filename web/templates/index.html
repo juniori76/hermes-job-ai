@@ -79,6 +79,46 @@
     // OTIMIZADOR ATS & GERADOR DE CURRÍCULOS
     // ==========================================
     let currentOptimizerMode = 'general';
+    let currentOptimizerSource = 'profile';
+
+    function setOptimizerSource(source) {
+      currentOptimizerSource = source;
+      const btnProfile = document.getElementById('opt-src-profile');
+      const btnUpload = document.getElementById('opt-src-upload');
+      const btnText = document.getElementById('opt-src-text');
+      const boxProfile = document.getElementById('opt-box-profile');
+      const boxUpload = document.getElementById('opt-box-upload');
+      const boxText = document.getElementById('opt-box-text');
+
+      [btnProfile, btnUpload, btnText].forEach(b => {
+        if (b) b.className = 'p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold text-[11px] flex items-center justify-center gap-1.5 transition';
+      });
+
+      if (source === 'profile') {
+        if (btnProfile) btnProfile.className = 'p-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition';
+        if (boxProfile) boxProfile.classList.remove('hidden');
+        if (boxUpload) boxUpload.classList.add('hidden');
+        if (boxText) boxText.classList.add('hidden');
+      } else if (source === 'upload') {
+        if (btnUpload) btnUpload.className = 'p-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition';
+        if (boxProfile) boxProfile.classList.add('hidden');
+        if (boxUpload) boxUpload.classList.remove('hidden');
+        if (boxText) boxText.classList.add('hidden');
+      } else if (source === 'text') {
+        if (btnText) btnText.className = 'p-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition';
+        if (boxProfile) boxProfile.classList.add('hidden');
+        if (boxUpload) boxUpload.classList.add('hidden');
+        if (boxText) boxText.classList.remove('hidden');
+      }
+    }
+
+    function onCustomCVSelected(input) {
+      const file = input.files && input.files[0];
+      const label = document.getElementById('opt-custom-file-label');
+      if (file && label) {
+        label.innerHTML = `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-file-circle-check"></i> ${file.name}</span> (${(file.size / 1024).toFixed(1)} KB)`;
+      }
+    }
 
     function setOptimizerMode(mode) {
       currentOptimizerMode = mode;
@@ -113,9 +153,9 @@
     }
 
     async function runResumeOptimization() {
-      const username = document.getElementById('optimizer-user').value || 'eduardo';
-      const targetRole = document.getElementById('optimizer-target-role').value;
-      const jobId = currentOptimizerMode === 'sniper' ? document.getElementById('optimizer-job-id').value : null;
+      const username = document.getElementById('optimizer-user')?.value || 'eduardo';
+      const targetRole = document.getElementById('optimizer-target-role')?.value || '';
+      const jobId = currentOptimizerMode === 'sniper' ? document.getElementById('optimizer-job-id')?.value : null;
 
       const emptyState = document.getElementById('optimizer-empty-state');
       const loadingState = document.getElementById('optimizer-loading');
@@ -129,17 +169,61 @@
       btnSubmit.classList.add('opacity-50');
 
       try {
-        const payload = {
-          username: username,
-          target_role: targetRole,
-          job_id: jobId
-        };
+        let res;
+        if (currentOptimizerSource === 'upload') {
+          const fileInput = document.getElementById('opt-custom-file');
+          if (!fileInput.files || !fileInput.files[0]) {
+            alert('Por favor, selecione um arquivo (PDF ou Word) para otimizar.');
+            loadingState.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+            btnSubmit.disabled = false;
+            btnSubmit.classList.remove('opacity-50');
+            return;
+          }
+          const fd = new FormData();
+          fd.append('file', fileInput.files[0]);
+          fd.append('username', username);
+          if (targetRole) fd.append('target_role', targetRole);
+          if (jobId) fd.append('job_id', jobId);
 
-        const res = await fetch('/api/resume/optimize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+          res = await fetch('/api/resume/optimize', {
+            method: 'POST',
+            body: fd
+          });
+        } else if (currentOptimizerSource === 'text') {
+          const customText = document.getElementById('opt-custom-text').value.trim();
+          if (!customText) {
+            alert('Por favor, cole o texto do currículo no campo.');
+            loadingState.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+            btnSubmit.disabled = false;
+            btnSubmit.classList.remove('opacity-50');
+            return;
+          }
+          const payload = {
+            username: username,
+            target_role: targetRole,
+            job_id: jobId,
+            custom_cv_text: customText
+          };
+          res = await fetch('/api/resume/optimize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          // Perfil Ativo
+          const payload = {
+            username: username,
+            target_role: targetRole,
+            job_id: jobId
+          };
+          res = await fetch('/api/resume/optimize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
 
         const data = await res.json();
         loadingState.classList.add('hidden');
@@ -175,7 +259,13 @@
       }
     }
 
-</script>
+    function confirmMasterResumeUpload() {
+      if (confirm("ATENÇÃO: Você está prestes a atualizar o currículo permanente do seu perfil que o robô Hermes usa no radar 24/7.\n\nSe você deseja apenas otimizar um currículo para uma vaga específica, use a ferramenta 'Otimizador ATS' acima.\n\nDeseja continuar atualizando o perfil mestre?")) {
+        document.getElementById('resume-file-input').click();
+      }
+    }
+    
+    </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { background-color: #0b0f19; color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif; }
@@ -935,7 +1025,7 @@
               Otimizador ATS & Gerador de Currículos
             </h2>
             <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
-              A IA analisa o histórico do seu perfil, identifica lacunas que os robôs da Gupy e LinkedIn rejeitam e reescreve seu currículo com métricas e palavras-chave para atingir <strong>97% a 100% de match</strong>.
+              Gere uma versão sob medida em PDF e DOCX do seu currículo alinhada com as palavras-chave e exigências do cargo ou vaga. <strong>Funciona de forma independente e instantânea sem alterar o perfil permanente.</strong>
             </p>
           </div>
 
@@ -957,8 +1047,50 @@
         <!-- Painel de Configuração da Otimização -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div class="lg:col-span-5 space-y-4">
+            
+            <!-- 1. Fonte do Currículo a Otimizar -->
             <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Modo de Otimização:</label>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Fonte do Currículo:</label>
+              <div class="grid grid-cols-3 gap-1.5">
+                <button type="button" onclick="setOptimizerSource('profile')" id="opt-src-profile" class="p-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition">
+                  <i class="fa-solid fa-user-check text-indigo-400"></i> Perfil Ativo
+                </button>
+                <button type="button" onclick="setOptimizerSource('upload')" id="opt-src-upload" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold text-[11px] flex items-center justify-center gap-1.5 transition">
+                  <i class="fa-solid fa-file-arrow-up text-indigo-400"></i> Arquivo Avulso
+                </button>
+                <button type="button" onclick="setOptimizerSource('text')" id="opt-src-text" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold text-[11px] flex items-center justify-center gap-1.5 transition">
+                  <i class="fa-solid fa-paste text-indigo-400"></i> Colar Texto
+                </button>
+              </div>
+            </div>
+
+            <!-- Box Informativo: Perfil Ativo -->
+            <div id="opt-box-profile" class="bg-slate-950/50 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-center gap-2.5">
+              <i class="fa-solid fa-circle-info text-indigo-400 text-sm"></i>
+              <span>Usa o histórico e competências do perfil selecionado como base para gerar a versão 100% ATS.</span>
+            </div>
+
+            <!-- Box Upload Arquivo Avulso -->
+            <div id="opt-box-upload" class="hidden bg-slate-950/60 border border-dashed border-indigo-500/40 rounded-xl p-4 text-center">
+              <input type="file" id="opt-custom-file" accept=".pdf,.docx,.txt" class="hidden" onchange="onCustomCVSelected(this)">
+              <div onclick="document.getElementById('opt-custom-file').click()" class="cursor-pointer space-y-1.5 group">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 flex items-center justify-center mx-auto transition">
+                  <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+                </div>
+                <p id="opt-custom-file-label" class="text-xs text-slate-300 font-bold">Clique para selecionar PDF ou DOCX avulso</p>
+                <p class="text-[10px] text-slate-500">Otimização instantânea sob medida — NÃO altera nem sobrescreve o perfil mestre do sistema</p>
+              </div>
+            </div>
+
+            <!-- Box Colar Texto -->
+            <div id="opt-box-text" class="hidden">
+              <label class="block text-xs font-bold text-slate-400 mb-1">Cole aqui o texto do currículo:</label>
+              <textarea id="opt-custom-text" rows="4" placeholder="Cole resumo, experiências e competências aqui..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-2.5 text-xs text-white outline-none font-mono"></textarea>
+            </div>
+
+            <!-- 2. Alvo da Otimização -->
+            <div>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Alvo da Otimização:</label>
               <div class="grid grid-cols-2 gap-2">
                 <button type="button" onclick="setOptimizerMode('general')" id="opt-mode-general" class="p-3 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95">
                   <i class="fa-solid fa-bullseye text-indigo-400"></i> Mercado Geral
@@ -1005,7 +1137,7 @@
               </div>
               <h3 class="text-base font-bold text-white">Nenhum currículo otimizado gerado nesta sessão</h3>
               <p class="text-xs text-slate-400 max-w-md mx-auto">
-                Clique no botão verde ao lado para a IA analisar seu currículo, corrigir lacunas de palavras-chave e compilar o PDF diagramado e o DOCX pronto para envio.
+                Escolha a fonte do currículo (perfil cadastrado ou arquivo avulso) e clique no botão verde para a IA analisar, alinhar palavras-chave e gerar o PDF e Word prontos para envio.
               </p>
             </div>
 
@@ -1058,21 +1190,25 @@
         </div>
       </div>
 
-      <div class="glass-card p-6 rounded-3xl">
+      <!-- ===== PERFIL CADASTRADO NO SISTEMA (RADAR 24/7) ===== -->
+      <div class="glass-card p-6 rounded-3xl border border-slate-800/80">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-slate-800">
           <div>
+            <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[11px] font-bold uppercase tracking-wider mb-1.5">
+              <i class="fa-solid fa-shield-halved"></i> Perfil Permanente de Monitoramento
+            </div>
             <h2 class="text-lg font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-file-waveform text-indigo-400"></i> Diagnóstico de Currículo ATS & Perfil
+              <i class="fa-solid fa-id-card-clip text-indigo-400"></i> Currículo Mestre do Perfil (Radar 24/7)
             </h2>
-            <p class="text-xs text-slate-400">Como os robôs de RH (Gupy, Kenoby, Workday) e recrutadores avaliam seu perfil.</p>
+            <p class="text-xs text-slate-400">Este é o currículo mestre cadastrado no servidor que o robô Hermes utiliza 24/7 para calcular o match e aplicar os filtros geográficos nas vagas.</p>
           </div>
           <div class="flex flex-wrap gap-2">
             <input type="file" id="resume-file-input" accept=".pdf" class="hidden" onchange="uploadResumeFile(this)">
-            <button onclick="document.getElementById('resume-file-input').click()" class="bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-sky-600/20">
-              <i class="fa-solid fa-cloud-arrow-up"></i> Enviar Novo PDF
+            <button onclick="confirmMasterResumeUpload()" class="bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-sky-600/20">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Atualizar Currículo Mestre
             </button>
             <button onclick="triggerProfileSync()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-600/20">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Sincronizar Perfil
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Sincronizar Perfil com IA
             </button>
             <button onclick="fetchResumeDiagnostic()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-indigo-600/20">
               <i class="fa-solid fa-arrows-rotate"></i> Recalcular Diagnóstico
@@ -1080,20 +1216,20 @@
           </div>
         </div>
 
-        <!-- Dropzone de Upload de Currículo -->
-        <div onclick="document.getElementById('resume-file-input').click()" 
+        <!-- Dropzone de Upload de Currículo Mestre -->
+        <div onclick="confirmMasterResumeUpload()" 
              class="mb-6 bg-slate-950/40 p-4 rounded-2xl border border-dashed border-slate-700 hover:border-indigo-500/60 transition cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-3 group">
           <div class="flex items-center gap-3">
             <div class="bg-indigo-500/10 group-hover:bg-indigo-500/20 text-indigo-400 p-3 rounded-xl transition">
               <i class="fa-solid fa-file-pdf text-2xl"></i>
             </div>
             <div>
-              <p class="text-xs font-bold text-white">Currículo Ativo no Servidor: <span class="text-indigo-400 font-mono">curriculo.pdf</span></p>
-              <p class="text-[11px] text-slate-400">Clique para selecionar e enviar o seu novo PDF (ex: curriculo_eduardo_junior.pdf da Área de Trabalho)</p>
+              <p class="text-xs font-bold text-white">Currículo Mestre Ativo no Servidor: <span class="text-indigo-400 font-mono">curriculo.pdf</span></p>
+              <p class="text-[11px] text-slate-400">Clique para atualizar o PDF mestre do seu perfil (usado para o cálculo do radar)</p>
             </div>
           </div>
           <span class="text-xs bg-slate-800 group-hover:bg-indigo-600 text-slate-200 group-hover:text-white px-3.5 py-2 rounded-xl border border-slate-700 group-hover:border-indigo-500 transition font-bold whitespace-nowrap">
-            <i class="fa-solid fa-upload mr-1"></i> Selecionar Arquivo
+            <i class="fa-solid fa-upload mr-1"></i> Substituir Mestre
           </span>
         </div>
 

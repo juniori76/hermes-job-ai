@@ -881,26 +881,79 @@ async def api_clean_rejected_jobs(request: Request):
 
 @app.post("/api/resume/optimize")
 async def api_optimize_resume(request: Request):
-    """Otimiza o currículo do membro contra cargo alvo ou vaga específica para atingir 100% ATS."""
+    """Otimiza o curriculo do membro contra cargo alvo ou vaga especifica para atingir 100% ATS.
+    Pode usar o curriculo do perfil OU um arquivo avulso (PDF/DOCX/texto) sem alterar o perfil permanente."""
     user = get_current_user(request)
     if not user:
-        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+        return JSONResponse({"error": "Nao autorizado"}, status_code=401)
     
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
+    content_type = request.headers.get("content-type", "")
+    username = user
+    target_role = None
+    job_id = None
+    custom_cv_text = None
+    custom_job_desc = None
+
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        username = form.get("username", user) or user
+        target_role = form.get("target_role")
+        job_id = form.get("job_id")
+        custom_cv_text = form.get("custom_cv_text")
+        custom_job_desc = form.get("custom_job_desc")
         
-    username = body.get("username", user)
-    target_role = body.get("target_role")
-    job_id = body.get("job_id")
+        uploaded_file = form.get("file")
+        if uploaded_file and hasattr(uploaded_file, "read"):
+            file_bytes = await uploaded_file.read()
+            if file_bytes:
+                filename = getattr(uploaded_file, "filename", "").lower()
+                extracted_text = ""
+                if filename.endswith(".pdf") or file_bytes[:4] == b'%PDF':
+                    try:
+                        import pypdf, io
+                        reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+                        extracted_text = "\n".join([page.extract_text() or "" for page in reader.pages]).strip()
+                    except Exception as e:
+                        print(f"[Optimizer] Erro ao extrair PDF em memoria: {e}")
+                elif filename.endswith(".docx"):
+                    try:
+                        import docx, io
+                        doc = docx.Document(io.BytesIO(file_bytes))
+                        extracted_text = "\n".join([p.text for p in doc.paragraphs if p.text]).strip()
+                    except Exception as e:
+                        print(f"[Optimizer] Erro ao extrair DOCX em memoria: {e}")
+                else:
+                    try:
+                        extracted_text = file_bytes.decode("utf-8", errors="ignore").strip()
+                    except Exception:
+                        pass
+                if extracted_text:
+                    custom_cv_text = extracted_text
+    else:
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+            
+        username = body.get("username", user) or user
+        target_role = body.get("target_role")
+        job_id = body.get("job_id")
+        custom_cv_text = body.get("custom_cv_text")
+        custom_job_desc = body.get("custom_job_desc")
+        
     if job_id:
         try:
             job_id = int(job_id)
         except Exception:
             job_id = None
             
-    result = optimize_resume_for_target(username=username, target_role=target_role, job_id=job_id)
+    result = optimize_resume_for_target(
+        username=username, 
+        target_role=target_role, 
+        job_id=job_id,
+        custom_cv_text=custom_cv_text,
+        custom_job_desc=custom_job_desc
+    )
     return result
 
 

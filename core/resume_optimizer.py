@@ -53,14 +53,22 @@ def get_job_details(job_id: int) -> Optional[Dict[str, Any]]:
 
 def optimize_resume_for_target(username: str = "eduardo", 
                                target_role: Optional[str] = None, 
-                               job_id: Optional[int] = None) -> Dict[str, Any]:
+                               job_id: Optional[int] = None,
+                               custom_cv_text: Optional[str] = None,
+                               custom_job_desc: Optional[str] = None) -> Dict[str, Any]:
     """
-    Analisa o currículo existente do usuário contra um cargo alvo ou vaga específica,
-    identifica lacunas de ATS e gera a estrutura otimizada.
+    Analisa o currículo existente do usuário OU o texto/arquivo customizado enviado pontualmente,
+    identifica lacunas de ATS e gera a estrutura otimizada em PDF e DOCX.
+    NUNCA sobrescreve o currículo base nem o perfil do candidato no sistema.
     """
     profile = get_profile(username)
-    pdf_path = get_resume_path(username)
-    current_cv_text = extract_text_from_pdf(pdf_path)
+    
+    # Se foi enviado um texto ou arquivo customizado avulso, usa ele diretamente
+    if custom_cv_text and custom_cv_text.strip():
+        current_cv_text = custom_cv_text.strip()
+    else:
+        pdf_path = get_resume_path(username)
+        current_cv_text = extract_text_from_pdf(pdf_path)
     
     # Se não tiver PDF, usa os dados do perfil como base
     if not current_cv_text:
@@ -75,7 +83,15 @@ LinkedIn: {profile.get('candidato', {}).get('linkedin', '')}
 
     context_target = ""
     job_info = None
-    if job_id:
+    if custom_job_desc and custom_job_desc.strip():
+        context_target = f"""
+ALVO PERSONALIZADO (VAGA EXTERNA):
+- Requisitos e Descrição:
+\"\"\"
+{custom_job_desc.strip()[:4000]}
+\"\"\"
+"""
+    elif job_id:
         job_info = get_job_details(job_id)
         if job_info:
             context_target = f"""
