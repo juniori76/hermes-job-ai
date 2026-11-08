@@ -67,16 +67,8 @@ def run_cycle():
     else:
         print("[Hermes Scheduler] Nenhuma vaga nova neste ciclo.")
 
-    # 4. Modo Automático: se houver vagas aprovadas ou com score alto, aplica
-    settings = load_settings()
-    mode = settings.get("operation_mode", "review")
-    if mode == "auto":
-        print("[Hermes Scheduler 🟢] Modo Automático ativo — verificando vagas para candidatura...")
-        approved = get_approved_unapplied_jobs(limit=3)
-        for job in approved:
-            print(f"[Hermes Scheduler 🤖] Auto-candidatando para {job.get('title')} @ {job.get('company')}...")
-            apply_to_job(job, dry_run=False)
-            time.sleep(random.randint(20, 45)) # Pausa humana entre submissões
+    # 4. Auto-candidatura autônoma DESLIGADA permanentemente para economia de recursos (RAM/CPU)
+    # e total controle do usuário. O Hermes foca 100% em monitorar, filtrar por Km e classificar vagas.
 
 
 def start_scheduler():

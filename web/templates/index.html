@@ -481,19 +481,17 @@
 
           <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full lg:w-auto justify-end">
             <!-- Seletor de Modos -->
-            <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-950/80 rounded-2xl border border-slate-800 w-full sm:w-auto" id="mode-selector">
+            <div class="flex items-center gap-1.5 p-1 bg-slate-950/80 rounded-2xl border border-slate-800 w-full sm:w-auto" id="mode-selector">
               <button onclick="setOperationMode('review')" id="btn-mode-review"
                 class="mode-btn px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 border-blue-500 bg-blue-500/20 text-blue-300 shadow-sm active:scale-95">
-                <i class="fa-solid fa-eye text-blue-400"></i> Avaliação
+                <i class="fa-solid fa-eye text-blue-400"></i> Avaliação (Manual)
               </button>
               <button onclick="setOperationMode('smart')" id="btn-mode-smart"
                 class="mode-btn px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 border-transparent text-slate-400 hover:text-purple-300 hover:bg-purple-500/10 active:scale-95">
-                <i class="fa-solid fa-brain text-purple-400"></i> Inteligente
+                <i class="fa-solid fa-brain text-purple-400"></i> Inteligente (Alertas)
               </button>
-              <button onclick="setOperationMode('auto')" id="btn-mode-auto"
-                class="mode-btn px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 border-transparent text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10 active:scale-95">
-                <i class="fa-solid fa-robot text-emerald-400"></i> Automático
-              </button>
+              <!-- Modo Automático Oculto/Desligado a pedido do usuário para economia de recursos -->
+              <button onclick="setOperationMode('auto')" id="btn-mode-auto" style="display:none;" class="hidden"></button>
             </div>
 
             <!-- Botões de Ação Imediata -->
@@ -1422,7 +1420,7 @@
           </div>
           <div class="flex flex-wrap gap-2">
             <input type="file" id="resume-file-input" accept=".pdf" class="hidden" onchange="uploadResumeFile(this)">
-            <button onclick="confirmMasterResumeUpload()" class="bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-sky-600/20">
+            <button onclick="openMasterResumeUploadModal()" class="bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-sky-600/20">
               <i class="fa-solid fa-cloud-arrow-up"></i> Atualizar Currículo Mestre
             </button>
             <button onclick="triggerProfileSync()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-lg shadow-emerald-600/20">
@@ -1435,7 +1433,7 @@
         </div>
 
         <!-- Dropzone de Upload de Currículo Mestre -->
-        <div onclick="confirmMasterResumeUpload()" 
+        <div onclick="openMasterResumeUploadModal()" 
              class="mb-6 bg-slate-950/40 p-4 rounded-2xl border border-dashed {% if resume_exists %}border-slate-700 hover:border-indigo-500/60{% else %}border-amber-500/40 hover:border-amber-400 bg-amber-500/5{% endif %} transition cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-3 group">
           <div class="flex items-center gap-3">
             <div class="{% if resume_exists %}bg-indigo-500/10 text-indigo-400{% else %}bg-amber-500/10 text-amber-400{% endif %} p-3 rounded-xl transition">
@@ -1973,6 +1971,100 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+  
+    <!-- ================= MODAL DE UPLOAD DE CURRÍCULO MESTRE ================= -->
+    <div id="modal-upload-master-cv" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative max-h-[92vh] overflow-y-auto safe-bottom space-y-5">
+        
+        <!-- Topo do Modal -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <span class="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">Radar 24/7 & Cérebro ATS</span>
+            <h3 class="text-base sm:text-lg font-black text-white flex items-center gap-2">
+              <i class="fa-solid fa-cloud-arrow-up text-indigo-400"></i> Enviar Currículo Oficial (PDF)
+            </h3>
+          </div>
+          <button onclick="closeMasterUploadModal()" class="text-slate-400 hover:text-white text-xl p-1">✕</button>
+        </div>
+
+        <!-- Seletor de Perfil / Candidato -->
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">1. Candidato do Currículo:</label>
+          <select id="modal-master-user" class="w-full p-2.5 text-xs glass-input rounded-xl text-white font-bold bg-slate-950 border border-slate-800 focus:border-indigo-500">
+            <option value="{{ current_user or 'eduardo' }}" selected>👤 {{ profile.candidato.nome_completo or (current_user.capitalize() if current_user else 'Eduardo') }} (@{{ current_user or 'eduardo' }})</option>
+            {% if all_profiles %}
+              {% for p in all_profiles %}
+                {% if p.id != current_user and p.id != 'esposa' %}
+                  <option value="{{ p.id }}">👤 {{ p.display_name or p.name or p.id }} (@{{ p.id }})</option>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          </select>
+        </div>
+
+        <!-- Área Visual de Seleção de Arquivo (Visible Dropzone & File Input) -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">2. Selecionar Arquivo PDF:</label>
+          
+          <!-- Input de arquivo real -->
+          <input type="file" id="modal-master-file-input" accept=".pdf" class="hidden" onchange="onModalMasterFileSelected(this)">
+          
+          <!-- Caixa clicável de dropzone -->
+          <div onclick="document.getElementById('modal-master-file-input').click()" 
+               id="modal-master-dropzone"
+               class="border-2 border-dashed border-indigo-500/40 hover:border-indigo-400 bg-slate-950/60 hover:bg-slate-950/90 rounded-2xl p-6 text-center cursor-pointer transition group space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 group-hover:scale-105 flex items-center justify-center mx-auto text-xl transition">
+              <i class="fa-solid fa-file-pdf"></i>
+            </div>
+            <p class="text-xs font-bold text-white group-hover:text-indigo-300">
+              Clique aqui para selecionar o arquivo PDF
+            </p>
+            <p class="text-[11px] text-slate-400">
+              Arquivos no formato <strong class="text-slate-200">.pdf</strong> com texto selecionável
+            </p>
+          </div>
+
+          <!-- Card de Confirmação do Arquivo Selecionado -->
+          <div id="modal-master-file-preview" class="hidden bg-emerald-950/30 border border-emerald-500/40 p-3.5 rounded-2xl flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 overflow-hidden">
+              <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <div class="truncate">
+                <p id="modal-master-file-name" class="text-xs font-bold text-white truncate">curriculo.pdf</p>
+                <p id="modal-master-file-size" class="text-[10px] text-emerald-400">Pronto para envio</p>
+              </div>
+            </div>
+            <button type="button" onclick="clearModalMasterFile()" class="text-slate-400 hover:text-rose-400 text-xs p-1">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mensagem de Orientações da IA -->
+        <div class="p-3 bg-slate-950/50 rounded-xl border border-slate-800 text-[11px] text-slate-400 flex items-start gap-2">
+          <i class="fa-solid fa-circle-info text-indigo-400 mt-0.5"></i>
+          <span>Ao salvar, a IA do Gemini lê suas experiências e competências para recalcular as notas de match nas vagas do seu radar.</span>
+        </div>
+
+        <!-- Spinner de Envio -->
+        <div id="modal-master-loading" class="hidden text-center py-3 space-y-2">
+          <i class="fa-solid fa-circle-notch fa-spin text-2xl text-indigo-400"></i>
+          <p class="text-xs font-bold text-white">Enviando e extraindo competências com IA Gemini...</p>
+        </div>
+
+        <!-- Rodapé de Ações -->
+        <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
+          <button type="button" onclick="closeMasterUploadModal()" class="px-4 py-2 text-slate-400 hover:text-white font-medium text-xs">Cancelar</button>
+          <button type="button" id="btn-submit-master-upload" onclick="submitMasterResumeUpload()" 
+                  class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center gap-2 text-xs">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Salvar e Analisar com IA
+          </button>
+        </div>
+
       </div>
     </div>
 
@@ -3428,6 +3520,92 @@ async function changePassword() {
         alert('Erro de conexão: ' + e.message);
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-bolt text-amber-300"></i> Salvar & Buscar Vagas Agora';
+      }
+    }
+
+
+    // ==========================================
+    // MODAL DE UPLOAD DE CURRÍCULO MESTRE
+    // ==========================================
+    let selectedMasterFile = null;
+
+    function openMasterResumeUploadModal() {
+      selectedMasterFile = null;
+      document.getElementById('modal-master-file-input').value = '';
+      document.getElementById('modal-master-dropzone').classList.remove('hidden');
+      document.getElementById('modal-master-file-preview').classList.add('hidden');
+      document.getElementById('modal-master-loading').classList.add('hidden');
+      document.getElementById('btn-submit-master-upload').disabled = false;
+      document.getElementById('btn-submit-master-upload').innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Salvar e Analisar com IA';
+      document.getElementById('modal-upload-master-cv').classList.remove('hidden');
+    }
+
+    function closeMasterUploadModal() {
+      document.getElementById('modal-upload-master-cv').classList.add('hidden');
+    }
+
+    function onModalMasterFileSelected(input) {
+      if (input.files && input.files[0]) {
+        selectedMasterFile = input.files[0];
+        const nameEl = document.getElementById('modal-master-file-name');
+        const sizeEl = document.getElementById('modal-master-file-size');
+        nameEl.textContent = selectedMasterFile.name;
+        const sizeKb = Math.round(selectedMasterFile.size / 1024);
+        sizeEl.textContent = `${sizeKb} KB • Pronto para envio`;
+
+        document.getElementById('modal-master-dropzone').classList.add('hidden');
+        document.getElementById('modal-master-file-preview').classList.remove('hidden');
+      }
+    }
+
+    function clearModalMasterFile() {
+      selectedMasterFile = null;
+      document.getElementById('modal-master-file-input').value = '';
+      document.getElementById('modal-master-dropzone').classList.remove('hidden');
+      document.getElementById('modal-master-file-preview').classList.add('hidden');
+    }
+
+    async function submitMasterResumeUpload() {
+      if (!selectedMasterFile) {
+        alert("Por favor, selecione um arquivo PDF primeiro clicando na área de upload.");
+        return;
+      }
+
+      const user = document.getElementById('modal-master-user').value || '{{ current_user or "eduardo" }}';
+      const btn = document.getElementById('btn-submit-master-upload');
+      const loading = document.getElementById('modal-master-loading');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Enviando...';
+      loading.classList.remove('hidden');
+
+      const fd = new FormData();
+      fd.append('file', selectedMasterFile);
+      fd.append('username', user);
+
+      try {
+        const res = await fetch('/api/settings/upload-resume', {
+          method: 'POST',
+          body: fd
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showToast(`✅ Currículo de @${user} salvo e analisado com sucesso!`, 'green');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          alert('Erro no envio: ' + (data.error || 'Falha ao processar arquivo.'));
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Salvar e Analisar com IA';
+          loading.classList.add('hidden');
+        }
+      } catch (err) {
+        alert('Erro de conexão ao enviar: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Salvar e Analisar com IA';
+        loading.classList.add('hidden');
       }
     }
 
