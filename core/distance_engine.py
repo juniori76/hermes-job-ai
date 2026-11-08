@@ -19,7 +19,7 @@ LOCALIDADES_SP = {
     "sao caetano": (-23.6229, -46.5546),
     "maua": (-23.6678, -46.4614),
     "ribeirao pires": (-23.7139, -46.4136),
-    "sao paulo": (-23.5505, -46.6333),
+    "sao paulo": (-23.6000, -46.6400), # Zona Sul / Polo Metropolitano conectando ao ABC/Diadema
     "zona sul": (-23.6300, -46.6700),
     "jabaquara": (-23.6450, -46.6430),
     "saude": (-23.6150, -46.6390),
@@ -95,8 +95,8 @@ def estimate_distance_to_candidate(job_location: str, candidate_city: str = "Dia
 
     # 4. Se a vaga contém menção explícita a SP ou São Paulo e não achou bairro específico
     if re.search(r'\b(sp|sao paulo)\b', loc_clean):
-        # Média para a Região Metropolitana de São Paulo
-        return 16.0
+        # Média de trajeto para a Região Metropolitana / Capital acessível do ABC/Diadema
+        return 12.0
 
     # 5. Detecção de outros estados interestaduais (fora de SP) com regex rigorosa (sem falso positivo em "paulo" ou "proximas")
     outros_estados_pattern = r'\b(pi|ce|ba|pe|ma|rn|pb|se|al|rj|mg|pr|rs|sc|go|df|mt|ms|am|pa|ac|ro|rr|ap|to)\b'

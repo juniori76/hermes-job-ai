@@ -439,8 +439,11 @@
         <button onclick="switchTab('regras')" id="tab-regras" class="px-3.5 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-location-crosshairs text-indigo-400"></i> Regras & Km
         </button>
+        <button onclick="switchTab('ats-lab')" id="tab-ats-lab" class="px-3.5 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-flask-vial text-amber-400"></i> Laboratório ATS
+        </button>
         <button onclick="switchTab('curriculo')" id="tab-curriculo" class="px-3.5 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-2 whitespace-nowrap">
-          <i class="fa-solid fa-file-waveform text-purple-400"></i> Currículo ATS
+          <i class="fa-solid fa-shield-halved text-purple-400"></i> Currículo do Robô
         </button>
         <button onclick="switchTab('sessoes')" id="tab-sessoes" class="px-3.5 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-user-lock text-cyan-400"></i> Plataformas
@@ -1228,24 +1231,9 @@
     <!-- ================= ABA 3: ANÁLISE DE CURRÍCULO ATS ================= -->
     <div id="content-curriculo" class="hidden space-y-6">
 
-      <!-- ================= SELETOR DE SUB-ABAS DE CURRÍCULO ================= -->
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/90 p-2 rounded-2xl border border-slate-800 shadow-xl">
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="switchCurriculoSubTab('lab')" id="subtab-lab" 
-                  class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-indigo-600 shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2">
-            <i class="fa-solid fa-flask-vial text-amber-300"></i> 🔬 Laboratório ATS (Testar Vários Currículos)
-          </button>
-          <button type="button" onclick="switchCurriculoSubTab('mestre')" id="subtab-mestre" 
-                  class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-medium text-xs text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center justify-center gap-2">
-            <i class="fa-solid fa-shield-halved text-emerald-400"></i> 🛡️ Currículo Oficial do Robô (Radar 24/7)
-          </button>
-        </div>
-        <div class="text-[11px] text-slate-400 px-2 py-1 bg-slate-950/60 rounded-xl border border-slate-800 text-center sm:text-right">
-          <i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i>
-          O Laboratório é 100% isolado e <strong>não altera o robô de vagas</strong>.
-        </div>
-      </div>
-
+      
+    <!-- ================= ABA 3: LABORATÓRIO ATS (TESTADOR SANDBOX) ================= -->
+    <div id="content-ats-lab" class="hidden space-y-6">
       <!-- ================= PAINEL 1: LABORATÓRIO ATS (TESTADOR AVULSO & SANDBOX) ================= -->
       <div id="subcontent-lab" class="space-y-6">
         <div class="bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 md:p-8 backdrop-blur-xl relative shadow-2xl space-y-6">
@@ -1418,9 +1406,26 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- ================= PAINEL 2: CURRÍCULO MESTRE OFICIAL (RADAR 24/7) ================= -->
-      <div id="subcontent-mestre" class="hidden space-y-6">
+    <!-- ================= ABA 4: CURRÍCULO OFICIAL DO ROBÔ (RADAR 24/7) ================= -->
+    <div id="content-curriculo" class="hidden space-y-6">
+      <div class="flex items-center justify-between p-4 bg-slate-900/80 border border-slate-800 rounded-2xl">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Currículo Mestre Oficial (Radar 24/7)</h3>
+            <p class="text-xs text-slate-400">Este é o arquivo ativo utilizado pelo robô Hermes para calcular o match e aplicar os filtros de localização nas vagas.</p>
+          </div>
+        </div>
+        <button type="button" onclick="switchTab('ats-lab')" class="px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center gap-2">
+          <i class="fa-solid fa-flask-vial"></i> Ir para Laboratório ATS
+        </button>
+      </div>
+<!-- ================= PAINEL 2: CURRÍCULO MESTRE OFICIAL (RADAR 24/7) ================= -->
+      <div id="subcontent-mestre" class="space-y-6">
 
       <!-- ===== OTIMIZADOR ATS 100% & GERADOR DE CURRÍCULOS ===== -->
       <div class="bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
@@ -1440,7 +1445,7 @@
           <!-- Seletor de Perfil do Membro -->
           <div class="flex items-center gap-2 bg-slate-950/80 border border-slate-800 p-2 rounded-2xl w-full sm:w-auto">
             <span class="text-xs font-bold text-slate-400 pl-2">Candidato:</span>
-            <select id="optimizer-user" class="bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-indigo-500 flex-1 sm:flex-initial">
+            <select id="optimizer-user" onchange="onOptimizerCandidateChanged(this.value)" class="bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-indigo-500 flex-1 sm:flex-initial">
               {% if all_profiles %}
                 {% for p in all_profiles %}
                   <option value="{{ p.id }}" {% if p.id == (current_user or 'eduardo') %}selected{% endif %}>👤 {{ p.display_name }} (@{{ p.id }})</option>
@@ -2264,8 +2269,28 @@
   </main>
 
   <script>
+    
+    function onOptimizerCandidateChanged(username) {
+      // Atualiza o cargo alvo dinamicamente para o candidato selecionado
+      fetch('/api/admin/profiles-full')
+        .then(r => r.json())
+        .then(profiles => {
+          const p = profiles.find(item => item.id === username);
+          if (p) {
+            const roleInput = document.getElementById('optimizer-target-role');
+            if (roleInput) {
+              const roles = (p.preferencias_de_vaga && p.preferencias_de_vaga.cargos_alvo) || p.cargos_alvo || [];
+              if (roles.length > 0) {
+                roleInput.value = roles[0];
+              }
+            }
+          }
+        })
+        .catch(err => console.error('Erro ao trocar candidato no otimizador:', err));
+    }
+
     function switchTab(tab) {
-      ['vagas', 'historico', 'copilot', 'regras', 'curriculo', 'sessoes', 'admin'].forEach(t => {
+      ['vagas', 'historico', 'copilot', 'regras', 'ats-lab', 'curriculo', 'sessoes', 'admin'].forEach(t => {
         const el = document.getElementById('content-' + t);
         const btn = document.getElementById('tab-' + t);
         const mBtn = document.getElementById('mobile-tab-' + t);
@@ -3116,7 +3141,7 @@ async function changePassword() {
     function applyAllJobFilters() {
       const search = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
       const filterUser = document.getElementById('filter-user')?.value || '{{ current_user or "eduardo" }}';
-      const scoreFilter = document.getElementById('filter-score')?.value || 'approved';
+      const scoreFilter = document.getElementById('filter-score')?.value || 'all';
       const recencyFilter = document.getElementById('filter-recency')?.value || 'all';
       const modalityFilter = document.getElementById('filter-modality')?.value || 'all';
       const platformFilter = document.getElementById('filter-platform')?.value || 'all';
