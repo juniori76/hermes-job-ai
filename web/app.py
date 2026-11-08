@@ -132,7 +132,8 @@ async def dashboard_home(request: Request):
         """)
         raw_jobs = [dict(row) for row in cursor.fetchall()]
 
-        # Processa tags de antiguidade da vaga
+        # Processa tags de antiguidade da vaga e roteamento de perfil
+        from core.telegram_multi_router import route_job_to_user
         jobs = []
         for j in raw_jobs:
             age = calculate_job_age_hours(j.get("date_posted") or j.get("created_at", ""))
@@ -141,6 +142,7 @@ async def dashboard_home(request: Request):
             j["badge_text"] = badge_text
             j["badge_css"] = badge_css
             j["badge_icon"] = badge_icon
+            j["target_user"] = route_job_to_user(j)
             jobs.append(j)
 
     return templates.TemplateResponse(
@@ -153,7 +155,9 @@ async def dashboard_home(request: Request):
             "jobs": jobs,
             "profile": profile,
             "resume_exists": resume_exists,
-            "gemini_key_set": gemini_key_set
+            "gemini_key_set": gemini_key_set,
+            "current_user": user,
+            "all_profiles": list_profiles()
         }
     )
 
@@ -498,57 +502,6 @@ async def trigger_assisted_login(background_tasks: BackgroundTasks, request: Req
     background_tasks.add_task(launch_assisted_login, platform)
     return {"success": True, "message": f"Navegador aberto para {platform}. Acesse o noVNC para efetuar o login."}
 
-
-
-@app.get("/", response_class=HTMLResponse)
-async def dashboard_home(request: Request):
-    """Página principal do Dashboard exibindo métricas e vagas ranqueadas."""
-    with get_connection() as conn:
-        cursor = conn.cursor()
-        
-        # Métricas gerais
-        cursor.execute("SELECT COUNT(*) FROM jobs;")
-        total_jobs = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM jobs WHERE match_score >= 75;")
-        high_match_jobs = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM applications WHERE status = 'success';")
-        applied_jobs = cursor.fetchone()[0]
-        
-        # Top 50 melhores vagas ranqueadas
-        cursor.execute("""
-            SELECT id, site, title, company, location, is_remote, job_url, 
-                   match_score, match_reasons, keywords_found, status, date_posted, created_at
-            FROM jobs
-            ORDER BY 
-                CASE WHEN match_score IS NULL THEN 0 ELSE match_score END DESC,
-                created_at DESC
-            LIMIT 500;
-        """)
-        raw_jobs = [dict(row) for row in cursor.fetchall()]
-
-        # Processa tags de antiguidade da vaga
-        jobs = []
-        for j in raw_jobs:
-            age = calculate_job_age_hours(j.get("date_posted") or j.get("created_at", ""))
-            badge_text, badge_css, badge_icon = format_job_badge(age)
-            j["age_hours"] = age
-            j["badge_text"] = badge_text
-            j["badge_css"] = badge_css
-            j["badge_icon"] = badge_icon
-            jobs.append(j)
-
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "total_jobs": total_jobs,
-            "high_match_jobs": high_match_jobs,
-            "applied_jobs": applied_jobs,
-            "jobs": jobs
-        }
-    )
 
 
 @app.post("/api/scan")
