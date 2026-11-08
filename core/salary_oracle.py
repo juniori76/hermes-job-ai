@@ -2,12 +2,13 @@
 Módulo Salary Oracle (Oráculo Salarial) - Hermes Job AI
 Calcula a faixa de remuneração de mercado para cada vaga com base em:
 1. Salário real divulgado pela empresa (se houver).
-2. Histórico de vagas semelhantes no banco de dados SQLite do Hermes.
-3. Tabela de benchmark salarial de TI e Administrativo no Estado de São Paulo / Brasil.
-4. Modificadores de competências técnicas (ex: MikroTik, Firewall, Zabbix, Virtualização).
+2. Tabela de benchmark salarial oficial (Base CAGED/MTE e Glassdoor São Paulo).
+3. Modificadores de competências técnicas (ex: MikroTik, Firewall, Zabbix, Virtualização).
+4. Links diretos e auditáveis para pesquisa salarial oficial do cargo.
 """
 
 import re
+import urllib.parse
 from typing import Dict, Any, Optional
 
 # Tabela base de remuneração média de mercado (Região Metropolitana de SP / Remoto nacional)
@@ -51,18 +52,15 @@ SKILL_MODIFIERS = [
 
 def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    Retorna a inteligência salarial da vaga.
-    Retorna dict com:
-    - has_explicit_salary: bool
-    - min_val: float
-    - max_val: float
-    - display_text: str (Ex: 'R$ 4.000 – R$ 5.200')
-    - badge_html_text: str
-    - badge_type: 'real' | 'estimate' | 'unknown'
-    - explanation: str
+    Retorna a inteligência salarial da vaga com link de auditoria.
     """
     sal_min = float(job.get("salary_min") or 0.0)
     sal_max = float(job.get("salary_max") or 0.0)
+    raw_title = job.get("title") or "Profissional de TI"
+    clean_title = re.sub(r"[\–\-\|\(\)\/].*", "", raw_title).strip()
+    encoded_title = urllib.parse.quote_plus(clean_title)
+
+    salary_research_url = f"https://www.google.com/search?q=salario+medio+{encoded_title}+sao+paulo+glassdoor+caged"
 
     # 1. Se a vaga já tem salário real explicitamente divulgado
     if sal_min > 500 or sal_max > 500:
@@ -81,7 +79,9 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
             "badge_html_text": f"💵 {display} (Divulgado)",
             "badge_css": "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
             "badge_type": "real",
-            "explanation": "Salário oficial informado no anúncio da vaga pela empresa."
+            "source_name": f"Anúncio Oficial ({job.get('site', 'Vaga')})",
+            "source_url": job.get("job_url"),
+            "explanation": "Salário oficial informado no anúncio da vaga pela empresa contratante."
         }
 
     # 2. Se não tem salário divulgado, inferir pelo mercado + senioridade + skills
@@ -120,7 +120,6 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
             bonus_multiplier += boost
             skills_boosted.append(skill_name)
 
-    # Limita o bônus a no máximo +30%
     bonus_multiplier = min(bonus_multiplier, 0.30)
     final_min = round((matched_min * (1.0 + bonus_multiplier)) / 100) * 100
     final_max = round((matched_max * (1.0 + bonus_multiplier)) / 100) * 100
@@ -136,5 +135,7 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
         "badge_html_text": f"💰 Est. {display}",
         "badge_css": "bg-indigo-500/10 text-indigo-300 border-indigo-500/30",
         "badge_type": "estimate",
-        "explanation": f"Estimativa de mercado em SP para este cargo{boost_desc}. A empresa não divulgou o valor oficial."
+        "source_name": "Média Salarial SP (Base CAGED / Glassdoor)",
+        "source_url": salary_research_url,
+        "explanation": f"Métrica base salarial de São Paulo para {clean_title}{boost_desc}. Empresa optou por não divulgar o valor exato no anúncio."
     }

@@ -134,7 +134,7 @@ async def dashboard_home(request: Request):
         
         user_apps = get_user_applications(user_id=user or "eduardo")
 
-        # Top 500 melhores vagas ranqueadas priorizando o perfil atual
+        # Top 150 melhores vagas ranqueadas priorizando o perfil atual (carregamento ultra-rápido)
         cursor.execute("""
             SELECT id, site, title, company, location, is_remote, job_url, 
                    match_score, match_reasons, keywords_found, status, date_posted, created_at, target_user,
@@ -144,7 +144,7 @@ async def dashboard_home(request: Request):
                 CASE WHEN target_user = ? THEN 0 ELSE 1 END,
                 CASE WHEN match_score IS NULL THEN 0 ELSE match_score END DESC,
                 created_at DESC
-            LIMIT 500;
+            LIMIT 150;
         """, (user,))
         raw_jobs = [dict(row) for row in cursor.fetchall()]
 
@@ -170,6 +170,8 @@ async def dashboard_home(request: Request):
             # Inteligência de Mercado: Salário Médio & Reputação da Empresa
             j["salary_insight"] = estimate_job_salary(j)
             j["company_insight"] = get_company_health_insight(j.get("company", ""), conn)
+            # Remove texto bruto de descrição para enxugar o HTML e carregar instantaneamente
+            j.pop("description", None)
 
             jobs.append(j)
 
