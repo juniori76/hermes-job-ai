@@ -56,62 +56,15 @@ send_telegram_alert = send_telegram_message
 
 def notify_high_score_job(job: Dict[str, Any]) -> bool:
     """
-    Alerta especial para vaga com alta afinidade (modo smart/auto).
-    Inclui botões inline para Aprovar ou Rejeitar direto no Telegram.
+    Roteia e notifica a vaga de alto score especificamente para o Telegram
+    do membro da família correspondente aos cargos pretendidos.
     """
-    score = job.get("match_score", 0)
-    title = job.get("title", "Vaga")
-    company = job.get("company", "Empresa")
-    location = job.get("location", "Local não informado")
-    modality = job.get("modality", "")
-    job_url = job.get("job_url", "")
-    job_id = job.get("id", "")
-    reasons = job.get("match_reasons", "Sem detalhes adicionais")
-    age_hours = job.get("age_hours", None)
-
-    # Badge de urgência
-    if age_hours is not None and age_hours < 2:
-        urgency = "🔥 URGENTE — há menos de 2h!"
-    elif age_hours is not None and age_hours < 6:
-        urgency = "⚡ Recente — há menos de 6h"
-    else:
-        urgency = "🕒 Hoje"
-
-    # Emoji de modalidade
-    modality_map = {"remote": "🏠 Remoto", "hybrid": "🔀 Híbrido", "presential": "🏢 Presencial"}
-    modality_label = modality_map.get(modality, modality)
-
-    msg = (
-        f"🎯 *VAGA DE ALTO SCORE ENCONTRADA!*\n\n"
-        f"💼 *Cargo:* {title}\n"
-        f"🏢 *Empresa:* {company}\n"
-        f"📍 *Local:* {location} — {modality_label}\n"
-        f"⭐ *Score ATS:* `{score}%`\n"
-        f"⏱ {urgency}\n\n"
-        f"🧠 *Por que combina com você:*\n_{reasons}_\n\n"
-        f"🔗 [Acessar Vaga]({job_url})\n"
-        f"📱 [Painel Hermes](http://192.168.0.123:8090)"
-    )
-
-    # Botões inline de aprovação rápida
-    reply_markup = None
-    if job_id:
-        panel_base = "http://192.168.0.123:8090"
-        reply_markup = {
-            "inline_keyboard": [[
-                {
-                    "text": "✅ Aprovar",
-                    "url": f"{panel_base}/api/jobs/{job_id}/approve_redirect"
-                },
-                {
-                    "text": "❌ Rejeitar",
-                    "url": f"{panel_base}/api/jobs/{job_id}/reject_redirect"
-                }
-            ]]
-        }
-
-    return send_telegram_message(msg, reply_markup=reply_markup)
-
+    try:
+        from core.telegram_multi_router import notify_segmented_job
+        return notify_segmented_job(job)
+    except Exception as e:
+        print(f"[Notifier ⚠️] Erro no roteador multi-perfil: {e}")
+        return False
 
 def notify_application_sent(job_title: str, company: str, job_url: str = "", status: str = "sent") -> bool:
     """Alerta de candidatura realizada (modo auto)."""

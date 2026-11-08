@@ -30,10 +30,17 @@ from core.notifier import test_telegram_connection
 from core.profiles_manager import list_profiles, get_profile, save_profile, get_resume_path
 from core.visual_copilot import answer_job_question
 from core.resume_optimizer import optimize_resume_for_target
+from core.telegram_multi_router import (
+    start_telegram_listener, list_all_bindings, bind_user_telegram
+)
 from automation.apply_engine import apply_to_job
 from automation.browser_session import check_auth_status, launch_assisted_login
 
 app = FastAPI(title="Hermes Job AI Dashboard")
+
+@app.on_event("startup")
+async def startup_event():
+    start_telegram_listener()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -1030,3 +1037,38 @@ async def api_download_resume(username: str, file_format: str, request: Request)
         filename=filename
     )
 
+
+
+@app.get("/api/telegram/bindings")
+async def api_get_telegram_bindings(request: Request):
+    """Retorna o status de vinculação do Telegram de cada perfil da casa."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    bindings = list_all_bindings()
+    profiles = list_profiles()
+    result = []
+    for p in profiles:
+        u_id = p["id"]
+        result.append({
+            "username": u_id,
+            "display_name": p.get("display_name", u_id.capitalize()),
+            "chat_id": bindings.get(u_id),
+            "is_linked": bool(bindings.get(u_id))
+        })
+    return {"bindings": result}
+
+
+@app.post("/api/telegram/bind")
+async def api_bind_telegram(request: Request):
+    """Permite vincular manualmente o Chat ID de um membro pelo painel Web."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    body = await request.json()
+    username = body.get("username", "").strip().lower()
+    chat_id = body.get("chat_id", "").strip()
+    if not username or not chat_id:
+        return JSONResponse({"error": "Usuário e Chat ID são obrigatórios."}, status_code=400)
+    success = bind_user_telegram(chat_id, username)
+    if success:
+        return {"success": True, "message": f"Telegram de @{username} vinculado com sucesso!"}
+    return JSONResponse({"error": "Usuário não encontrado."}, status_code=400)

@@ -10,6 +10,7 @@ import uvicorn
 from dotenv import load_dotenv
 from core.database import init_db
 from core.scheduler import start_scheduler
+from core.telegram_multi_router import start_telegram_listener
 
 load_dotenv()
 
@@ -23,6 +24,9 @@ if __name__ == "__main__":
     # Inicia o agendador em uma thread paralela de segundo plano
     scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
     scheduler_thread.start()
+
+    # Inicia o roteador inteligente e listener de mensagens do Telegram
+    start_telegram_listener()
     
     print(f"\n=======================================================")
     print(f"🚀 Hermes Job AI rodando com sucesso!")
