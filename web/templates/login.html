@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#070a13">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Hermes Job AI - Acesso Seguro</title>
+  <title>Hermes Job AI - Centro de Comando de Carreiras</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -16,59 +16,140 @@
     .glass-input:focus { border-color: #6366f1; outline: none; }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex items-center justify-center p-3 sm:p-6 md:p-10 relative overflow-x-hidden">
 
-  <div class="glass-card max-w-md w-full p-8 rounded-3xl shadow-2xl space-y-6 relative overflow-hidden">
-    <!-- Efeito de gradiente de fundo -->
-    <div class="absolute -top-24 -left-24 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+  <!-- Efeitos de gradiente ambiente de fundo -->
+  <div class="absolute -top-32 -left-32 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
-    <div class="text-center space-y-2">
-      <div class="inline-flex bg-gradient-to-tr from-indigo-600 to-violet-500 text-white p-3.5 rounded-2xl shadow-lg shadow-indigo-500/25 mb-1">
-        <i class="fa-solid fa-robot text-2xl"></i>
-      </div>
-      <h1 class="text-2xl font-black text-white tracking-tight">Hermes Job AI</h1>
-      <p class="text-xs text-slate-400">Entre com suas credenciais para acessar sua Central de Vagas</p>
-    </div>
+  <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
 
-    {% if error %}
-    <div class="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3.5 rounded-2xl text-xs flex items-center gap-2">
-      <i class="fa-solid fa-circle-exclamation"></i>
-      <span>{{ error }}</span>
-    </div>
-    {% endif %}
-
-    <form method="POST" action="/login" class="space-y-4">
-      <div>
-        <label class="text-xs font-bold text-slate-400 block mb-1.5">Usuário</label>
-        <div class="relative">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500 text-sm">
-            <i class="fa-solid fa-user"></i>
-          </span>
-          <input type="text" name="username" required placeholder="eduardo" value="eduardo" class="w-full pl-10 pr-4 py-2.5 text-sm glass-input">
-        </div>
+    <!-- ================= COLUNA ESQUERDA: APRESENTAÇÃO DO HERMES ================= -->
+    <div class="lg:col-span-7 space-y-5 text-left">
+      <!-- Tag de Apresentação Mitológica -->
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-xs font-bold uppercase tracking-wider">
+        <i class="fa-solid fa-feather-pointed text-amber-400"></i> O Mensageiro Veloz das Oportunidades
       </div>
 
-      <div>
-        <label class="text-xs font-bold text-slate-400 block mb-1.5">Senha</label>
-        <div class="relative">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500 text-sm">
-            <i class="fa-solid fa-lock"></i>
-          </span>
-          <input type="password" name="password" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 text-sm glass-input">
-        </div>
+      <!-- Título Principal -->
+      <div class="space-y-1">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight flex items-center gap-3">
+          Hermes <span class="bg-gradient-to-r from-indigo-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">Job AI</span>
+        </h1>
+        <p class="text-sm sm:text-base font-semibold text-slate-300">
+          Inteligência Artificial & Radar 24/7 para Carreiras da Família
+        </p>
       </div>
 
-      <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm py-3 rounded-2xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 mt-2">
-        <i class="fa-solid fa-arrow-right-to-bracket"></i> Acessar Central
-      </button>
-    </form>
-
-    <div class="pt-4 border-t border-slate-800/80 text-center">
-      <p class="text-[11px] text-slate-500">
-        <i class="fa-solid fa-shield-halved text-emerald-400"></i> Autenticação Criptografada • Servidor Pessoal
+      <!-- Texto Explicativo do Sistema -->
+      <p class="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-xl">
+        Inspirado no deus mensageiro da mitologia grega — conhecido por sua agilidade inigualável e pelo dom da eloquência —, o <strong>Hermes</strong> foi desenvolvido para automatizar a busca por empregos, analisar a compatibilidade do seu currículo com robôs de RH (ATS) e ajudar você e sua família a conquistar as melhores oportunidades profissionais no menor tempo possível.
       </p>
+
+      <!-- Grade dos 4 Pilares do Hermes -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+        <div class="bg-slate-900/60 border border-slate-800/80 p-3.5 rounded-2xl flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5 text-base">
+            <i class="fa-solid fa-satellite-dish"></i>
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-white">Radar em 5 Plataformas</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">LinkedIn Easy Apply, Gupy, Indeed, Vagas.com e InfoJobs em tempo real.</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800/80 p-3.5 rounded-2xl flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 text-base">
+            <i class="fa-solid fa-brain"></i>
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-white">Cérebro ATS Gemini</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Classifica cada vaga de 0 a 100% e gera currículos sob medida em PDF e Word.</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800/80 p-3.5 rounded-2xl flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0 mt-0.5 text-base">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-white">Copiloto IA de Formulários</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Tirou print da pergunta na Gupy? A IA analisa a tela e formula a resposta ideal.</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800/80 p-3.5 rounded-2xl flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0 mt-0.5 text-base">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-white">Multiperfil & Telegram</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Contas e alertas separados no Telegram para você, sua esposa, irmão e parentes.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rodapé Institucional -->
+      <div class="flex items-center gap-4 text-xs text-slate-500 pt-1">
+        <span class="flex items-center gap-1.5"><i class="fa-solid fa-server text-emerald-400"></i> Servidor Base Diadema - SP</span>
+        <span>•</span>
+        <span class="flex items-center gap-1.5"><i class="fa-solid fa-bolt text-amber-400"></i> Operação 24/7 Ativa</span>
+      </div>
     </div>
+
+    <!-- ================= COLUNA DIREITA: FORMULÁRIO DE LOGIN ================= -->
+    <div class="lg:col-span-5 w-full">
+      <div class="glass-card p-6 sm:p-8 rounded-3xl shadow-2xl space-y-6 relative border border-slate-800/90">
+        
+        <div class="text-left space-y-1.5">
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-xl mb-1">
+            <i class="fa-solid fa-shield-halved"></i> Acesso Protegido
+          </div>
+          <h2 class="text-xl font-bold text-white tracking-tight">Entre na sua Central</h2>
+          <p class="text-xs text-slate-400">Digite seu usuário de membro e sua senha pessoal.</p>
+        </div>
+
+        {% if error %}
+        <div class="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3.5 rounded-2xl text-xs flex items-center gap-2">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/login" class="space-y-4">
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1.5">Usuário de Login</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500 text-sm">
+                <i class="fa-solid fa-user"></i>
+              </span>
+              <input type="text" name="username" required placeholder="ex: eduardo, esposa, gabriel..." autocomplete="username" class="w-full pl-10 pr-4 py-3 text-sm glass-input text-white placeholder-slate-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1.5">Senha</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500 text-sm">
+                <i class="fa-solid fa-lock"></i>
+              </span>
+              <input type="password" name="password" required placeholder="Sua senha de acesso" autocomplete="current-password" class="w-full pl-10 pr-4 py-3 text-sm glass-input text-white placeholder-slate-500">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-sm py-3.5 rounded-2xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 mt-2 active:scale-95">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i> Acessar Minha Central
+          </button>
+        </form>
+
+        <div class="pt-4 border-t border-slate-800/80 text-center">
+          <p class="text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-lock text-emerald-400"></i> Autenticação PBKDF2 Criptografada • Hermes 2.0
+          </p>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 </body>
