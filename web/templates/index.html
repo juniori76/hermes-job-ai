@@ -109,9 +109,6 @@
       }
       setTimeout(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-      if (tab === 'historico') {
-        loadApplicationsHistory();
-      }
       }, 100);
     }
 
@@ -1459,6 +1456,8 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
       if (tab === 'historico') {
         loadApplicationsHistory();
+      } else if (tab === 'sessoes') {
+        checkAuthStatusNow();
       }
     }
 
@@ -1785,7 +1784,7 @@ async function changePassword() {
     }
 
     // Carrega settings ao iniciar a página
-    document.addEventListener('DOMContentLoaded', () => { loadCurrentSettings(); checkAuthStatusNow(); setInterval(checkAuthStatusNow, 6000); });
+    document.addEventListener('DOMContentLoaded', () => { loadCurrentSettings(); });
 
     async function checkAuthStatusNow() {
       const elIn = document.getElementById('status-linkedin');

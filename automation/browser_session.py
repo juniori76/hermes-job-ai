@@ -139,15 +139,22 @@ def open_session(headless: bool = False):
             _clear_singleton_locks()
 
 
+_AUTH_STATUS_CACHE = {"timestamp": 0, "status": {"linkedin": False, "gupy": False}}
+
 def check_auth_status() -> Dict[str, bool]:
     """
     Verifica se existem sessões ativas e válidas para o LinkedIn e a Gupy.
-    Primeiro verifica o banco de cookies do Chromium (instantâneo, sem abrir janela).
-    Se inconclusivo, faz verificação rápida via Playwright.
+    Lê diretamente o banco SQLite de cookies do Chromium (instantâneo, < 2ms, zero CPU).
+    Nunca dispara navegadores em background.
     """
+    import time
+    now = time.time()
+    if now - _AUTH_STATUS_CACHE["timestamp"] < 15:
+        return _AUTH_STATUS_CACHE["status"]
+
     status = {"linkedin": False, "gupy": False}
     
-    # Método 1: Verificação direta via SQLite de cookies do Chromium
+    # Verificação direta via SQLite de cookies do Chromium
     cookie_paths = [
         os.path.join(PROFILE_DIR, "Default", "Network", "Cookies"),
         os.path.join(PROFILE_DIR, "Default", "Cookies"),
@@ -167,7 +174,7 @@ def check_auth_status() -> Dict[str, bool]:
                 if "li_at" in li_names:
                     status["linkedin"] = True
                 
-                # Check Gupy (procura tokens reais de sessão, não apenas cookies de analytics)
+                # Check Gupy (tokens reais de sessão)
                 cur.execute("SELECT name FROM cookies WHERE host_key LIKE '%gupy%'")
                 gu_names = {r[0] for r in cur.fetchall()}
                 gupy_auth_keys = {"auth_token", "jwt_token", "gupy_session", "candidate_token", "user_id", "access_token"}
@@ -177,41 +184,11 @@ def check_auth_status() -> Dict[str, bool]:
                 conn.close()
                 if os.path.exists(tmp_db):
                     os.remove(tmp_db)
-            except Exception as ce:
-                print(f"[Auth Status] Aviso check cookies db: {ce}")
-                
-    if status["linkedin"] and status["gupy"]:
-        return status
+            except Exception:
+                pass
 
-    # Método 2: Verificação rápida via Playwright se ainda houver dúvida
-    try:
-        with open_session(headless=True) as ctx:
-            page = ctx.new_page()
-
-            # Checagem LinkedIn
-            if not status["linkedin"]:
-                try:
-                    page.goto("https://www.linkedin.com/feed/", timeout=10000)
-                    human_pause(1.0, 1.8)
-                    if "/feed" in page.url or "/in/" in page.url:
-                        status["linkedin"] = True
-                except Exception:
-                    pass
-
-            # Checagem Gupy
-            if not status["gupy"]:
-                try:
-                    page.goto("https://portal.gupy.io/", timeout=10000)
-                    human_pause(1.0, 1.8)
-                    entrar_btn = page.locator("a:has-text('Entrar'), button:has-text('Entrar')").first
-                    if not entrar_btn.is_visible(timeout=1500):
-                        status["gupy"] = True
-                except Exception:
-                    pass
-
-    except Exception as e:
-        print(f"[Auth Status ⚠️] Erro ao verificar sessões: {e}")
-
+    _AUTH_STATUS_CACHE["timestamp"] = now
+    _AUTH_STATUS_CACHE["status"] = status
     return status
 
 
