@@ -3,7 +3,7 @@ Módulo Salary Oracle (Oráculo Salarial) - Hermes Job AI
 Calcula a faixa de remuneração de mercado para cada vaga com base em:
 1. Salário real divulgado pela empresa (se houver).
 2. Tabela de benchmark salarial oficial (Base CAGED/MTE e Glassdoor São Paulo).
-3. Modificadores de competências técnicas (ex: MikroTik, Firewall, Zabbix, Virtualização).
+3. Modificadores de competências técnicas rigorosamente balanceados por senioridade.
 4. Links diretos e auditáveis para pesquisa salarial oficial do cargo.
 """
 
@@ -13,52 +13,64 @@ from typing import Dict, Any, Optional
 
 # Tabela base de remuneração média de mercado (Região Metropolitana de SP / Remoto nacional)
 ROLE_BENCHMARKS = [
-    # TI - Infra / Redes / Suporte
-    (r"(estagi[aá]rio|estagio).*(ti|redes|suporte|infra)", 1500, 2200, "Estágio"),
-    (r"(suporte.*(n1|1|t[eé]cnico|helpdesk)|t[eé]cnico.*(suporte|inform[aá]tica)).*jr", 2600, 3600, "Júnior"),
-    (r"(suporte.*(n1|1|helpdesk)|t[eé]cnico.*inform[aá]tica)", 2400, 3400, "Operacional"),
-    (r"(analista.*ti|analista.*suporte|suporte.*ti).*jr", 3200, 4400, "Júnior"),
-    (r"(analista.*ti|analista.*suporte|suporte.*ti).*pl", 4500, 6200, "Pleno"),
-    (r"(analista.*ti|analista.*suporte|suporte.*ti).*sr", 6500, 8800, "Sênior"),
-    (r"(analista.*infra|analista.*redes|infraestrutura).*jr", 3500, 4800, "Júnior"),
-    (r"(analista.*infra|analista.*redes|infraestrutura).*pl", 5000, 7200, "Pleno"),
-    (r"(analista.*infra|analista.*redes|infraestrutura).*sr", 7500, 10500, "Sênior"),
-    (r"(administrador.*redes|sysadmin|administrador.*sistemas).*pl", 5500, 7800, "Pleno"),
-    (r"(administrador.*redes|sysadmin|administrador.*sistemas)", 4800, 7200, "Especialista"),
-    (r"(seguran[çc]a da informa[çc][aã]o|cybersecurity|soc)", 5500, 8500, "Pleno"),
-    (r"(coordenador|supervisor|l[ií]der t[eé]cnico).*(ti|infra|suporte)", 8000, 13000, "Gestão"),
+    # TI - Estágios
+    (r"(estagi[aá]rio|estagio).*(ti|redes|suporte|infra|seguran[çc]a)", 1400, 2200, "Estágio"),
+    
+    # TI - Suporte & Helpdesk
+    (r"(suporte.*(n1|1|t[eé]cnico|helpdesk)|t[eé]cnico.*(suporte|inform[aá]tica)).*jr", 2500, 3500, "Júnior"),
+    (r"(suporte.*(n1|1|helpdesk)|t[eé]cnico.*inform[aá]tica)", 2400, 3300, "Operacional"),
+    (r"(analista.*ti|analista.*suporte|suporte.*ti).*jr", 3000, 4200, "Júnior"),
+    (r"(analista.*ti|analista.*suporte|suporte.*ti).*pl", 4200, 5800, "Pleno"),
+    (r"(analista.*ti|analista.*suporte|suporte.*ti).*sr", 6000, 8200, "Sênior"),
+    
+    # TI - Infraestrutura & Redes
+    (r"(analista.*infra|analista.*redes|infraestrutura).*jr", 3200, 4500, "Júnior"),
+    (r"(analista.*infra|analista.*redes|infraestrutura).*pl", 4800, 6800, "Pleno"),
+    (r"(analista.*infra|analista.*redes|infraestrutura).*sr", 7000, 9800, "Sênior"),
+    (r"(administrador.*redes|sysadmin|administrador.*sistemas).*jr", 3500, 4800, "Júnior"),
+    (r"(administrador.*redes|sysadmin|administrador.*sistemas).*pl", 5000, 7200, "Pleno"),
+    (r"(administrador.*redes|sysadmin|administrador.*sistemas)", 4500, 6800, "Pleno"),
+    
+    # TI - Segurança da Informação / Cyber / SOC
+    (r"(seguran[çc]a|cyber|soc|infosec).*jr", 3500, 4800, "Júnior"),
+    (r"(seguran[çc]a|cyber|soc|infosec).*pl", 5200, 7500, "Pleno"),
+    (r"(seguran[çc]a|cyber|soc|infosec).*sr", 8000, 11500, "Sênior"),
+    (r"(seguran[çc]a da informa[çc][aã]o|cybersecurity|soc)", 4200, 6200, "Pleno"),
+
+    # TI - Gestão & Coordenação
+    (r"(coordenador|supervisor|l[ií]der t[eé]cnico).*(ti|infra|suporte)", 7500, 12000, "Gestão"),
 
     # Administrativo / Operacional (Ex: Perfil Rute)
     (r"(jovem aprendiz|aprendiz)", 800, 1300, "Aprendiz"),
-    (r"(recepcionista|atendente|telefonista)", 1800, 2600, "Operacional"),
-    (r"(auxiliar.*administrativ|assistente.*administrativ.*jr)", 2200, 3200, "Júnior"),
-    (r"(assistente.*administrativ|analista.*administrativ.*jr)", 2600, 3600, "Júnior"),
-    (r"(analista.*administrativ.*pl|analista.*financeir.*pl)", 3800, 5200, "Pleno"),
-    (r"(analista.*administrativ|analista.*financeir)", 3200, 4800, "Pleno"),
-    (r"(faturamento|fiscal|cont[aá]bil)", 2800, 4200, "Técnico"),
+    (r"(recepcionista|atendente|telefonista)", 1800, 2500, "Operacional"),
+    (r"(auxiliar.*administrativ|assistente.*administrativ.*jr)", 2000, 3000, "Júnior"),
+    (r"(assistente.*administrativ|analista.*administrativ.*jr)", 2500, 3500, "Júnior"),
+    (r"(analista.*administrativ.*pl|analista.*financeir.*pl)", 3800, 5000, "Pleno"),
+    (r"(analista.*administrativ|analista.*financeir)", 3000, 4500, "Pleno"),
+    (r"(faturamento|fiscal|cont[aá]bil)", 2600, 4000, "Técnico"),
 ]
 
-# Modificadores de valorização por habilidades técnicas de alto valor agregado
+# Modificadores de valorização por habilidades técnicas (controlados)
 SKILL_MODIFIERS = [
-    (r"(mikrotik|mtcna|routeros)", 0.08, "MikroTik"),
-    (r"(fortinet|firewall|fortigate|pfsense)", 0.08, "Firewall/Segurança"),
-    (r"(zabbix|grafana|prometheus)", 0.06, "Observabilidade"),
-    (r"(vmware|esxi|proxmox|hyper-v)", 0.07, "Virtualização"),
-    (r"(microsoft 365|office 365|ms-900|azure)", 0.06, "Cloud M365/Azure"),
-    (r"(active directory|gpo|windows server)", 0.05, "Windows Server/AD"),
-    (r"(n8n|python|powershell|automa[çc])", 0.05, "Automação"),
+    (r"(mikrotik|mtcna|routeros)", 0.05, "MikroTik"),
+    (r"(fortinet|firewall|fortigate|pfsense)", 0.05, "Firewall/Segurança"),
+    (r"(zabbix|grafana|prometheus)", 0.04, "Observabilidade"),
+    (r"(vmware|esxi|proxmox|hyper-v)", 0.05, "Virtualização"),
+    (r"(microsoft 365|office 365|ms-900|azure)", 0.04, "Cloud M365/Azure"),
+    (r"(active directory|gpo|windows server)", 0.04, "Windows Server/AD"),
+    (r"(n8n|python|powershell|automa[çc])", 0.04, "Automação"),
 ]
 
 
 def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    Retorna a inteligência salarial da vaga com link de auditoria.
+    Retorna a inteligência salarial da vaga com link de auditoria direta no Glassdoor e CAGED.
     """
     sal_min = float(job.get("salary_min") or 0.0)
     sal_max = float(job.get("salary_max") or 0.0)
     raw_title = job.get("title") or "Profissional de TI"
     clean_title = re.sub(r"[\–\-\|\(\)\/].*", "", raw_title).strip()
-    encoded_title = urllib.parse.quote_plus(clean_title)
+    encoded_title = urllib.parse.quote_plus(raw_title.strip())
 
     salary_research_url = f"https://www.google.com/search?q=salario+medio+{encoded_title}+sao+paulo+glassdoor+caged"
 
@@ -85,34 +97,47 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
         }
 
     # 2. Se não tem salário divulgado, inferir pelo mercado + senioridade + skills
-    title = (job.get("title") or "").lower()
-    desc = (job.get("description") or "").lower()
-    full_text = f"{title} {desc}"
+    title_lower = (job.get("title") or "").lower()
+    desc_lower = (job.get("description") or "").lower()
+    full_text = f"{title_lower} {desc_lower}"
 
-    matched_min = 3000.0
-    matched_max = 4200.0
+    # Detecção de Senioridade explícita no título
+    is_estagio = bool(re.search(r"\b(est[aá]gio|estagi[aá]rio)\b", title_lower))
+    is_junior = bool(re.search(r"\b(j[uú]nior|jr|trainee|i\b|1\b)\b", title_lower))
+    is_senior = bool(re.search(r"\b(s[eê]nior|sr|especialista|coordenador|supervisor)\b", title_lower))
+
+    matched_min = 3200.0
+    matched_max = 4400.0
     matched_label = "Média de Mercado SP"
     rule_found = False
 
     for pattern, b_min, b_max, label in ROLE_BENCHMARKS:
-        if re.search(pattern, title):
+        if re.search(pattern, title_lower):
             matched_min = float(b_min)
             matched_max = float(b_max)
             matched_label = f"Média {label} em SP"
             rule_found = True
             break
 
-    # Se não achou no título, busca palavras-chave no texto geral
+    # Se não achou no título, busca no texto geral
     if not rule_found:
         for pattern, b_min, b_max, label in ROLE_BENCHMARKS:
-            if re.search(pattern, desc[:500]):
+            if re.search(pattern, desc_lower[:500]):
                 matched_min = float(b_min)
                 matched_max = float(b_max)
                 matched_label = f"Estimativa {label}"
                 rule_found = True
                 break
 
-    # Aplica modificadores de skills de alta complexidade
+    # Teto e Piso de Segurança por Senioridade (Garante que Júnior nunca caia em faixa Pleno/Sênior)
+    if is_junior:
+        matched_min = min(matched_min, 3800.0)
+        matched_max = min(matched_max, 4900.0)
+    elif is_estagio:
+        matched_min = min(matched_min, 1500.0)
+        matched_max = min(matched_max, 2200.0)
+
+    # Aplica modificadores de skills técnicas
     bonus_multiplier = 0.0
     skills_boosted = []
     for pattern, boost, skill_name in SKILL_MODIFIERS:
@@ -120,12 +145,17 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
             bonus_multiplier += boost
             skills_boosted.append(skill_name)
 
-    bonus_multiplier = min(bonus_multiplier, 0.30)
+    # Limita o bônus máximo
+    bonus_multiplier = min(bonus_multiplier, 0.15)
     final_min = round((matched_min * (1.0 + bonus_multiplier)) / 100) * 100
     final_max = round((matched_max * (1.0 + bonus_multiplier)) / 100) * 100
 
+    # Aplica teto final estrito de Júnior se detectado
+    if is_junior:
+        final_max = min(final_max, 5000.0)
+
     display = f"R$ {final_min:,.0f} – R$ {final_max:,.0f}".replace(",", ".")
-    boost_desc = f" (+{len(skills_boosted)} skills de alto valor)" if skills_boosted else ""
+    boost_desc = f" (+{len(skills_boosted)} skills técnicas)" if skills_boosted else ""
 
     return {
         "has_explicit_salary": False,
@@ -137,5 +167,5 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
         "badge_type": "estimate",
         "source_name": "Média Salarial SP (Base CAGED / Glassdoor)",
         "source_url": salary_research_url,
-        "explanation": f"Métrica base salarial de São Paulo para {clean_title}{boost_desc}. Empresa optou por não divulgar o valor exato no anúncio."
+        "explanation": f"Métrica base salarial em São Paulo para {clean_title}{boost_desc}. A empresa não divulgou o valor oficial."
     }
