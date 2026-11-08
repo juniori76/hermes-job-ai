@@ -407,12 +407,39 @@
 
                 <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">{{ job.site }}</span>
 
-                
+                <!-- Badge de Estimativa / Salário Real -->
+                {% if job.salary_insight %}
+                  <span class="text-xs px-2.5 py-0.5 rounded-lg border {{ job.salary_insight.badge_css }} flex items-center gap-1 font-semibold" title="{{ job.salary_insight.explanation }}">
+                    {{ job.salary_insight.badge_html_text }}
+                  </span>
+                {% endif %}
+
+                <!-- Badge de Saúde / Reputação da Empresa -->
+                {% if job.company_insight %}
+                  <span class="text-xs px-2.5 py-0.5 rounded-lg border {{ job.company_insight.badge_css }} flex items-center gap-1 font-medium cursor-help" title="Prós: {{ job.company_insight.pros }} | Contras: {{ job.company_insight.cons }}">
+                    {{ job.company_insight.badge_text }}
+                  </span>
+                {% endif %}
+
               </div>
 
               <p class="text-xs text-slate-400 mt-1">
                 <strong class="text-slate-200">{{ job.company }}</strong> • <i class="fa-solid fa-location-dot text-indigo-400"></i> {{ job.location }} • Publicado: {{ job.created_at[:10] }}
               </p>
+
+              <!-- Destaque de Clima / Reputação da Empresa (Prós e Alertas) -->
+              {% if job.company_insight and not job.company_insight.is_confidential and job.company_insight.pros %}
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px]">
+                  <span class="text-emerald-400/90 flex items-center gap-1">
+                    <i class="fa-solid fa-thumbs-up text-[10px]"></i> {{ job.company_insight.pros }}
+                  </span>
+                  {% if job.company_insight.cons %}
+                    <span class="text-amber-400/80 flex items-center gap-1">
+                      <i class="fa-solid fa-circle-exclamation text-[10px]"></i> {{ job.company_insight.cons }}
+                    </span>
+                  {% endif %}
+                </div>
+              {% endif %}
 
               {% if job.match_reasons %}
                 <p class="text-xs text-slate-300 mt-2 bg-slate-950/70 p-3 rounded-xl border border-slate-800">

@@ -71,6 +71,22 @@ def init_db():
             );
         """)
 
+        # Tabela de Reputação e Saúde de Empresas (Company Health Insights)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS company_insights (
+                company_clean TEXT PRIMARY KEY,
+                company_display TEXT NOT NULL,
+                rating REAL,
+                rating_label TEXT,
+                sentiment TEXT,
+                pros TEXT,
+                cons TEXT,
+                culture_summary TEXT,
+                is_confidential BOOLEAN DEFAULT 0,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
+
         # Tabela do Funil / Histórico de Gestão de Candidaturas
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS job_applications (

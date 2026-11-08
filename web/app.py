@@ -137,7 +137,8 @@ async def dashboard_home(request: Request):
         # Top 500 melhores vagas ranqueadas priorizando o perfil atual
         cursor.execute("""
             SELECT id, site, title, company, location, is_remote, job_url, 
-                   match_score, match_reasons, keywords_found, status, date_posted, created_at, target_user
+                   match_score, match_reasons, keywords_found, status, date_posted, created_at, target_user,
+                   salary_min, salary_max, description
             FROM jobs
             ORDER BY 
                 CASE WHEN target_user = ? THEN 0 ELSE 1 END,
@@ -150,9 +151,11 @@ async def dashboard_home(request: Request):
         # Carrega os perfis em memória UMA ÚNICA VEZ
         from core.profiles_manager import list_profiles
         from core.telegram_multi_router import route_job_to_user
+        from core.salary_oracle import estimate_job_salary
+        from core.company_analyzer import get_company_health_insight
         cached_profiles = list_profiles()
 
-        # Processa tags de antiguidade da vaga
+        # Processa tags de antiguidade da vaga e inteligência de mercado
         jobs = []
         for j in raw_jobs:
             age = calculate_job_age_hours(j.get("date_posted") or j.get("created_at", ""))
@@ -163,6 +166,11 @@ async def dashboard_home(request: Request):
             j["badge_icon"] = badge_icon
             if not j.get("target_user"):
                 j["target_user"] = route_job_to_user(j, cached_profiles)
+            
+            # Inteligência de Mercado: Salário Médio & Reputação da Empresa
+            j["salary_insight"] = estimate_job_salary(j)
+            j["company_insight"] = get_company_health_insight(j.get("company", ""), conn)
+
             jobs.append(j)
 
     return templates.TemplateResponse(
