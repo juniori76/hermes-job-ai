@@ -8,7 +8,7 @@ import hashlib
 import secrets
 import json
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -112,4 +112,61 @@ def change_user_password(username: str, new_password: str) -> bool:
         return True
     except Exception as e:
         print(f"[Auth ⚠️] Erro ao alterar senha: {e}")
+        return False
+
+
+def create_user(username: str, password: str, display_name: str = "") -> bool:
+    """Cria um novo usuário e hash de senha no sistema."""
+    init_auth()
+    try:
+        username = username.strip().lower()
+        if not username or not password:
+            return False
+        with open(AUTH_FILE, "r", encoding="utf-8") as f:
+            users = json.load(f)
+        users[username] = {
+            "password_hash": hash_password(password),
+            "display_name": display_name or username.capitalize(),
+            "created_at": datetime.now().isoformat()
+        }
+        with open(AUTH_FILE, "w", encoding="utf-8") as f:
+            json.dump(users, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"[Auth ⚠️] Erro ao criar usuário: {e}")
+        return False
+
+
+def list_users() -> Dict[str, Any]:
+    """Retorna todos os usuários cadastrados."""
+    init_auth()
+    try:
+        with open(AUTH_FILE, "r", encoding="utf-8") as f:
+            users = json.load(f)
+        return {
+            u: {
+                "display_name": data.get("display_name", u.capitalize()),
+                "created_at": data.get("created_at", "")
+            }
+            for u, data in users.items()
+        }
+    except Exception:
+        return {}
+
+
+def delete_user(username: str) -> bool:
+    """Remove um usuário (não permite remover eduardo)."""
+    if username.lower() == "eduardo":
+        return False
+    init_auth()
+    try:
+        with open(AUTH_FILE, "r", encoding="utf-8") as f:
+            users = json.load(f)
+        if username in users:
+            del users[username]
+            with open(AUTH_FILE, "w", encoding="utf-8") as f:
+                json.dump(users, f, indent=2)
+            return True
+        return False
+    except Exception:
         return False

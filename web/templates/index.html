@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hermes Job AI - Centro de Comando de Carreiras</title>
@@ -38,6 +41,9 @@
         <button onclick="switchTab('vagas')" id="tab-vagas" class="px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-briefcase"></i> Central de Vagas
         </button>
+        <button onclick="switchTab('copilot')" id="tab-copilot" class="px-4 py-2 rounded-xl font-medium text-amber-300 hover:text-white transition flex items-center gap-2 whitespace-nowrap bg-amber-500/10 border border-amber-500/20">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Copiloto IA (Ctrl+V)
+        </button>
         <button onclick="switchTab('regras')" id="tab-regras" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-location-crosshairs text-amber-400"></i> Modalidades, Km & Salário
         </button>
@@ -46,6 +52,9 @@
         </button>
         <button onclick="switchTab('sessoes')" id="tab-sessoes" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-user-lock text-emerald-400"></i> Plataformas & IA
+        </button>
+        <button onclick="switchTab('admin')" id="tab-admin" class="px-4 py-2 rounded-xl font-medium text-purple-300 hover:text-white transition flex items-center gap-2 whitespace-nowrap bg-purple-500/10 border border-purple-500/20">
+          <i class="fa-solid fa-users-gear text-purple-400"></i> Gestão de Perfis & Família
         </button>
       </nav>
 
@@ -115,6 +124,15 @@
           </div>
 
           <div class="flex items-center gap-2 w-full lg:w-auto justify-end">
+            <div class="flex items-center gap-1.5 w-full sm:w-auto">
+              <input type="text" id="live-search-cargo" placeholder="Pesquisar cargo novo (ex: suporte de redes)..." 
+                     class="bg-slate-950 border border-slate-700 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none w-48 md:w-64">
+              <button onclick="searchLiveCargo()" title="Dispara busca imediata deste cargo nas 5 plataformas" 
+                      class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 whitespace-nowrap">
+                <i class="fa-solid fa-bolt text-amber-300"></i> Buscar
+              </button>
+            </div>
+            
             <button onclick="triggerAction('/api/scan', 'Varredura disparada em todas as plataformas!')" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-700 flex items-center gap-2 transition shadow-sm">
               <i class="fa-solid fa-satellite-dish text-indigo-400"></i> Varrer Vagas
             </button>
@@ -164,8 +182,11 @@
             <span class="text-xs text-slate-400 font-medium whitespace-nowrap">
               Exibindo <span id="filtered-count" class="text-white font-bold">{{ jobs|length }}</span> de <span class="text-indigo-400 font-bold">{{ total_jobs }}</span> vagas
             </span>
-            <button onclick="resetJobFilters()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl border border-slate-700 transition flex items-center gap-1.5 whitespace-nowrap">
+            <button onclick="resetJobFilters()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl border border-slate-700 transition flex items-center gap-1.5 whitespace-nowrap">
               <i class="fa-solid fa-filter-circle-xmark"></i> Limpar Filtros
+            </button>
+            <button onclick="cleanRejectedJobs()" title="Remove vagas rejeitadas do banco para despoluir a visualização" class="text-xs bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 px-3 py-2 rounded-xl border border-rose-800/80 transition flex items-center gap-1.5 whitespace-nowrap">
+              <i class="fa-solid fa-trash-can"></i> Limpar Descartadas
             </button>
           </div>
         </div>
@@ -173,9 +194,10 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
           <div>
             <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Score / Status ATS</label>
-            <select id="filter-score" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200">
-              <option value="all">Todos os Scores</option>
-              <option value="approved">⭐ Aprovadas (Score ≥ 75%)</option>
+            <select id="filter-score" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200 font-medium">
+              <option value="approved" selected>⭐ Aprovadas (Score ≥ 75%)</option>
+              <option value="top">🔥 Top Score (Score ≥ 85%)</option>
+              <option value="all">Todas as Vagas</option>
               <option value="top">🔥 Top Score (Score ≥ 85%)</option>
               <option value="pending">⏳ Aguardando IA</option>
               <option value="applied">✅ Candidatadas / Realizadas</option>
@@ -290,19 +312,27 @@
               {% endif %}
             </div>
 
-            <!-- Botões de Ação -->
-            <div class="flex items-center gap-2 self-end md:self-center">
-              <a href="{{ job.job_url }}" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl border border-slate-700 transition">
-                <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver Vaga
+            <!-- Botões de Ação Direta (Candidatura & Descarte Rápido) -->
+            <div class="flex items-center gap-2 self-end md:self-center flex-wrap justify-end">
+              <!-- Botão 1: Abrir link da vaga -->
+              <a href="{{ job.job_url }}" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl border border-slate-700 transition flex items-center gap-1.5 font-semibold shadow-sm">
+                <i class="fa-solid fa-arrow-up-right-from-square text-indigo-400"></i> Abrir Vaga
               </a>
-              <button onclick="applyJob('{{ job.id }}')" title="Candidatura real automatizada via Playwright" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl font-bold transition shadow-sm flex items-center gap-1.5">
-                <i class="fa-solid fa-paper-plane"></i> Candidatar
-              </button>
-              <button onclick="dryRunJob('{{ job.id }}')" title="Simulação: preenche form e tira print sem enviar" class="text-xs bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 border border-purple-500/40 px-3 py-2 rounded-xl font-bold transition flex items-center gap-1">
-                <i class="fa-solid fa-flask"></i> Simular
-              </button>
-              <button onclick="updateJobStatus('{{ job.id }}', 'rejected')" class="text-xs bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 px-3 py-2 rounded-xl border border-slate-700 transition">
-                <i class="fa-solid fa-trash"></i>
+
+              <!-- Botão 2: Flag Já Me Candidatei -->
+              {% if job.status in ['applied', 'success'] %}
+                <span class="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 shadow-sm">
+                  <i class="fa-solid fa-circle-check text-emerald-400"></i> Candidatado
+                </span>
+              {% else %}
+                <button onclick="markAsApplied('{{ job.id }}')" title="Marca como candidatada e remove da fila pendente" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl font-bold transition shadow-sm flex items-center gap-1.5 active:scale-95">
+                  <i class="fa-solid fa-check-double"></i> Já Me Candidatei
+                </button>
+              {% endif %}
+
+              <!-- Botão 3: Descartar / Limpar da Fila -->
+              <button onclick="markAsDiscarded('{{ job.id }}')" title="Descarta esta vaga (não faz sentido para mim)" class="text-xs bg-slate-800/80 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 px-3 py-2 rounded-xl border border-slate-700/80 hover:border-rose-800/60 transition flex items-center gap-1.5 active:scale-95">
+                <i class="fa-solid fa-ban"></i> Descartar
               </button>
             </div>
           </div>
@@ -316,6 +346,140 @@
     </div>
 
     <!-- ================= ABA 2: REGRAS DE MODALIDADE, KM & SALÁRIO ================= -->
+    
+    <!-- ABA: COPILOTO IA VISUAL (CTRL+V / PRINTS) -->
+    <div id="content-copilot" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
+        <div class="absolute -right-20 -top-20 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-20 -bottom-20 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-800/80">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider mb-2">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Copiloto Anti-Saco-Cheio de Formulários
+            </div>
+            <h2 class="text-2xl font-black text-white flex items-center gap-3">
+              Copiloto IA de Candidatura (Visual Copilot)
+            </h2>
+            <p class="text-slate-400 text-sm mt-1 max-w-2xl">
+              Tirou print de uma pergunta difícil, teste técnico ou formulário chato na Gupy, LinkedIn ou site de empresa? 
+              Basta dar <strong>Ctrl + V</strong> aqui. A IA analisa a tela e formula a resposta ideal fundamentada no seu currículo para você <strong>apenas copiar e colar</strong>.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3 bg-slate-950/80 border border-slate-800 p-2 rounded-2xl">
+            <span class="text-xs font-bold text-slate-400 pl-2">Perfil:</span>
+            <select id="copilot-profile" class="bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-indigo-500">
+              <option value="eduardo" selected>👤 Eduardo (Infra, Redes & Projetos)</option>
+              <option value="esposa">👤 Esposa (Área Operacional / Admin)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- DROPZONE / PASTE AREA -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-6 space-y-4">
+            <div 
+              id="copilot-dropzone" 
+              onclick="document.getElementById('copilot-file-input').click()"
+              class="border-2 border-dashed border-indigo-500/40 hover:border-indigo-400/80 bg-slate-950/60 hover:bg-slate-950/90 rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[260px] group"
+            >
+              <input type="file" id="copilot-file-input" accept="image/*" class="hidden" onchange="handleCopilotFileSelect(event)">
+              
+              <div id="dropzone-empty-state" class="flex flex-col items-center">
+                <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 group-hover:bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-3xl mb-4 transition">
+                  <i class="fa-solid fa-paste"></i>
+                </div>
+                <h3 class="text-base font-bold text-white mb-1">
+                  Pressione <kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700 text-indigo-300 font-mono text-xs">Ctrl + V</kbd> para colar o print aqui
+                </h3>
+                <p class="text-xs text-slate-400 max-w-sm mt-1">
+                  Ou clique para selecionar uma imagem salva do seu computador
+                </p>
+                <div class="mt-4 flex items-center gap-2 text-xs text-slate-400 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800">
+                  <i class="fa-solid fa-camera text-indigo-400"></i> Atalho Windows: <strong>Win + Shift + S</strong>
+                </div>
+              </div>
+
+              <!-- PREVIEW QUANDO TEM IMAGEM -->
+              <div id="dropzone-preview-state" class="hidden w-full flex flex-col items-center">
+                <div class="relative max-h-56 overflow-hidden rounded-xl border border-indigo-500/40 mb-3 shadow-lg">
+                  <img id="copilot-preview-img" src="" alt="Print da Pergunta" class="max-h-52 w-auto object-contain rounded-lg">
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-circle-check"></i> Imagem pronta para análise
+                  </span>
+                  <button type="button" onclick="clearCopilotImage(event)" class="text-xs text-red-400 hover:text-red-300 underline ml-2">
+                    Remover
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- CAMPO DE TEXTO OPCIONAL -->
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
+                Pergunta em Texto ou Observação Adicional (Opcional):
+              </label>
+              <textarea 
+                id="copilot-text" 
+                rows="3" 
+                placeholder="Ex: 'Por que devemos te contratar?' ou 'Qual sua pretensão salarial?' (se não quiser colar print, pode digitar aqui)..." 
+                class="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-400 outline-none transition"
+              ></textarea>
+            </div>
+
+            <button 
+              id="copilot-submit-btn" 
+              onclick="submitCopilotQuestion()" 
+              class="w-full py-3.5 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 transition flex items-center justify-center gap-2 text-sm"
+            >
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Resposta com IA do Hermes
+            </button>
+          </div>
+
+          <!-- COLUNA DA DIREITA: RESPOSTA GERADA -->
+          <div class="lg:col-span-6 flex flex-col">
+            <div class="bg-slate-950/90 border border-slate-800 rounded-2xl p-5 flex-1 flex flex-col min-h-[380px]">
+              <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800/80">
+                <div class="flex items-center gap-2">
+                  <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Resposta Pronta para Envio</h4>
+                </div>
+                <button 
+                  id="copilot-copy-btn" 
+                  onclick="copyCopilotAnswer()" 
+                  class="hidden px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-lg shadow-emerald-600/20 active:scale-95"
+                >
+                  <i class="fa-regular fa-copy"></i> Copiar Resposta
+                </button>
+              </div>
+
+              <!-- PLACEHOLDER INICIAL -->
+              <div id="copilot-empty-result" class="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-400">
+                <i class="fa-solid fa-robot text-4xl mb-3 text-slate-400"></i>
+                <p class="text-sm font-medium text-slate-400">Aguardando print ou pergunta...</p>
+                <p class="text-xs text-slate-400 max-w-xs mt-1">Cole a tela da vaga para ver a resposta formulada com base no seu currículo e projetos reais.</p>
+              </div>
+
+              <!-- LOADING SPINNER -->
+              <div id="copilot-loading" class="hidden flex-1 flex flex-col items-center justify-center text-center p-6 text-indigo-400">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3"></i>
+                <p class="text-sm font-bold text-white">Analisando imagem com Gemini Flash...</p>
+                <p class="text-xs text-slate-400 mt-1">Lendo pergunta e consultando seu histórico de experiências...</p>
+              </div>
+
+              <!-- TEXTO DA RESPOSTA -->
+              <div id="copilot-answer-container" class="hidden flex-1 overflow-y-auto max-h-[460px] pr-2">
+                <div id="copilot-answer-text" class="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans bg-slate-900/60 p-4 rounded-xl border border-slate-800"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="content-regras" class="hidden space-y-6">
       
       <!-- Cartão de Localização Residencial -->
@@ -690,11 +854,152 @@
 
     </div>
 
-  </main>
+  
+    <!-- ABA: GESTÃO DE PERFIS & FAMÍLIA (ADMIN) -->
+    <div id="content-admin" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-800/80">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">
+              <i class="fa-solid fa-shield-halved"></i> Administração Central Hermes
+            </div>
+            <h2 class="text-2xl font-black text-white flex items-center gap-3">
+              Gestão de Perfis & Acessos da Família
+            </h2>
+            <p class="text-slate-400 text-sm mt-1 max-w-2xl">
+              Crie logins independentes para quem mora com você, personalize os cargos pretendidos de cada um, 
+              atualize dados de contato e faça upload dos currículos em PDF.
+            </p>
+          </div>
+
+          <button 
+            onclick="openCreateUserModal()" 
+            class="px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-purple-600/25 transition active:scale-95"
+          >
+            <i class="fa-solid fa-user-plus"></i> Novo Membro / Login
+          </button>
+        </div>
+
+        <!-- LISTA DE CARDS DE PERFIS -->
+        <div id="admin-profiles-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="col-span-full text-center py-12 text-slate-500">
+            <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+            <p class="text-sm">Carregando perfis cadastrados...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CRIAR NOVO USUÁRIO -->
+    <div id="modal-create-user" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative">
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+          <h3 class="text-lg font-black text-white flex items-center gap-2">
+            <i class="fa-solid fa-user-plus text-purple-400"></i> Criar Novo Perfil da Família
+          </h3>
+          <button onclick="closeCreateUserModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+        </div>
+
+        <form id="form-create-user" onsubmit="submitCreateUser(event)" class="space-y-4 text-sm">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">Nome Completo *</label>
+            <input type="text" id="new-user-fullname" required placeholder="Ex: Maria da Silva" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Usuário de Login *</label>
+              <input type="text" id="new-user-login" required placeholder="ex: esposa" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Senha Inicial *</label>
+              <input type="password" id="new-user-pass" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">Cargos Pretendidos (separados por vírgula) *</label>
+            <input type="text" id="new-user-roles" required placeholder="Ex: Assistente Administrativo, Analista Financeiro, Atendimento" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Cidade / Estado</label>
+              <input type="text" id="new-user-city" value="Diadema, SP" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Distância Máxima (Km)</label>
+              <input type="number" id="new-user-km" value="30" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+          </div>
+
+          <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
+            <button type="button" onclick="closeCreateUserModal()" class="px-4 py-2 text-slate-400 hover:text-white font-medium">Cancelar</button>
+            <button type="submit" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg shadow-purple-600/30 transition">Criar Perfil</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: EDITAR DADOS DO PERFIL -->
+    <div id="modal-edit-profile" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl relative">
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+          <h3 class="text-lg font-black text-white flex items-center gap-2">
+            <i class="fa-solid fa-user-pen text-indigo-400"></i> Editar Dados do Perfil
+          </h3>
+          <button onclick="closeEditProfileModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+        </div>
+
+        <form id="form-edit-profile" onsubmit="submitEditProfile(event)" class="space-y-4 text-sm">
+          <input type="hidden" id="edit-user-id">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">Nome Completo</label>
+            <input type="text" id="edit-user-fullname" required class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">E-mail</label>
+              <input type="email" id="edit-user-email" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Telefone / WhatsApp</label>
+              <input type="text" id="edit-user-phone" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">Cargos Pretendidos (separados por vírgula)</label>
+            <textarea id="edit-user-roles" rows="2" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"></textarea>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Cidade</label>
+              <input type="text" id="edit-user-city" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Salário Mínimo (R$)</label>
+              <input type="number" id="edit-user-salary" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 mb-1">Distância Máxima (Km)</label>
+              <input type="number" id="edit-user-km" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">URL do LinkedIn (Opcional)</label>
+            <input type="url" id="edit-user-linkedin" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
+          </div>
+
+          <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
+            <button type="button" onclick="closeEditProfileModal()" class="px-4 py-2 text-slate-400 hover:text-white font-medium">Cancelar</button>
+            <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition">Salvar Alterações</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    </main>
 
   <script>
     function switchTab(tab) {
-      ['vagas', 'regras', 'curriculo', 'sessoes'].forEach(t => {
+      ['vagas', 'copilot', 'regras', 'curriculo', 'sessoes', 'admin'].forEach(t => {
         const el = document.getElementById('content-' + t);
         const btn = document.getElementById('tab-' + t);
         if (t === tab) {
@@ -1096,6 +1401,617 @@ async function changePassword() {
       }
     }
 
+
+  
+    // ==========================================
+    // COPILOTO IA VISUAL (CTRL+V / PRINTS)
+    // ==========================================
+    let copilotCurrentBase64 = null;
+
+    // Escuta evento global de Paste (Ctrl+V)
+    window.addEventListener('paste', function(e) {
+      // Se não houver itens na área de transferência, ignora
+      if (!e.clipboardData || !e.clipboardData.items) return;
+      
+      for (let item of e.clipboardData.items) {
+        if (item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            setCopilotImage(event.target.result);
+            // Muda para a aba do Copiloto automaticamente para facilitar!
+            switchTab('copilot');
+          };
+          reader.readAsDataURL(blob);
+          break;
+        }
+      }
+    });
+
+    function setCopilotImage(dataUrl) {
+      copilotCurrentBase64 = dataUrl;
+      const previewImg = document.getElementById('copilot-preview-img');
+      const emptyState = document.getElementById('dropzone-empty-state');
+      const previewState = document.getElementById('dropzone-preview-state');
+      
+      previewImg.src = dataUrl;
+      emptyState.classList.add('hidden');
+      previewState.classList.remove('hidden');
+    }
+
+    function clearCopilotImage(event) {
+      if (event) event.stopPropagation();
+      copilotCurrentBase64 = null;
+      document.getElementById('copilot-file-input').value = '';
+      document.getElementById('dropzone-empty-state').classList.remove('hidden');
+      document.getElementById('dropzone-preview-state').classList.add('hidden');
+    }
+
+    function handleCopilotFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        setCopilotImage(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function submitCopilotQuestion() {
+      const username = document.getElementById('copilot-profile').value;
+      const textQuestion = document.getElementById('copilot-text').value;
+      
+      if (!copilotCurrentBase64 && (!textQuestion || !textQuestion.trim())) {
+        alert("Por favor, cole um print da tela (Ctrl + V) ou digite a pergunta antes de enviar.");
+        return;
+      }
+
+      const emptyEl = document.getElementById('copilot-empty-result');
+      const loadingEl = document.getElementById('copilot-loading');
+      const containerEl = document.getElementById('copilot-answer-container');
+      const textEl = document.getElementById('copilot-answer-text');
+      const copyBtn = document.getElementById('copilot-copy-btn');
+      const submitBtn = document.getElementById('copilot-submit-btn');
+
+      emptyEl.classList.add('hidden');
+      containerEl.classList.add('hidden');
+      copyBtn.classList.add('hidden');
+      loadingEl.classList.remove('hidden');
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50');
+
+      try {
+        const payload = {
+          username: username,
+          text_question: textQuestion || null,
+          image_base64: copilotCurrentBase64 || null
+        };
+
+        const res = await fetch('/api/copilot/answer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        loadingEl.classList.add('hidden');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50');
+
+        if (data.success) {
+          textEl.textContent = data.copy_text || data.answer_markdown;
+          containerEl.classList.remove('hidden');
+          copyBtn.classList.remove('hidden');
+        } else {
+          emptyEl.classList.remove('hidden');
+          alert("Erro: " + (data.error || "Não foi possível gerar a resposta."));
+        }
+      } catch (err) {
+        loadingEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50');
+        alert("Erro na conexão com o servidor: " + err.message);
+      }
+    }
+
+    function copyCopilotAnswer() {
+      const textEl = document.getElementById('copilot-answer-text');
+      const copyBtn = document.getElementById('copilot-copy-btn');
+      if (!textEl || !textEl.textContent) return;
+
+      navigator.clipboard.writeText(textEl.textContent).then(() => {
+        const originalHtml = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+        copyBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+        copyBtn.classList.add('bg-indigo-600');
+        setTimeout(() => {
+          copyBtn.innerHTML = originalHtml;
+          copyBtn.classList.remove('bg-indigo-600');
+          copyBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+        }, 2500);
+      }).catch(err => {
+        alert("Erro ao copiar para a área de transferência: " + err);
+      });
+    }
+
+  
+    // ==========================================
+    // GESTÃO ADMINISTRATIVA DE PERFIS E LOGINS
+    // ==========================================
+    let cachedAdminProfiles = [];
+
+    async function loadAdminProfiles() {
+      const grid = document.getElementById('admin-profiles-grid');
+      try {
+        const res = await fetch('/api/admin/profiles-full');
+        const data = await res.json();
+        cachedAdminProfiles = data.profiles || [];
+        renderAdminProfiles(cachedAdminProfiles);
+      } catch (err) {
+        grid.innerHTML = `<div class="col-span-full text-center text-red-400 py-6">Erro ao carregar perfis: ${err.message}</div>`;
+      }
+    }
+
+    function renderAdminProfiles(profiles) {
+      const grid = document.getElementById('admin-profiles-grid');
+      if (!profiles || profiles.length === 0) {
+        grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-6">Nenhum perfil cadastrado.</div>';
+        return;
+      }
+
+      grid.innerHTML = profiles.map(p => {
+        const isMaster = p.id === 'eduardo';
+        const rolesList = (p.cargos_alvo || []).map(r => `<span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-xs border border-slate-700">${r}</span>`).join(' ');
+        
+        return `
+          <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition flex flex-col justify-between shadow-xl">
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-2xl ${isMaster ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30' : 'bg-purple-600/20 text-purple-400 border border-purple-500/30'} flex items-center justify-center text-xl font-black">
+                    ${isMaster ? '<i class="fa-solid fa-crown"></i>' : '<i class="fa-solid fa-user"></i>'}
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-white text-base">${p.display_name}</h3>
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                      <span>Login: <code class="text-purple-300 font-mono">@${p.id}</code></span>
+                      ${isMaster ? '<span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold">ADMIN MASTER</span>' : ''}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  ${p.has_resume 
+                    ? '<span class="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center gap-1"><i class="fa-solid fa-file-pdf"></i> Currículo OK</span>'
+                    : '<span class="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Sem Currículo</span>'
+                  }
+                </div>
+              </div>
+
+              <!-- DADOS DO PERFIL -->
+              <div class="space-y-2 text-xs text-slate-400 my-4 bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+                <div class="flex justify-between">
+                  <span>Localização:</span>
+                  <strong class="text-slate-200">${p.cidade || 'Diadema'}, ${p.estado || 'SP'} (Raio: ${p.distancia_km || 30}km)</strong>
+                </div>
+                <div class="flex justify-between">
+                  <span>Salário Mínimo:</span>
+                  <strong class="text-emerald-400">R$ ${(p.salario_min || 3000).toLocaleString('pt-BR')}</strong>
+                </div>
+                ${p.email ? `<div class="flex justify-between"><span>E-mail:</span><strong class="text-slate-200">${p.email}</strong></div>` : ''}
+              </div>
+
+              <!-- CARGOS PRETENDIDOS -->
+              <div class="mb-4">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">Cargos de Interesse:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  ${rolesList || '<span class="text-xs text-slate-500">Nenhum cargo definido</span>'}
+                </div>
+              </div>
+            </div>
+
+            <!-- BOTÕES DE AÇÃO -->
+            <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <button 
+                  onclick="openEditProfileModal('${p.id}')" 
+                  class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5"
+                >
+                  <i class="fa-solid fa-pen-to-square"></i> Editar
+                </button>
+
+                <!-- BOTÃO UPLOAD CURRÍCULO -->
+                <label class="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 hover:text-white text-xs font-bold cursor-pointer transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-upload"></i> Subir PDF
+                  <input type="file" accept=".pdf" class="hidden" onchange="uploadResumeForUser(event, '${p.id}')">
+                </label>
+              </div>
+
+              ${!isMaster ? `
+                <button 
+                  onclick="deleteUserAccount('${p.id}')" 
+                  class="px-2.5 py-1.5 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition text-xs font-bold"
+                  title="Excluir Perfil"
+                >
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Modal Criar Usuário
+    function openCreateUserModal() {
+      document.getElementById('modal-create-user').classList.remove('hidden');
+    }
+    function closeCreateUserModal() {
+      document.getElementById('modal-create-user').classList.add('hidden');
+    }
+    async function submitCreateUser(e) {
+      e.preventDefault();
+      const payload = {
+        display_name: document.getElementById('new-user-fullname').value,
+        username: document.getElementById('new-user-login').value,
+        password: document.getElementById('new-user-pass').value,
+        cargos_alvo: document.getElementById('new-user-roles').value,
+        cidade: document.getElementById('new-user-city').value,
+        distancia_km: parseInt(document.getElementById('new-user-km').value) || 30
+      };
+
+      try {
+        const res = await fetch('/api/admin/users/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeCreateUserModal();
+          alert("Perfil criado com sucesso!");
+          loadAdminProfiles();
+        } else {
+          alert("Erro: " + (data.error || "Falha ao criar usuário"));
+        }
+      } catch (err) {
+        alert("Erro de conexão: " + err.message);
+      }
+    }
+
+    // Modal Editar Perfil
+    function openEditProfileModal(userId) {
+      const p = cachedAdminProfiles.find(x => x.id === userId);
+      if (!p) return;
+
+      document.getElementById('edit-user-id').value = p.id;
+      document.getElementById('edit-user-fullname').value = p.display_name || '';
+      document.getElementById('edit-user-email').value = p.email || '';
+      document.getElementById('edit-user-phone').value = p.telefone || '';
+      document.getElementById('edit-user-roles').value = (p.cargos_alvo || []).join(', ');
+      document.getElementById('edit-user-city').value = p.cidade || 'Diadema';
+      document.getElementById('edit-user-salary').value = p.salario_min || 3000;
+      document.getElementById('edit-user-km').value = p.distancia_km || 30;
+      document.getElementById('edit-user-linkedin').value = p.linkedin_url || '';
+
+      document.getElementById('modal-edit-profile').classList.remove('hidden');
+    }
+    function closeEditProfileModal() {
+      document.getElementById('modal-edit-profile').classList.add('hidden');
+    }
+    async function submitEditProfile(e) {
+      e.preventDefault();
+      const userId = document.getElementById('edit-user-id').value;
+      const payload = {
+        username: userId,
+        nome_completo: document.getElementById('edit-user-fullname').value,
+        email: document.getElementById('edit-user-email').value,
+        telefone: document.getElementById('edit-user-phone').value,
+        cargos_alvo: document.getElementById('edit-user-roles').value,
+        cidade: document.getElementById('edit-user-city').value,
+        salario_min: parseFloat(document.getElementById('edit-user-salary').value) || 3000,
+        distancia_km: parseInt(document.getElementById('edit-user-km').value) || 30,
+        linkedin_url: document.getElementById('edit-user-linkedin').value
+      };
+
+      try {
+        const res = await fetch('/api/admin/profiles/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeEditProfileModal();
+          alert("Perfil atualizado com sucesso!");
+          loadAdminProfiles();
+        } else {
+          alert("Erro: " + (data.error || "Falha ao salvar dados"));
+        }
+      } catch (err) {
+        alert("Erro de conexão: " + err.message);
+      }
+    }
+
+    // Upload de Currículo PDF para Perfil Específico
+    async function uploadResumeForUser(e, userId) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('username', userId);
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/api/admin/profiles/upload-resume', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Currículo de ${userId} enviado com sucesso!`);
+          loadAdminProfiles();
+        } else {
+          alert("Erro ao enviar: " + (data.error || "Formato inválido"));
+        }
+      } catch (err) {
+        alert("Erro de conexão: " + err.message);
+      }
+    }
+
+    // Excluir Perfil
+    async function deleteUserAccount(userId) {
+      if (!confirm(`Deseja realmente excluir o perfil de @${userId}?`)) return;
+
+      try {
+        const res = await fetch('/api/admin/users/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: userId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert("Perfil excluído com sucesso.");
+          loadAdminProfiles();
+        } else {
+          alert("Erro: " + (data.error || "Não foi possível excluir"));
+        }
+      } catch (err) {
+        alert("Erro de conexão: " + err.message);
+      }
+    }
+
+    // Ao mudar para a aba admin, carrega automaticamente os perfis
+    const originalSwitchTab = window.switchTab;
+    window.switchTab = function(tab) {
+      originalSwitchTab(tab);
+      if (tab === 'admin') {
+        loadAdminProfiles();
+      }
+    };
+
+  
+    // ==========================================
+    // SISTEMA DE FILTRAGEM DINÂMICA DE VAGAS
+    // ==========================================
+    function applyAllJobFilters() {
+      const search = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
+      const scoreFilter = document.getElementById('filter-score')?.value || 'approved';
+      const recencyFilter = document.getElementById('filter-recency')?.value || 'all';
+      const modalityFilter = document.getElementById('filter-modality')?.value || 'all';
+      const platformFilter = document.getElementById('filter-platform')?.value || 'all';
+
+      const cards = document.querySelectorAll('.job-card');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const title = card.getAttribute('data-title') || '';
+        const company = card.getAttribute('data-company') || '';
+        const location = card.getAttribute('data-location') || '';
+        const keywords = card.getAttribute('data-keywords') || '';
+        const score = parseFloat(card.getAttribute('data-score')) || -1;
+        const status = card.getAttribute('data-status') || '';
+        const ageHours = parseFloat(card.getAttribute('data-age-hours')) || 9999;
+        const isRemote = card.getAttribute('data-remote') === '1';
+        const platform = card.getAttribute('data-platform') || '';
+
+        // 1. Busca por Texto
+        let matchSearch = true;
+        if (search) {
+          matchSearch = title.includes(search) || company.includes(search) || location.includes(search) || keywords.includes(search);
+        }
+
+        // 2. Filtro de Score / Status
+        let matchScore = true;
+        if (scoreFilter === 'approved') {
+          matchScore = (score >= 75) || (status === 'approve' || status === 'approved');
+        } else if (scoreFilter === 'top') {
+          matchScore = score >= 85;
+        } else if (scoreFilter === 'pending') {
+          matchScore = (score < 0 || status === 'discovered');
+        } else if (scoreFilter === 'applied') {
+          matchScore = (status === 'applied' || status === 'success');
+        } else if (scoreFilter === 'dry_run') {
+          matchScore = (status === 'dry_run');
+        } else if (scoreFilter === 'rejected') {
+          matchScore = (status === 'reject' || status === 'rejected');
+        }
+
+        // 3. Filtro de Recência
+        let matchRecency = true;
+        if (recencyFilter === '2h') matchRecency = ageHours <= 2;
+        else if (recencyFilter === '6h') matchRecency = ageHours <= 6;
+        else if (recencyFilter === '24h') matchRecency = ageHours <= 24;
+        else if (recencyFilter === '3d') matchRecency = ageHours <= 72;
+        else if (recencyFilter === '7d') matchRecency = ageHours <= 168;
+
+        // 4. Modalidade
+        let matchModality = true;
+        if (modalityFilter === 'remote') matchModality = isRemote;
+        else if (modalityFilter === 'presential') matchModality = !isRemote;
+
+        // 5. Plataforma
+        let matchPlatform = true;
+        if (platformFilter !== 'all') {
+          matchPlatform = platform.includes(platformFilter);
+        }
+
+        if (matchSearch && matchScore && matchRecency && matchModality && matchPlatform) {
+          card.style.display = '';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      const countEl = document.getElementById('filtered-count');
+      if (countEl) countEl.textContent = visibleCount;
+      updatePillsVisual(scoreFilter);
+    }
+
+    function setScorePill(val) {
+      const sel = document.getElementById('filter-score');
+      if (sel) {
+        sel.value = val;
+        applyAllJobFilters();
+      }
+    }
+
+    function updatePillsVisual(currentVal) {
+      ['approved', 'top', 'pending', 'all'].forEach(k => {
+        const p = document.getElementById('pill-' + k);
+        if (!p) return;
+        if (k === currentVal) {
+          p.className = 'px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5';
+        } else {
+          p.className = 'px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-900 text-slate-400 border border-slate-800 hover:text-white transition flex items-center gap-1.5';
+        }
+      });
+    }
+
+    function filterFromMetric(type) {
+      const scoreSelect = document.getElementById('filter-score');
+      if (type === 'all') scoreSelect.value = 'all';
+      else if (type === 'approved') scoreSelect.value = 'approved';
+      else if (type === 'applied') scoreSelect.value = 'applied';
+      applyAllJobFilters();
+    }
+
+    function resetJobFilters() {
+      document.getElementById('filter-search').value = '';
+      document.getElementById('filter-score').value = 'approved';
+      document.getElementById('filter-recency').value = 'all';
+      document.getElementById('filter-modality').value = 'all';
+      document.getElementById('filter-platform').value = 'all';
+      applyAllJobFilters();
+    }
+
+    async function cleanRejectedJobs() {
+      if (!confirm("Deseja realmente apagar do banco de dados todas as vagas descartadas pela IA?")) return;
+      try {
+        const res = await fetch('/api/jobs/clean-rejected', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          alert(data.message);
+          window.location.reload();
+        } else {
+          alert("Erro: " + (data.error || "Falha ao limpar"));
+        }
+      } catch (err) {
+        alert("Erro de conexão: " + err.message);
+      }
+    }
+
+    // Inicializa o filtro imediatamente ao carregar a página
+    document.addEventListener('DOMContentLoaded', function() {
+      applyAllJobFilters();
+    });
+
+  
+    // ==========================================
+    // AÇÕES RÁPIDAS DE FILA (CANDIDATAR & DESCARTAR)
+    // ==========================================
+    async function markAsApplied(jobId) {
+      const card = document.querySelector(`[data-job-id="${jobId}"]`);
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'applied' })
+        });
+        if (res.ok) {
+          if (card) {
+            card.setAttribute('data-status', 'applied');
+            card.style.transition = 'all 0.35s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(40px)';
+            setTimeout(() => {
+              card.remove();
+              applyAllJobFilters();
+            }, 350);
+          }
+          showToast('✅ Vaga marcada como candidatada com sucesso!', 'green');
+
+          // Incrementa contador de candidaturas realizadas
+          const metricEls = document.querySelectorAll('.glass-card p.text-3xl');
+          if (metricEls && metricEls.length >= 3) {
+            const cur = parseInt(metricEls[2].textContent.trim()) || 0;
+            metricEls[2].textContent = cur + 1;
+          }
+        }
+      } catch (err) {
+        alert("Erro ao registrar candidatura: " + err.message);
+      }
+    }
+
+    async function markAsDiscarded(jobId) {
+      const card = document.querySelector(`[data-job-id="${jobId}"]`);
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'rejected' })
+        });
+        if (res.ok) {
+          if (card) {
+            card.setAttribute('data-status', 'rejected');
+            card.style.transition = 'all 0.35s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(-40px)';
+            setTimeout(() => {
+              card.remove();
+              applyAllJobFilters();
+            }, 350);
+          }
+          showToast('🗑️ Vaga descartada da fila!', 'slate');
+        }
+      } catch (err) {
+        alert("Erro ao descartar vaga: " + err.message);
+      }
+    }
+
+  
+    async function searchLiveCargo() {
+      const input = document.getElementById('live-search-cargo');
+      const term = input ? input.value : '';
+      if (!term || !term.trim()) {
+        alert("Digite um termo para pesquisar (ex: suporte de redes, mikrotik, linux)");
+        return;
+      }
+      try {
+        const res = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ term: term.trim() })
+        });
+        const data = await res.json();
+        showToast(data.message || 'Busca iniciada nas 5 plataformas!', 'indigo');
+        input.value = '';
+      } catch (e) {
+        alert("Erro ao disparar busca: " + e.message);
+      }
+    }
 
   </script>
 </body>

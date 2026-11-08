@@ -81,6 +81,38 @@ def generate(prompt: str, smart: bool = False, json_mode: bool = False, temperat
     raise RuntimeError("Todos os provedores falharam (Chaves Gemini 1 e 2 esgotadas e Ollama indisponível).")
 
 
+def generate_with_image(
+    prompt: str,
+    image_bytes: bytes,
+    mime_type: str = "image/png",
+    temperature: float = 0.2
+) -> str:
+    """Gera resposta contextual a partir de uma imagem (print) e texto com Gemini Multimodal."""
+    gemini_keys = get_gemini_keys()
+    # Modelos recomendados para visão multimodal ultra-rápida e precisa
+    models = ["gemini-2.5-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"]
+
+    image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+    contents = [image_part, prompt]
+
+    for key_idx, key in enumerate(gemini_keys):
+        client = genai.Client(api_key=key, http_options=types.HttpOptions(timeout=45_000))
+        for model in models:
+            try:
+                cfg = types.GenerateContentConfig(temperature=temperature)
+                resp = client.models.generate_content(model=model, contents=contents, config=cfg)
+                if resp.text:
+                    return resp.text.strip()
+            except Exception as e:
+                err_msg = str(e)
+                if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
+                    print(f"[LLM Vision] Cota esgotada na Chave {key_idx+1} para {model}. Alternando...")
+                    break
+                time.sleep(1)
+
+    raise RuntimeError("Não foi possível processar a imagem (chaves Gemini esgotadas ou indisponíveis).")
+
+
 def generate_json(prompt: str, smart: bool = False, temperature: float = 0.2) -> Dict[str, Any]:
     raw = generate(prompt, smart=smart, json_mode=True, temperature=temperature)
     # Garante parsing de JSON limpo mesmo se a LLM mandar marcação markdown

@@ -27,6 +27,8 @@ from core.settings_manager import (
     load_settings, save_settings, set_operation_mode, update_telegram_config
 )
 from core.notifier import test_telegram_connection
+from core.profiles_manager import list_profiles, get_profile, save_profile, get_resume_path
+from core.visual_copilot import answer_job_question
 from automation.apply_engine import apply_to_job
 from automation.browser_session import check_auth_status, launch_assisted_login
 
@@ -92,8 +94,9 @@ async def dashboard_home(request: Request):
     user = get_current_user(request)
     if not user:
         return RedirectResponse(url="/login", status_code=302)
-    profile = load_profile()
-    resume_exists = os.path.exists(os.path.join(DATA_DIR, "curriculo.pdf"))
+    profile = get_profile(user)
+    user_resume = get_resume_path(user)
+    resume_exists = bool(user_resume and os.path.exists(user_resume))
     gemini_key_set = config.has_api_key()
 
     with get_connection() as conn:
@@ -186,10 +189,19 @@ async def upload_resume(file: UploadFile = File(...)):
 
 
 @app.post("/api/scan")
-async def trigger_scan(background_tasks: BackgroundTasks, request: Request = None):
+async def trigger_scan(background_tasks: BackgroundTasks, request: Request = None, term: Optional[str] = None):
     """Dispara uma varredura de novas vagas em segundo plano."""
+    if not term and request:
+        try:
+            body = await request.json()
+            term = body.get("term")
+        except Exception:
+            pass
+    if term and term.strip():
+        background_tasks.add_task(scan_jobs, 15, [term.strip()])
+        return {"message": f"Varredura iniciada para o termo '{term.strip()}'!"}
     background_tasks.add_task(scan_jobs)
-    return {"message": "Varredura iniciada em segundo plano no LinkedIn, Gupy, Indeed e Glassdoor!"}
+    return {"message": "Varredura iniciada para todos os cargos configurados!"}
 
 
 @app.post("/api/resume/upload")
@@ -756,3 +768,211 @@ async def reject_redirect(job_id: str):
         cursor.execute("UPDATE jobs SET status = 'rejected' WHERE id = ?", (job_id,))
         conn.commit()
     return RedirectResponse(url="/?tab=vagas", status_code=302)
+
+
+@app.get("/api/profiles")
+async def api_list_profiles():
+    """Lista todos os perfis cadastrados no sistema."""
+    return {"profiles": list_profiles()}
+
+
+@app.post("/api/copilot/answer")
+async def api_copilot_answer(
+    request: Request,
+    username: str = Form("eduardo"),
+    text_question: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None)
+):
+    """
+    Copiloto IA de Candidaturas: Analisa prints de tela (ou texto) de qualquer
+    formulario de vaga e devolve a resposta definitiva pronta para copiar e colar.
+    """
+    image_bytes = None
+    mime_type = "image/png"
+    
+    if file and file.filename:
+        image_bytes = await file.read()
+        mime_type = file.content_type or "image/png"
+    
+    # Suporte a envio direto via JSON com imagem em base64 (Ctrl+V no navegador)
+    if not image_bytes and not text_question:
+        try:
+            body = await request.json()
+            username = body.get("username", username)
+            text_question = body.get("text_question")
+            b64_img = body.get("image_base64")
+            if b64_img:
+                import base64
+                if "," in b64_img:
+                    header, b64_img = b64_img.split(",", 1)
+                    if "jpeg" in header or "jpg" in header:
+                        mime_type = "image/jpeg"
+                image_bytes = base64.b64decode(b64_img)
+        except Exception:
+            pass
+
+    res = answer_job_question(
+        image_bytes=image_bytes,
+        text_question=text_question,
+        username=username,
+        mime_type=mime_type
+    )
+    return res
+
+
+# ==========================================
+# ENDPOINTS ADMINISTRATIVOS (GESTAO DE PERFIS E LOGINS)
+# ==========================================
+from core.auth import create_user, delete_user, list_users
+from core.profiles_manager import create_or_update_profile, save_resume_file, delete_profile
+
+
+@app.get("/api/admin/profiles-full")
+async def api_admin_profiles_full(request: Request):
+    """Retorna a lista detalhada de perfis e seus dados completos para a area administrativa."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Nao autorizado"}, status_code=401)
+    
+    profiles = list_profiles()
+    full_data = []
+    users_auth = list_users()
+    
+    for p in profiles:
+        u_id = p["id"]
+        cfg = get_profile(u_id)
+        cand = cfg.get("candidato", {})
+        prefs = cfg.get("preferencias_de_vaga", {})
+        mods = prefs.get("modalidades", {})
+        
+        dist_km = 30
+        if "hibrido" in mods:
+            dist_km = mods["hibrido"].get("distancia_maxima_km", 30)
+        elif "presencial" in mods:
+            dist_km = mods["presencial"].get("distancia_maxima_km", 20)
+
+        full_data.append({
+            "id": u_id,
+            "display_name": cand.get("nome_completo") or p["name"],
+            "email": cand.get("email", ""),
+            "telefone": cand.get("telefone", ""),
+            "cidade": cand.get("cidade", "Diadema"),
+            "estado": cand.get("estado", "SP"),
+            "linkedin_url": cand.get("linkedin_url", ""),
+            "cargos_alvo": prefs.get("cargos_alvo", []),
+            "salario_min": prefs.get("salario_minimo_pretendido", 3000),
+            "distancia_km": dist_km,
+            "has_resume": p["has_resume"],
+            "created_at": users_auth.get(u_id, {}).get("created_at", "")
+        })
+    return {"profiles": full_data}
+
+
+@app.post("/api/admin/users/create")
+async def api_admin_create_user(request: Request):
+    """Cria um novo usuario de login e inicializa seu perfil no sistema."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Nao autorizado"}, status_code=401)
+    
+    body = await request.json()
+    username = body.get("username", "").strip().lower()
+    password = body.get("password", "").strip()
+    display_name = body.get("display_name", "").strip()
+    cargos = body.get("cargos_alvo", [])
+    if isinstance(cargos, str):
+        cargos = [c.strip() for c in cargos.split(",") if c.strip()]
+        
+    if not username or not password:
+        return JSONResponse({"error": "Usuario e senha sao obrigatorios."}, status_code=400)
+        
+    created = create_user(username, password, display_name=display_name)
+    if not created:
+        return JSONResponse({"error": "Usuario ja existe ou dados invalidos."}, status_code=400)
+        
+    create_or_update_profile(
+        username=username,
+        nome_completo=display_name or username.capitalize(),
+        cargos_alvo=cargos or ["Assistente Administrativo", "Atendimento ao Cliente"]
+    )
+    return {"success": True, "message": f"Usuario '{username}' criado com sucesso!"}
+
+
+@app.post("/api/admin/profiles/save")
+async def api_admin_save_profile(request: Request):
+    """Salva alteracoes cadastrais de qualquer perfil."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Nao autorizado"}, status_code=401)
+        
+    body = await request.json()
+    username = body.get("username", "eduardo")
+    nome = body.get("nome_completo", "")
+    email = body.get("email", "")
+    telefone = body.get("telefone", "")
+    cidade = body.get("cidade", "Diadema")
+    estado = body.get("estado", "SP")
+    cargos = body.get("cargos_alvo", [])
+    if isinstance(cargos, str):
+        cargos = [c.strip() for c in cargos.split(",") if c.strip()]
+    salario = body.get("salario_min", 3000)
+    distancia = body.get("distancia_km", 30)
+    linkedin = body.get("linkedin_url", "")
+    
+    create_or_update_profile(
+        username=username,
+        nome_completo=nome,
+        email=email,
+        telefone=telefone,
+        cidade=cidade,
+        estado=estado,
+        cargos_alvo=cargos,
+        salario_min=salario,
+        distancia_km=int(distancia),
+        linkedin_url=linkedin
+    )
+    return {"success": True, "message": "Perfil atualizado com sucesso!"}
+
+
+@app.post("/api/admin/profiles/upload-resume")
+async def api_admin_upload_resume(
+    request: Request,
+    username: str = Form("eduardo"),
+    file: UploadFile = File(...)
+):
+    """Faz upload de curriculo PDF especifico para um perfil."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Nao autorizado"}, status_code=401)
+        
+    if not file.filename.lower().endswith(".pdf"):
+        return JSONResponse({"error": "Apenas arquivos PDF sao permitidos."}, status_code=400)
+        
+    bytes_data = await file.read()
+    save_resume_file(username, bytes_data)
+    return {"success": True, "message": f"Curriculo de {username} atualizado com sucesso!"}
+
+
+@app.post("/api/admin/users/delete")
+async def api_admin_delete_user(request: Request):
+    """Exclui um perfil e usuario adicional."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Nao autorizado"}, status_code=401)
+        
+    body = await request.json()
+    username = body.get("username", "")
+    if username.lower() == "eduardo":
+        return JSONResponse({"error": "O perfil administrador principal nao pode ser excluido."}, status_code=400)
+        
+    delete_user(username)
+    delete_profile(username)
+    return {"success": True, "message": f"Perfil {username} excluido com sucesso."}
+
+
+@app.post("/api/jobs/clean-rejected")
+async def api_clean_rejected_jobs(request: Request):
+    """Limpa do banco todas as vagas descartadas/rejeitadas pela IA para despoluir a visualizacao."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Nao autorizado"}, status_code=401)
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM jobs WHERE status in ('reject', 'rejected')")
+        deleted = cursor.rowcount
+        conn.commit()
+    return {"success": True, "message": f"{deleted} vagas rejeitadas foram removidas do banco."}

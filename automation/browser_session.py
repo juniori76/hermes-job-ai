@@ -87,6 +87,8 @@ def open_session(headless: bool = False):
             viewport={"width": 1366, "height": 850},
             locale="pt-BR",
             timezone_id="America/Sao_Paulo",
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            ignore_default_args=["--enable-automation"],
             args=[
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
@@ -103,6 +105,30 @@ def open_session(headless: bool = False):
                 "--start-maximized"
             ],
         )
+        context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+            window.chrome = {
+                runtime: {},
+                app: {},
+                csi: () => {},
+                loadTimes: () => {}
+            };
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [1, 2, 3, 4, 5],
+            });
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['pt-BR', 'pt', 'en-US', 'en'],
+            });
+        """)
+        try:
+            from playwright_stealth import stealth_sync
+            for pg in context.pages:
+                stealth_sync(pg)
+            context.on("page", lambda pg: stealth_sync(pg))
+        except Exception:
+            pass
         try:
             yield context
         finally:
