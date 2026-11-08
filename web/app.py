@@ -33,6 +33,9 @@ from core.notifier import test_telegram_connection
 from core.profiles_manager import list_profiles, get_profile, save_profile, get_resume_path
 from core.visual_copilot import answer_job_question
 from core.resume_optimizer import optimize_resume_for_target
+from core.cover_letter import generate_cover_letter
+from core.backup_manager import create_backup, list_backups
+from core.profiles_manager import save_resume_file
 from core.telegram_multi_router import (
     start_telegram_listener, list_all_bindings, bind_user_telegram
 )
@@ -951,3 +954,124 @@ async def api_bind_telegram(request: Request):
     if success:
         return {"success": True, "message": f"Telegram de @{username} vinculado com sucesso!"}
     return JSONResponse({"error": "Usuário não encontrado."}, status_code=400)
+
+
+# ==========================================
+# GERAÇÃO DE CARTA DE APRESENTAÇÃO (PITCH RH)
+# ==========================================
+@app.post("/api/jobs/cover-letter")
+async def api_generate_cover_letter(request: Request):
+    """Gera uma carta de apresentação sob medida para uma vaga e perfil de candidato."""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    job_id = body.get("job_id")
+    if not job_id:
+        return JSONResponse({"error": "ID da vaga é obrigatório."}, status_code=400)
+    
+    try:
+        job_id = int(job_id)
+    except Exception:
+        return JSONResponse({"error": "ID da vaga inválido."}, status_code=400)
+        
+    target_user = body.get("user_id") or user
+    tone = body.get("tone") or "persuasivo"
+
+    result = generate_cover_letter(job_id=job_id, username=target_user, tone=tone)
+    if result.get("success"):
+        return result
+    return JSONResponse(result, status_code=400)
+
+
+# ==========================================
+# WIZARD DE ONBOARDING GUIADO (NOVO MEMBRO)
+# ==========================================
+@app.post("/api/onboarding/wizard")
+async def api_onboarding_wizard(
+    background_tasks: BackgroundTasks,
+    request: Request,
+    target_roles: str = Form(...),
+    city: str = Form("Diadema"),
+    state: str = Form("SP"),
+    max_km_presential: int = Form(18),
+    max_km_hybrid: int = Form(30),
+    min_salary: float = Form(2500.0),
+    resume_file: Optional[UploadFile] = File(None)
+):
+    """Configura o perfil do usuário em 1 passo guiado (cargos, localização, currículo e primeira varredura)."""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+
+    # 1. Atualiza preferências no profile.json
+    prof = get_profile(user)
+    roles_list = [r.strip() for r in target_roles.replace(";", ",").split(",") if r.strip()]
+    if not roles_list:
+        roles_list = [target_roles.strip()]
+
+    prof["cargos_alvo"] = roles_list
+    if "preferencias_de_vaga" not in prof:
+        prof["preferencias_de_vaga"] = {}
+    prof["preferencias_de_vaga"]["cargos_alvo"] = roles_list
+
+    if "candidato" not in prof:
+        prof["candidato"] = {}
+    prof["candidato"]["cidade"] = city.strip()
+    prof["candidato"]["estado"] = state.strip().upper()
+
+    if "modalidades" not in prof["preferencias_de_vaga"]:
+        prof["preferencias_de_vaga"]["modalidades"] = {}
+    prof["preferencias_de_vaga"]["modalidades"]["presencial"] = {"distancia_maxima_km": max_km_presential}
+    prof["preferencias_de_vaga"]["modalidades"]["hibrido"] = {"distancia_maxima_km": max_km_hybrid}
+
+    if "financeiro" not in prof["preferencias_de_vaga"]:
+        prof["preferencias_de_vaga"]["financeiro"] = {}
+    prof["preferencias_de_vaga"]["financeiro"]["salario_minimo_clt"] = min_salary
+
+    save_profile(user, prof)
+
+    # 2. Se enviou currículo PDF, salva e analisa
+    if resume_file and resume_file.filename:
+        if resume_file.filename.lower().endswith(".pdf"):
+            content = await resume_file.read()
+            save_resume_file(user, content)
+            try:
+                sync_profile_from_resume_ai(user)
+            except Exception as e:
+                print(f"[Onboarding] Erro ao sincronizar com IA: {e}")
+
+    # 3. Dispara a primeira varredura focada no perfil do usuário
+    background_tasks.add_task(scan_jobs, 15, roles_list)
+
+    return {
+        "success": True, 
+        "message": f"Perfil de @{user} configurado com sucesso! Primeira varredura iniciada para {len(roles_list)} cargos."
+    }
+
+
+# ==========================================
+# BACKUP AUTOMÁTICO E INTEGRIDADE DO SISTEMA
+# ==========================================
+@app.post("/api/system/backup")
+async def api_trigger_backup(request: Request):
+    """Cria um snapshot compactado ZIP do banco de dados e perfis."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    res = create_backup()
+    if res.get("success"):
+        return res
+    return JSONResponse(res, status_code=500)
+
+
+@app.get("/api/system/backups")
+async def api_list_backups(request: Request):
+    """Lista histórico de backups salvos."""
+    if not get_current_user(request):
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    return {"backups": list_backups()}

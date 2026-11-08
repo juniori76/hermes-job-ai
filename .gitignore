@@ -28,3 +28,8 @@ logs/
 # IDEs
 .vscode/
 .idea/
+
+data/backups/
+data/auth_users.json
+data/telegram_bindings.json
+config/profiles/
