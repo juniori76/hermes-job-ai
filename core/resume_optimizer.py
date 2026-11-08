@@ -32,7 +32,7 @@ def extract_text_from_pdf(pdf_path: str) -> str:
         return ""
 
 
-def get_job_details(job_id: int) -> Optional[Dict[str, Any]]:
+def get_job_details(job_id: Any) -> Optional[Dict[str, Any]]:
     """Busca detalhes de uma vaga específica no banco de dados SQLite."""
     if not os.path.exists(DB_PATH):
         return None
@@ -40,7 +40,7 @@ def get_job_details(job_id: int) -> Optional[Dict[str, Any]]:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM jobs WHERE id = ?", (job_id,))
+        cursor.execute("SELECT * FROM jobs WHERE id = ?", (str(job_id),))
         row = cursor.fetchone()
         conn.close()
         if row:

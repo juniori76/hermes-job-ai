@@ -879,10 +879,7 @@ async def api_optimize_resume(request: Request):
         custom_job_desc = body.get("custom_job_desc")
         
     if job_id:
-        try:
-            job_id = int(job_id)
-        except Exception:
-            job_id = None
+        job_id = str(job_id).strip() or None
             
     result = optimize_resume_for_target(
         username=username, 
@@ -972,16 +969,13 @@ async def api_generate_cover_letter(request: Request):
     except Exception:
         body = {}
 
-    job_id = body.get("job_id")
+    job_id = str(body.get("job_id") or "").strip()
     if not job_id:
         return JSONResponse({"error": "ID da vaga é obrigatório."}, status_code=400)
-    
-    try:
-        job_id = int(job_id)
-    except Exception:
-        return JSONResponse({"error": "ID da vaga inválido."}, status_code=400)
         
     target_user = body.get("user_id") or user
+    if target_user == "all" or not target_user:
+        target_user = user
     tone = body.get("tone") or "persuasivo"
 
     result = generate_cover_letter(job_id=job_id, username=target_user, tone=tone)

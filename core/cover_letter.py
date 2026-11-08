@@ -11,7 +11,7 @@ from core.profiles_manager import get_profile
 from core.resume_analyzer import extract_text_from_pdf
 
 
-def generate_cover_letter(job_id: int, username: str = "eduardo", tone: str = "persuasivo") -> Dict[str, Any]:
+def generate_cover_letter(job_id: str, username: str = "eduardo", tone: str = "persuasivo") -> Dict[str, Any]:
     """
     Gera uma carta de apresentação sob medida para uma vaga específica,
     cruzando os requisitos reais da vaga com a trajetória do candidato.
@@ -33,6 +33,10 @@ def generate_cover_letter(job_id: int, username: str = "eduardo", tone: str = "p
         return {"success": False, "error": f"Vaga #{job_id} não encontrada."}
 
     # 2. Carrega o perfil e o currículo do candidato
+    if not username or username == "all":
+        username = job.get("target_user") or "eduardo"
+    if not username or username == "all":
+        username = job.get("target_user") or "eduardo"
     profile = get_profile(username)
     candidate_name = profile.get("candidato", {}).get("nome_completo") or username.capitalize()
     candidate_city = profile.get("candidato", {}).get("cidade") or "São Paulo"
