@@ -229,7 +229,7 @@
           <i class="fa-solid fa-user-lock text-emerald-400"></i> Plataformas & IA
         </button>
         <button onclick="switchTab('admin')" id="tab-admin" class="px-4 py-2 rounded-xl font-medium text-purple-300 hover:text-white transition flex items-center gap-2 whitespace-nowrap bg-purple-500/10 border border-purple-500/20">
-          <i class="fa-solid fa-users-gear text-purple-400"></i> Gestão de Perfis & Família
+          <i class="fa-solid fa-users-gear text-purple-400"></i> Gestão de Usuários & Perfis
         </button>
       </nav>
 
@@ -373,7 +373,7 @@
             <label class="text-[10px] uppercase font-bold text-amber-400 block mb-1">Perfil / Área</label>
             <select id="filter-user" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-amber-300 font-bold border-amber-500/30">
               <option value="{{ current_user or 'eduardo' }}" selected>👤 Minhas Vagas (@{{ current_user or 'eduardo' }})</option>
-              <option value="all">🌐 Todas as Áreas da Família</option>
+              <option value="all">🌐 Todos os Perfis / Geral</option>
               {% if all_profiles %}
                 {% for p in all_profiles %}
                   {% if p.id != current_user %}
@@ -569,8 +569,13 @@
           <div class="flex items-center gap-3 bg-slate-950/80 border border-slate-800 p-2 rounded-2xl">
             <span class="text-xs font-bold text-slate-400 pl-2">Perfil:</span>
             <select id="copilot-profile" class="bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-indigo-500">
-              <option value="eduardo" selected>👤 Eduardo (Infra, Redes & Projetos)</option>
-              <option value="esposa">👤 Esposa (Área Operacional / Admin)</option>
+              {% if all_profiles %}
+                {% for p in all_profiles %}
+                  <option value="{{ p.id }}" {% if p.id == (current_user or 'eduardo') %}selected{% endif %}>👤 {{ p.display_name }} (@{{ p.id }})</option>
+                {% endfor %}
+              {% else %}
+                <option value="eduardo" selected>👤 Eduardo (@eduardo)</option>
+              {% endif %}
             </select>
           </div>
         </div>
@@ -823,10 +828,15 @@
 
           <!-- Seletor de Perfil do Membro -->
           <div class="flex items-center gap-2 bg-slate-950/80 border border-slate-800 p-2 rounded-2xl w-full sm:w-auto">
-            <span class="text-xs font-bold text-slate-400 pl-2">Membro:</span>
+            <span class="text-xs font-bold text-slate-400 pl-2">Candidato:</span>
             <select id="optimizer-user" class="bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-indigo-500 flex-1 sm:flex-initial">
-              <option value="eduardo" selected>👤 Eduardo</option>
-              <option value="esposa">👤 Esposa</option>
+              {% if all_profiles %}
+                {% for p in all_profiles %}
+                  <option value="{{ p.id }}" {% if p.id == (current_user or 'eduardo') %}selected{% endif %}>👤 {{ p.display_name }} (@{{ p.id }})</option>
+                {% endfor %}
+              {% else %}
+                <option value="eduardo" selected>👤 Eduardo (@eduardo)</option>
+              {% endif %}
             </select>
           </div>
         </div>
@@ -1139,11 +1149,11 @@
 
         <div class="bg-sky-950/40 border border-sky-800/60 p-4 rounded-2xl text-xs text-sky-200 space-y-2">
           <p class="font-bold flex items-center gap-2 text-sky-300">
-            <i class="fa-solid fa-users text-amber-400"></i> Como a família usa o mesmo Bot do Telegram:
+            <i class="fa-solid fa-users text-amber-400"></i> Como múltiplos usuários utilizam o mesmo Bot do Telegram:
           </p>
           <ul class="space-y-1 text-slate-300 list-disc list-inside">
             <li>Você só precisa criar <strong>1 único Bot</strong> no Telegram (pelo <code>@BotFather</code>) e colar o Token abaixo.</li>
-            <li>Qualquer pessoa da casa (você, esposa, irmão) abre a conversa com o bot no celular e digita: <code class="bg-slate-900 px-2 py-0.5 rounded text-sky-300 font-mono font-bold">/vincular seu_usuario</code> (ex: <code class="bg-slate-900 px-2 py-0.5 rounded text-sky-300 font-mono font-bold">/vincular esposa</code>).</li>
+            <li>Cada usuário abre a conversa com o bot no celular e digita: <code class="bg-slate-900 px-2 py-0.5 rounded text-sky-300 font-mono font-bold">/vincular seu_usuario</code> (ex: <code class="bg-slate-900 px-2 py-0.5 rounded text-sky-300 font-mono font-bold">/vincular gabriel</code>). O Hermes passa a enviar alertas individuais e direcionados.</li>
             <li>O bot vincula na hora e só manda as vagas da área daquela pessoa para o celular dela!</li>
           </ul>
         </div>
@@ -1202,7 +1212,7 @@
     </div>
 
   
-    <!-- ABA: GESTÃO DE PERFIS & FAMÍLIA (ADMIN) -->
+    <!-- ABA: GESTÃO DE USUÁRIOS & PERFIS (ADMIN) -->
     <div id="content-admin" class="hidden space-y-6">
       <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-800/80">
@@ -1211,11 +1221,10 @@
               <i class="fa-solid fa-shield-halved"></i> Administração Central Hermes
             </div>
             <h2 class="text-2xl font-black text-white flex items-center gap-3">
-              Gestão de Perfis & Acessos da Família
+              Gestão de Usuários & Perfis de Candidatos
             </h2>
             <p class="text-slate-400 text-sm mt-1 max-w-2xl">
-              Crie logins independentes para quem mora com você, personalize os cargos pretendidos de cada um, 
-              atualize dados de contato e faça upload dos currículos em PDF.
+              Cadastre novos candidatos com logins independentes, personalize as áreas e cargos de interesse, atualize dados de contato e anexe o currículo em PDF.
             </p>
           </div>
 
@@ -1223,7 +1232,7 @@
             onclick="openCreateUserModal()" 
             class="px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-purple-600/25 transition active:scale-95"
           >
-            <i class="fa-solid fa-user-plus"></i> Novo Membro / Login
+            <i class="fa-solid fa-user-plus"></i> Novo Usuário / Candidato
           </button>
         </div>
 
@@ -1242,7 +1251,7 @@
       <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto safe-bottom">
         <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
           <h3 class="text-lg font-black text-white flex items-center gap-2">
-            <i class="fa-solid fa-user-plus text-purple-400"></i> Criar Novo Perfil da Família
+            <i class="fa-solid fa-user-plus text-purple-400"></i> Criar Novo Usuário / Candidato
           </h3>
           <button onclick="closeCreateUserModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
         </div>
@@ -1250,13 +1259,13 @@
         <form id="form-create-user" onsubmit="submitCreateUser(event)" class="space-y-4 text-sm">
           <div class="bg-purple-950/40 border border-purple-800/60 p-3 rounded-2xl text-xs text-purple-300 flex items-start gap-2.5">
             <i class="fa-solid fa-lightbulb text-amber-400 text-sm mt-0.5"></i>
-            <span><strong>Tudo bem!</strong> Você só precisa preencher o <strong>Usuário de Login</strong> e a <strong>Senha</strong>. O restante é opcional e quem for usar pode preencher depois.</span>
+            <span><strong>Tudo bem!</strong> Preencha apenas o <strong>Usuário de Login</strong> e a <strong>Senha</strong>. O restante das informações é opcional e o próprio candidato pode atualizar quando acessar.</span>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-200 mb-1">Usuário de Login *</label>
-              <input type="text" id="new-user-login" required placeholder="ex: esposa ou irmao" class="w-full bg-slate-950 border border-slate-700 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+              <input type="text" id="new-user-login" required placeholder="ex: gabriel, carlos, lucas..." class="w-full bg-slate-950 border border-slate-700 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-200 mb-1">Senha Inicial *</label>
@@ -2396,7 +2405,7 @@ async function changePassword() {
     </button>
     <button onclick="switchTab('admin')" id="mobile-tab-admin" class="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-slate-400 transition active:scale-95">
       <i class="fa-solid fa-users-gear text-base mb-1 text-purple-400"></i>
-      <span class="text-[10px]">Família</span>
+      <span class="text-[10px]">Usuários</span>
     </button>
     <button onclick="switchTab('curriculo')" id="mobile-tab-curriculo" class="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-slate-400 transition active:scale-95">
       <i class="fa-solid fa-file-waveform text-base mb-1 text-indigo-400"></i>

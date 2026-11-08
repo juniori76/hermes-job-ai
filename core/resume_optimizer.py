@@ -1,6 +1,6 @@
 """
 Módulo Cérebro Otimizador ATS & Gerador de Currículos - Hermes Job AI.
-Analisa currículos de qualquer membro da família, identifica lacunas ATS
+Analisa currículos de qualquer usuário/candidato, identifica lacunas ATS
 em relação ao mercado ou a uma vaga específica e gera novas versões em PDF e DOCX com score 95-100%.
 """
 

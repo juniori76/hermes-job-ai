@@ -1,6 +1,6 @@
 """
 Gerenciador Multi-Perfil do Hermes Job AI.
-Permite alternar entre diferentes perfis (Eduardo, Esposa, etc.),
+Permite alternar entre diferentes perfis de candidatos,
 cada um com suas preferências de busca, cargos-alvo, regras e currículo em PDF.
 """
 
@@ -37,39 +37,6 @@ def init_profiles():
     root_pdf = os.path.join(DATA_DIR, "curriculo.pdf")
     if not os.path.exists(eduardo_pdf) and os.path.exists(root_pdf):
         shutil.copy2(root_pdf, eduardo_pdf)
-
-    # Perfil modelo para a Esposa (se ainda não existir)
-    esposa_cfg = os.path.join(PROFILES_CONFIG_DIR, "esposa")
-    esposa_yaml = os.path.join(esposa_cfg, "candidate_profile.yaml")
-    if not os.path.exists(esposa_yaml):
-        os.makedirs(esposa_cfg, exist_ok=True)
-        default_esposa = {
-            "candidato": {
-                "nome_completo": "Perfil da Esposa",
-                "email": "",
-                "telefone": "",
-                "cidade": "Diadema",
-                "estado": "SP",
-                "linkedin_url": "",
-            },
-            "preferencias_de_vaga": {
-                "cargos_alvo": [
-                    "Assistente Administrativo",
-                    "Analista de Operações",
-                    "Atendimento ao Cliente"
-                ],
-                "modalidades": {
-                    "remoto": {"aceitar": True, "distancia_maxima_km": 99999},
-                    "hibrido": {"aceitar": True, "distancia_maxima_km": 30},
-                    "presencial": {"aceitar": True, "distancia_maxima_km": 25}
-                },
-                "salario_minimo_pretendido": 2500,
-                "palavras_chave_obrigatorias": [],
-                "palavras_chave_proibidas": ["estágio não remunerado"]
-            }
-        }
-        with open(esposa_yaml, "w", encoding="utf-8") as f:
-            yaml.dump(default_esposa, f, allow_unicode=True, sort_keys=False)
 
 
 def list_profiles() -> List[Dict[str, Any]]:

@@ -1,6 +1,6 @@
 """
 Roteador Multi-Perfil do Telegram - Hermes Job AI.
-Gerencia a vinculação de múltiplos membros da família (Eduardo, Esposa, Irmão)
+Gerencia a vinculação de múltiplos usuários/candidatos cadastrados
 a seus respectivos Telegram Chat IDs, roteia vagas com base nos cargos pretendidos
 de cada um e processa comandos interativos via Long-Polling (/start, /vincular, /vagas, /status).
 """
@@ -88,8 +88,8 @@ def list_all_bindings() -> Dict[str, str]:
 
 def route_job_to_user(job: Dict[str, Any]) -> str:
     """
-    Analisa o título e a descrição da vaga e determina qual membro
-    da família tem o perfil com maior afinidade para esta oportunidade.
+    Analisa o título e a descrição da vaga e determina qual usuário/candidato
+    tem o perfil com maior afinidade para esta oportunidade.
     """
     profiles = list_profiles()
     if not profiles:
@@ -278,10 +278,10 @@ def handle_telegram_command(token: str, chat_id: str, text: str, user_name: str 
             )
         else:
             reply = (
-                f"🤖 *Olá! Eu sou o Hermes Job AI da sua casa!*\n\n"
+                f"🤖 *Olá! Eu sou o Hermes Job AI!*\n\n"
                 f"Para receber as vagas certas para a sua área no seu celular, vincule seu login:\n\n"
                 f"👉 Digite: `/vincular seu_usuario`\n"
-                f"Exemplo: `/vincular esposa` ou `/vincular eduardo`\n\n"
+                f"Exemplo: `/vincular eduardo` ou `/vincular gabriel`\n\n"
                 f"👥 *Perfis cadastrados:* {users_str}\n\n"
                 f"Depois de vincular, você receberá apenas as vagas que interessam para você!"
             )
@@ -292,7 +292,7 @@ def handle_telegram_command(token: str, chat_id: str, text: str, user_name: str 
         if not args:
             send_message_to_chat(
                 token, chat_id,
-                "⚠️ *Por favor, informe seu usuário de login.*\nExemplo: `/vincular esposa` ou `/vincular eduardo`"
+                "⚠️ *Por favor, informe seu usuário de login.*\nExemplo: `/vincular eduardo` ou `/vincular seu_usuario`"
             )
             return
 
@@ -314,7 +314,7 @@ def handle_telegram_command(token: str, chat_id: str, text: str, user_name: str 
             send_message_to_chat(
                 token, chat_id,
                 f"❌ *Usuário '{target_u}' não encontrado.*\n"
-                f"Verifique se o login foi criado no painel Web em 'Gestão de Perfis & Família'."
+                f"Verifique se o login foi criado no painel Web em 'Gestão de Usuários & Perfis'."
             )
             return
         send_message_to_chat(token, chat_id, reply)

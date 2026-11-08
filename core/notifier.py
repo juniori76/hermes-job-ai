@@ -57,7 +57,7 @@ send_telegram_alert = send_telegram_message
 def notify_high_score_job(job: Dict[str, Any]) -> bool:
     """
     Roteia e notifica a vaga de alto score especificamente para o Telegram
-    do membro da família correspondente aos cargos pretendidos.
+    do usuário / candidato correspondente aos cargos pretendidos.
     """
     try:
         from core.telegram_multi_router import notify_segmented_job

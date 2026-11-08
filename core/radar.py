@@ -40,7 +40,7 @@ def scan_jobs(results_wanted_per_term: int = 15, custom_cargos: Optional[List[st
     if custom_cargos and len(custom_cargos) > 0:
         cargos = custom_cargos
     else:
-        # Varre automaticamente os cargos de TODOS os perfis da família cadastrados
+        # Varre automaticamente os cargos de TODOS os perfis de candidatos cadastrados
         cargos_set = set()
         for p_meta in list_profiles():
             p_data = get_profile(p_meta["id"])
