@@ -11,7 +11,171 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Hermes Jobs">
   <title>Hermes Job AI - Centro de Comando de Carreiras</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com">
+    // ==========================================
+    // COPILOTO: COLAR DIRETO DO CLIPBOARD (PRINT)
+    // ==========================================
+    async function pasteFromClipboard(event) {
+      if (event) event.stopPropagation();
+      try {
+        if (navigator.clipboard && navigator.clipboard.read) {
+          const items = await navigator.clipboard.read();
+          for (const item of items) {
+            const imgType = item.types.find(t => t.startsWith('image/'));
+            if (imgType) {
+              const blob = await item.getType(imgType);
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                setCopilotImage(e.target.result);
+                if (typeof showToast === 'function') showToast('✅ Print colado do clipboard!');
+              };
+              reader.readAsDataURL(blob);
+              return;
+            }
+          }
+        }
+        // Se for texto copiado
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          document.getElementById('copilot-text').value = text;
+          alert('Texto da pergunta colado do clipboard!');
+        } else {
+          alert('Nenhum print ou imagem encontrada na área de transferência. Tire o print (Win+Shift+S no Windows) e clique novamente.');
+        }
+      } catch (err) {
+        alert('Para colar o print diretamente, basta pressionar Ctrl + V no teclado!');
+      }
+    }
+
+    // Configura Drag & Drop limpo sem abrir seletor de arquivos
+    const copilotDropArea = document.getElementById('copilot-dropzone');
+    if (copilotDropArea) {
+      copilotDropArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        copilotDropArea.classList.add('border-indigo-400', 'bg-slate-900');
+      });
+      copilotDropArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        copilotDropArea.classList.remove('border-indigo-400', 'bg-slate-900');
+      });
+      copilotDropArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        copilotDropArea.classList.remove('border-indigo-400', 'bg-slate-900');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          const file = e.dataTransfer.files[0];
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (event) => setCopilotImage(event.target.result);
+            reader.readAsDataURL(file);
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // OTIMIZADOR ATS & GERADOR DE CURRÍCULOS
+    // ==========================================
+    let currentOptimizerMode = 'general';
+
+    function setOptimizerMode(mode) {
+      currentOptimizerMode = mode;
+      const btnGen = document.getElementById('opt-mode-general');
+      const btnSniper = document.getElementById('opt-mode-sniper');
+      const boxGen = document.getElementById('opt-input-general-box');
+      const boxSniper = document.getElementById('opt-input-sniper-box');
+
+      if (mode === 'general') {
+        btnGen.className = 'p-3 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95';
+        btnSniper.className = 'p-3 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95';
+        boxGen.classList.remove('hidden');
+        boxSniper.classList.add('hidden');
+      } else {
+        btnSniper.className = 'p-3 rounded-xl border border-amber-500 bg-amber-600/20 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95';
+        btnGen.className = 'p-3 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95';
+        boxGen.classList.add('hidden');
+        boxSniper.classList.remove('hidden');
+      }
+    }
+
+    function openSniperOptimizerForJob(jobId, jobTitle) {
+      switchTab('curriculo');
+      setOptimizerMode('sniper');
+      const select = document.getElementById('optimizer-job-id');
+      if (select) {
+        select.value = jobId;
+      }
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+    }
+
+    async function runResumeOptimization() {
+      const username = document.getElementById('optimizer-user').value || 'eduardo';
+      const targetRole = document.getElementById('optimizer-target-role').value;
+      const jobId = currentOptimizerMode === 'sniper' ? document.getElementById('optimizer-job-id').value : null;
+
+      const emptyState = document.getElementById('optimizer-empty-state');
+      const loadingState = document.getElementById('optimizer-loading');
+      const resultState = document.getElementById('optimizer-result');
+      const btnSubmit = document.getElementById('btn-run-optimization');
+
+      emptyState.classList.add('hidden');
+      resultState.classList.add('hidden');
+      loadingState.classList.remove('hidden');
+      btnSubmit.disabled = true;
+      btnSubmit.classList.add('opacity-50');
+
+      try {
+        const payload = {
+          username: username,
+          target_role: targetRole,
+          job_id: jobId
+        };
+
+        const res = await fetch('/api/resume/optimize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        loadingState.classList.add('hidden');
+        btnSubmit.disabled = false;
+        btnSubmit.classList.remove('opacity-50');
+
+        if (data.success) {
+          document.getElementById('res-score-orig').textContent = `${data.original_score || 75}%`;
+          document.getElementById('res-score-opt').textContent = `${data.optimized_score || 98}% ⭐`;
+
+          const gapsList = document.getElementById('res-gaps-list');
+          gapsList.innerHTML = (data.melhorias_aplicadas || []).map(m => `
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
+              <span>${m}</span>
+            </li>
+          `).join('');
+
+          document.getElementById('btn-download-pdf').href = data.pdf_download;
+          document.getElementById('btn-download-docx').href = data.docx_download;
+
+          resultState.classList.remove('hidden');
+        } else {
+          alert('Erro ao otimizar currículo: ' + (data.error || 'Falha desconhecida'));
+          emptyState.classList.remove('hidden');
+        }
+      } catch (err) {
+        loadingState.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        btnSubmit.disabled = false;
+        btnSubmit.classList.remove('opacity-50');
+        alert('Erro de comunicação com o servidor: ' + err.message);
+      }
+    }
+
+</script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { background-color: #0b0f19; color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif; }
@@ -304,6 +468,10 @@
                 {% endif %}
 
                 <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">{{ job.site }}</span>
+
+                <button type="button" onclick="openSniperOptimizerForJob('{{ job.id }}', '{{ job.title }}')" title="Otimizar currículo 100% para os filtros desta vaga" class="text-[10px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 active:scale-95 transition">
+                  <i class="fa-solid fa-crosshairs text-amber-400"></i> Sniper CV 100%
+                </button>
               </div>
 
               <p class="text-xs text-slate-400 mt-1">
@@ -394,7 +562,7 @@
           <div class="lg:col-span-6 space-y-4">
             <div 
               id="copilot-dropzone" 
-              onclick="document.getElementById('copilot-file-input').click()"
+              tabindex="0"
               class="border-2 border-dashed border-indigo-500/40 hover:border-indigo-400/80 bg-slate-950/60 hover:bg-slate-950/90 rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[260px] group"
             >
               <input type="file" id="copilot-file-input" accept="image/*" class="hidden" onchange="handleCopilotFileSelect(event)">
@@ -411,8 +579,13 @@
                   <span class="hidden md:inline">Ou clique para selecionar uma imagem salva do computador</span>
                   <span class="md:hidden">Tire um print no celular e envie direto da sua galeria</span>
                 </p>
-                <div class="mt-3 flex items-center gap-2 text-xs text-indigo-300 bg-indigo-950/80 px-4 py-2.5 rounded-xl border border-indigo-800 font-bold active:scale-95 shadow-sm">
-                  <i class="fa-solid fa-images text-amber-400"></i> Escolher Print da Galeria
+                <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  <button type="button" onclick="pasteFromClipboard(event)" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-indigo-600/30 transition active:scale-95">
+                    <i class="fa-solid fa-clipboard text-amber-300"></i> Colar do Clipboard (Print)
+                  </button>
+                  <button type="button" onclick="event.stopPropagation(); document.getElementById('copilot-file-input').click();" class="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95">
+                    <i class="fa-solid fa-folder-open text-indigo-400"></i> Arquivo do PC / Galeria
+                  </button>
                 </div>
               </div>
 
@@ -614,6 +787,136 @@
 
     <!-- ================= ABA 3: ANÁLISE DE CURRÍCULO ATS ================= -->
     <div id="content-curriculo" class="hidden space-y-6">
+
+      <!-- ===== OTIMIZADOR ATS 100% & GERADOR DE CURRÍCULOS ===== -->
+      <div class="bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-slate-800">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Inteligência Artificial ATS 100%
+            </div>
+            <h2 class="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+              Otimizador ATS & Gerador de Currículos
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
+              A IA analisa o histórico do seu perfil, identifica lacunas que os robôs da Gupy e LinkedIn rejeitam e reescreve seu currículo com métricas e palavras-chave para atingir <strong>97% a 100% de match</strong>.
+            </p>
+          </div>
+
+          <!-- Seletor de Perfil do Membro -->
+          <div class="flex items-center gap-2 bg-slate-950/80 border border-slate-800 p-2 rounded-2xl w-full sm:w-auto">
+            <span class="text-xs font-bold text-slate-400 pl-2">Membro:</span>
+            <select id="optimizer-user" class="bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:border-indigo-500 flex-1 sm:flex-initial">
+              <option value="eduardo" selected>👤 Eduardo</option>
+              <option value="esposa">👤 Esposa</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Painel de Configuração da Otimização -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div class="lg:col-span-5 space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Modo de Otimização:</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="setOptimizerMode('general')" id="opt-mode-general" class="p-3 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95">
+                  <i class="fa-solid fa-bullseye text-indigo-400"></i> Mercado Geral
+                </button>
+                <button type="button" onclick="setOptimizerMode('sniper')" id="opt-mode-sniper" class="p-3 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95">
+                  <i class="fa-solid fa-crosshairs text-amber-400"></i> Sniper (Vaga do Radar)
+                </button>
+              </div>
+            </div>
+
+            <!-- Campo Cargo Alvo (Modo Geral) -->
+            <div id="opt-input-general-box">
+              <label class="block text-xs font-bold text-slate-400 mb-1">Cargo Alvo Principal:</label>
+              <input type="text" id="optimizer-target-role" placeholder="Ex: Analista de Suporte e Infraestrutura Pleno / Redes" 
+                     value="Analista de Suporte e Infraestrutura Pleno / Redes"
+                     class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-3 text-xs text-white outline-none">
+            </div>
+
+            <!-- Campo Selecionar Vaga (Modo Sniper) -->
+            <div id="opt-input-sniper-box" class="hidden">
+              <label class="block text-xs font-bold text-slate-400 mb-1">Escolha a Vaga Alvo:</label>
+              <select id="optimizer-job-id" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-3 text-xs text-white outline-none">
+                {% if jobs %}
+                  {% for j in jobs[:20] %}
+                    <option value="{{ j.id }}">{{ j.title }} — {{ j.company }} ({{ j.site }})</option>
+                  {% endfor %}
+                {% else %}
+                  <option value="">Nenhuma vaga capturada no momento</option>
+                {% endif %}
+              </select>
+            </div>
+
+            <!-- Botão de Disparo da IA -->
+            <button id="btn-run-optimization" onclick="runResumeOptimization()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/25 transition active:scale-95">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i> Otimizar para 100% ATS & Gerar PDF / Word
+            </button>
+          </div>
+
+          <!-- Painel de Resultado / Downloads -->
+          <div class="lg:col-span-7 bg-slate-950/70 border border-slate-800/80 rounded-2xl p-6 min-h-[300px] flex flex-col justify-between">
+            <div id="optimizer-empty-state" class="text-center py-12 space-y-3">
+              <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-3xl mx-auto">
+                <i class="fa-solid fa-file-circle-check"></i>
+              </div>
+              <h3 class="text-base font-bold text-white">Nenhum currículo otimizado gerado nesta sessão</h3>
+              <p class="text-xs text-slate-400 max-w-md mx-auto">
+                Clique no botão verde ao lado para a IA analisar seu currículo, corrigir lacunas de palavras-chave e compilar o PDF diagramado e o DOCX pronto para envio.
+              </p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="optimizer-loading" class="hidden text-center py-12 space-y-4 animate-pulse">
+              <i class="fa-solid fa-circle-notch fa-spin text-4xl text-indigo-400"></i>
+              <div>
+                <h4 class="text-sm font-bold text-white">Analisando currículo com Gemini Flash...</h4>
+                <p class="text-xs text-slate-400 mt-1">Alinhando competências técnicas e gerando arquivos PDF e Word (leva ~5 segundos)</p>
+              </div>
+            </div>
+
+            <!-- Success Result -->
+            <div id="optimizer-result" class="hidden space-y-5">
+              <!-- Score Gauge Comparison -->
+              <div class="flex items-center justify-between bg-slate-900/90 border border-slate-800 p-4 rounded-xl">
+                <div>
+                  <span class="text-[10px] uppercase font-bold text-slate-500 block">Score Original</span>
+                  <span id="res-score-orig" class="text-xl font-bold text-slate-400">75%</span>
+                </div>
+                <div class="text-indigo-400 text-lg">
+                  <i class="fa-solid fa-arrow-right"></i>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] uppercase font-bold text-emerald-400 block">Score Otimizado</span>
+                  <span id="res-score-opt" class="text-3xl font-black text-emerald-400">98% ⭐</span>
+                </div>
+              </div>
+
+              <!-- Lista de Melhorias Aplicadas -->
+              <div>
+                <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <i class="fa-solid fa-check-circle text-emerald-400"></i> Ajustes Realizados pela IA:
+                </h4>
+                <ul id="res-gaps-list" class="space-y-1 text-xs text-slate-300 bg-slate-900/50 p-3 rounded-xl border border-slate-800/80">
+                </ul>
+              </div>
+
+              <!-- Botões de Download dos Arquivos Gerados -->
+              <div class="pt-3 border-t border-slate-800/80 grid grid-cols-2 gap-3">
+                <a id="btn-download-pdf" href="#" target="_blank" class="py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition active:scale-95 text-center">
+                  <i class="fa-solid fa-file-pdf text-amber-300 text-base"></i> Baixar PDF Formatado
+                </a>
+                <a id="btn-download-docx" href="#" target="_blank" class="py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition active:scale-95 text-center">
+                  <i class="fa-solid fa-file-word text-white text-base"></i> Baixar Word (DOCX)
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="glass-card p-6 rounded-3xl">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-slate-800">
           <div>

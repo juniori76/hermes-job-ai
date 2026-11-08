@@ -8,7 +8,7 @@ import shutil
 import yaml
 from typing import Optional
 from fastapi import FastAPI, Request, BackgroundTasks, UploadFile, File, Form, Response, Depends
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -29,6 +29,7 @@ from core.settings_manager import (
 from core.notifier import test_telegram_connection
 from core.profiles_manager import list_profiles, get_profile, save_profile, get_resume_path
 from core.visual_copilot import answer_job_question
+from core.resume_optimizer import optimize_resume_for_target
 from automation.apply_engine import apply_to_job
 from automation.browser_session import check_auth_status, launch_assisted_login
 
@@ -976,3 +977,56 @@ async def api_clean_rejected_jobs(request: Request):
         deleted = cursor.rowcount
         conn.commit()
     return {"success": True, "message": f"{deleted} vagas rejeitadas foram removidas do banco."}
+
+
+@app.post("/api/resume/optimize")
+async def api_optimize_resume(request: Request):
+    """Otimiza o currículo do membro contra cargo alvo ou vaga específica para atingir 100% ATS."""
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "Não autorizado"}, status_code=401)
+    
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+        
+    username = body.get("username", user)
+    target_role = body.get("target_role")
+    job_id = body.get("job_id")
+    if job_id:
+        try:
+            job_id = int(job_id)
+        except Exception:
+            job_id = None
+            
+    result = optimize_resume_for_target(username=username, target_role=target_role, job_id=job_id)
+    return result
+
+
+@app.get("/api/resume/download/{username}/{file_format}")
+async def api_download_resume(username: str, file_format: str, request: Request):
+    """Disponibiliza download direto do currículo otimizado em PDF ou DOCX."""
+    if not get_current_user(request):
+        return RedirectResponse(url="/login")
+        
+    file_format = file_format.lower().strip()
+    if file_format not in ["pdf", "docx"]:
+        return JSONResponse({"error": "Formato inválido. Use pdf ou docx."}, status_code=400)
+        
+    file_path = os.path.join(DATA_DIR, f"curriculo_{username}_otimizado.{file_format}")
+    if not os.path.exists(file_path):
+        return JSONResponse({"error": "Currículo otimizado ainda não gerado. Clique em 'Gerar Currículo 100% ATS' primeiro."}, status_code=404)
+        
+    media_types = {
+        "pdf": "application/pdf",
+        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    }
+    
+    filename = f"Curriculo_{username.capitalize()}_Otimizado_ATS.{file_format}"
+    return FileResponse(
+        path=file_path,
+        media_type=media_types[file_format],
+        filename=filename
+    )
+
