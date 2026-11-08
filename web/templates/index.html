@@ -11,384 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Hermes Jobs">
   <title>Hermes Job AI - Centro de Comando de Carreiras</title>
-  <script src="https://cdn.tailwindcss.com">
-    // ==========================================
-    // COPILOTO: COLAR DIRETO DO CLIPBOARD (PRINT)
-    // ==========================================
-    async function pasteFromClipboard(event) {
-      if (event) event.stopPropagation();
-      try {
-        if (navigator.clipboard && navigator.clipboard.read) {
-          const items = await navigator.clipboard.read();
-          for (const item of items) {
-            const imgType = item.types.find(t => t.startsWith('image/'));
-            if (imgType) {
-              const blob = await item.getType(imgType);
-              const reader = new FileReader();
-              reader.onload = function(e) {
-                setCopilotImage(e.target.result);
-                if (typeof showToast === 'function') showToast('✅ Print colado do clipboard!');
-              };
-              reader.readAsDataURL(blob);
-              return;
-            }
-          }
-        }
-        // Se for texto copiado
-        const text = await navigator.clipboard.readText();
-        if (text) {
-          document.getElementById('copilot-text').value = text;
-          alert('Texto da pergunta colado do clipboard!');
-        } else {
-          alert('Nenhum print ou imagem encontrada na área de transferência. Tire o print (Win+Shift+S no Windows) e clique novamente.');
-        }
-      } catch (err) {
-        alert('Para colar o print diretamente, basta pressionar Ctrl + V no teclado!');
-      }
-    }
-
-    // Configura Drag & Drop limpo sem abrir seletor de arquivos
-    const copilotDropArea = document.getElementById('copilot-dropzone');
-    if (copilotDropArea) {
-      copilotDropArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        copilotDropArea.classList.add('border-indigo-400', 'bg-slate-900');
-      });
-      copilotDropArea.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        copilotDropArea.classList.remove('border-indigo-400', 'bg-slate-900');
-      });
-      copilotDropArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        copilotDropArea.classList.remove('border-indigo-400', 'bg-slate-900');
-        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-          const file = e.dataTransfer.files[0];
-          if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (event) => setCopilotImage(event.target.result);
-            reader.readAsDataURL(file);
-          }
-        }
-      });
-    }
-
-    // ==========================================
-    // OTIMIZADOR ATS & GERADOR DE CURRÍCULOS
-    // ==========================================
-    let currentOptimizerMode = 'general';
-    let currentOptimizerSource = 'profile';
-
-    function setOptimizerSource(source) {
-      currentOptimizerSource = source;
-      const btnProfile = document.getElementById('opt-src-profile');
-      const btnUpload = document.getElementById('opt-src-upload');
-      const btnText = document.getElementById('opt-src-text');
-      const boxProfile = document.getElementById('opt-box-profile');
-      const boxUpload = document.getElementById('opt-box-upload');
-      const boxText = document.getElementById('opt-box-text');
-
-      [btnProfile, btnUpload, btnText].forEach(b => {
-        if (b) b.className = 'p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold text-[11px] flex items-center justify-center gap-1.5 transition';
-      });
-
-      if (source === 'profile') {
-        if (btnProfile) btnProfile.className = 'p-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition';
-        if (boxProfile) boxProfile.classList.remove('hidden');
-        if (boxUpload) boxUpload.classList.add('hidden');
-        if (boxText) boxText.classList.add('hidden');
-      } else if (source === 'upload') {
-        if (btnUpload) btnUpload.className = 'p-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition';
-        if (boxProfile) boxProfile.classList.add('hidden');
-        if (boxUpload) boxUpload.classList.remove('hidden');
-        if (boxText) boxText.classList.add('hidden');
-      } else if (source === 'text') {
-        if (btnText) btnText.className = 'p-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition';
-        if (boxProfile) boxProfile.classList.add('hidden');
-        if (boxUpload) boxUpload.classList.add('hidden');
-        if (boxText) boxText.classList.remove('hidden');
-      }
-    }
-
-    function onCustomCVSelected(input) {
-      const file = input.files && input.files[0];
-      const label = document.getElementById('opt-custom-file-label');
-      if (file && label) {
-        label.innerHTML = `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-file-circle-check"></i> ${file.name}</span> (${(file.size / 1024).toFixed(1)} KB)`;
-      }
-    }
-
-    function setOptimizerMode(mode) {
-      currentOptimizerMode = mode;
-      const btnGen = document.getElementById('opt-mode-general');
-      const btnSniper = document.getElementById('opt-mode-sniper');
-      const boxGen = document.getElementById('opt-input-general-box');
-      const boxSniper = document.getElementById('opt-input-sniper-box');
-
-      if (mode === 'general') {
-        btnGen.className = 'p-3 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95';
-        btnSniper.className = 'p-3 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95';
-        boxGen.classList.remove('hidden');
-        boxSniper.classList.add('hidden');
-      } else {
-        btnSniper.className = 'p-3 rounded-xl border border-amber-500 bg-amber-600/20 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95';
-        btnGen.className = 'p-3 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95';
-        boxGen.classList.add('hidden');
-        boxSniper.classList.remove('hidden');
-      }
-    }
-
-    function openSniperOptimizerForJob(jobId, jobTitle) {
-      switchTab('curriculo');
-      setOptimizerMode('sniper');
-      const select = document.getElementById('optimizer-job-id');
-      if (select) {
-        select.value = jobId;
-      }
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 100);
-    }
-
-    async function runResumeOptimization() {
-      const username = document.getElementById('optimizer-user')?.value || 'eduardo';
-      const targetRole = document.getElementById('optimizer-target-role')?.value || '';
-      const jobId = currentOptimizerMode === 'sniper' ? document.getElementById('optimizer-job-id')?.value : null;
-
-      const emptyState = document.getElementById('optimizer-empty-state');
-      const loadingState = document.getElementById('optimizer-loading');
-      const resultState = document.getElementById('optimizer-result');
-      const btnSubmit = document.getElementById('btn-run-optimization');
-
-      emptyState.classList.add('hidden');
-      resultState.classList.add('hidden');
-      loadingState.classList.remove('hidden');
-      btnSubmit.disabled = true;
-      btnSubmit.classList.add('opacity-50');
-
-      try {
-        let res;
-        if (currentOptimizerSource === 'upload') {
-          const fileInput = document.getElementById('opt-custom-file');
-          if (!fileInput.files || !fileInput.files[0]) {
-            alert('Por favor, selecione um arquivo (PDF ou Word) para otimizar.');
-            loadingState.classList.add('hidden');
-            emptyState.classList.remove('hidden');
-            btnSubmit.disabled = false;
-            btnSubmit.classList.remove('opacity-50');
-            return;
-          }
-          const fd = new FormData();
-          fd.append('file', fileInput.files[0]);
-          fd.append('username', username);
-          if (targetRole) fd.append('target_role', targetRole);
-          if (jobId) fd.append('job_id', jobId);
-
-          res = await fetch('/api/resume/optimize', {
-            method: 'POST',
-            body: fd
-          });
-        } else if (currentOptimizerSource === 'text') {
-          const customText = document.getElementById('opt-custom-text').value.trim();
-          if (!customText) {
-            alert('Por favor, cole o texto do currículo no campo.');
-            loadingState.classList.add('hidden');
-            emptyState.classList.remove('hidden');
-            btnSubmit.disabled = false;
-            btnSubmit.classList.remove('opacity-50');
-            return;
-          }
-          const payload = {
-            username: username,
-            target_role: targetRole,
-            job_id: jobId,
-            custom_cv_text: customText
-          };
-          res = await fetch('/api/resume/optimize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-        } else {
-          // Perfil Ativo
-          const payload = {
-            username: username,
-            target_role: targetRole,
-            job_id: jobId
-          };
-          res = await fetch('/api/resume/optimize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-        }
-
-        const data = await res.json();
-        loadingState.classList.add('hidden');
-        btnSubmit.disabled = false;
-        btnSubmit.classList.remove('opacity-50');
-
-        if (data.success) {
-          document.getElementById('res-score-orig').textContent = `${data.original_score || 75}%`;
-          document.getElementById('res-score-opt').textContent = `${data.optimized_score || 98}% ⭐`;
-
-          const gapsList = document.getElementById('res-gaps-list');
-          gapsList.innerHTML = (data.melhorias_aplicadas || []).map(m => `
-            <li class="flex items-start gap-2">
-              <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
-              <span>${m}</span>
-            </li>
-          `).join('');
-
-          document.getElementById('btn-download-pdf').href = data.pdf_download;
-          document.getElementById('btn-download-docx').href = data.docx_download;
-
-          resultState.classList.remove('hidden');
-        } else {
-          alert('Erro ao otimizar currículo: ' + (data.error || 'Falha desconhecida'));
-          emptyState.classList.remove('hidden');
-        }
-      } catch (err) {
-        loadingState.classList.add('hidden');
-        emptyState.classList.remove('hidden');
-        btnSubmit.disabled = false;
-        btnSubmit.classList.remove('opacity-50');
-        alert('Erro de comunicação com o servidor: ' + err.message);
-      }
-    }
-
-    function confirmMasterResumeUpload() {
-      const currentUser = '{{ current_user or "eduardo" }}';
-      const displayName = '{{ profile.candidato.nome_completo or (current_user.capitalize() if current_user else "Eduardo") }}';
-      const hasResume = {{ 'true' if resume_exists else 'false' }};
-
-      const promptMsg = hasResume
-        ? `Você está prestes a substituir o currículo permanente de ${displayName} (@${currentUser}) que o robô Hermes lê para monitorar vagas.\n\nDeseja selecionar um novo arquivo PDF para substituir?`
-        : `Deseja selecionar o arquivo PDF do currículo de ${displayName} (@${currentUser}) para cadastrar no sistema?`;
-
-      if (confirm(promptMsg)) {
-        document.getElementById('resume-file-input').click();
-      }
-    }
-    
-    
-    // ==========================================
-    // CARTA DE APRESENTAÇÃO / PITCH RH (GEMINI)
-    // ==========================================
-    let currentCoverLetterJob = { id: null, title: '', company: '' };
-
-    function openCoverLetterModal(jobId, title, company) {
-      currentCoverLetterJob = { id: jobId, title: title, company: company };
-      document.getElementById('cl-job-title').textContent = title;
-      document.getElementById('cl-job-company').textContent = company;
-      document.getElementById('modal-cover-letter').classList.remove('hidden');
-      generateCoverLetterNow();
-    }
-
-    function closeCoverLetterModal() {
-      document.getElementById('modal-cover-letter').classList.add('hidden');
-    }
-
-    async function generateCoverLetterNow() {
-      if (!currentCoverLetterJob.id) return;
-      const loading = document.getElementById('cl-loading');
-      const box = document.getElementById('cl-result-box');
-      const output = document.getElementById('cl-text-output');
-      const tone = document.getElementById('cl-tone-select').value;
-
-      loading.classList.remove('hidden');
-      box.classList.add('hidden');
-
-      try {
-        const res = await fetch('/api/jobs/cover-letter', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            job_id: currentCoverLetterJob.id,
-            user_id: document.getElementById('filter-user')?.value || '{{ current_user or "eduardo" }}',
-            tone: tone
-          })
-        });
-
-        const data = await res.json();
-        if (res.ok && data.success) {
-          output.value = data.cover_letter;
-          loading.classList.add('hidden');
-          box.classList.remove('hidden');
-        } else {
-          alert('Erro ao gerar carta: ' + (data.error || 'Falha na IA'));
-          closeCoverLetterModal();
-        }
-      } catch (e) {
-        alert('Erro ao conectar ao servidor: ' + e.message);
-        closeCoverLetterModal();
-      }
-    }
-
-    function copyCoverLetterToClipboard() {
-      const output = document.getElementById('cl-text-output');
-      output.select();
-      navigator.clipboard.writeText(output.value);
-      showToast('📋 Carta de apresentação copiada com sucesso!', 'purple');
-    }
-
-    // ==========================================
-    // ASSISTENTE DE ONBOARDING (PRIMEIRO ACESSO)
-    // ==========================================
-    function openOnboardingModal() {
-      document.getElementById('modal-onboarding').classList.remove('hidden');
-    }
-
-    function closeOnboardingModal() {
-      document.getElementById('modal-onboarding').classList.add('hidden');
-    }
-
-    async function submitOnboardingWizard(event) {
-      event.preventDefault();
-      const btn = document.getElementById('ob-submit-btn');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Configurando Perfil...';
-
-      const formData = new FormData();
-      formData.append('target_roles', document.getElementById('ob-roles').value);
-      formData.append('city', document.getElementById('ob-city').value);
-      formData.append('state', document.getElementById('ob-state').value);
-      formData.append('max_km_presential', document.getElementById('ob-presential-km').value);
-      formData.append('max_km_hybrid', '30');
-      formData.append('min_salary', document.getElementById('ob-min-salary').value);
-
-      const fileInput = document.getElementById('ob-cv-file');
-      if (fileInput.files.length > 0) {
-        formData.append('resume_file', fileInput.files[0]);
-      }
-
-      try {
-        const res = await fetch('/api/onboarding/wizard', {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await res.json();
-        if (res.ok && data.success) {
-          showToast('🚀 Perfil configurado! Buscando suas primeiras vagas...', 'green');
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000);
-        } else {
-          alert('Erro: ' + (data.error || data.message || 'Falha ao salvar'));
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-bolt text-amber-300"></i> Salvar & Buscar Vagas Agora';
-        }
-      } catch (e) {
-        alert('Erro de conexão: ' + e.message);
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-bolt text-amber-300"></i> Salvar & Buscar Vagas Agora';
-      }
-    }
-
-</script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { background-color: #0b0f19; color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif; }
@@ -815,14 +438,19 @@
               </a>
 
               <!-- Botão Sniper CV 100% -->
-              <button onclick="openSniperOptimizerForJob('{{ job.id }}', '{{ job.title }}')" 
+              <button data-job-id="{{ job.id }}"
+                      data-job-title="{{ job.title | escape }}"
+                      onclick="openSniperFromButton(this)" 
                       title="Adapta e gera seu currículo em PDF/DOCX 100% sob medida para esta vaga" 
                       class="h-9 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 transition flex items-center justify-center gap-1.5 text-xs font-bold shadow-sm active:scale-95 text-center">
                 <i class="fa-solid fa-crosshairs text-amber-400"></i> Sniper CV
               </button>
 
               <!-- Botão Carta de Apresentação / Pitch RH -->
-              <button onclick="openCoverLetterModal('{{ job.id }}', '{{ job.title | escape }}', '{{ job.company | escape }}')" 
+              <button data-job-id="{{ job.id }}"
+                      data-job-title="{{ job.title | escape }}"
+                      data-job-company="{{ job.company | escape }}"
+                      onclick="openCoverLetterFromButton(this)" 
                       title="Gera carta de apresentação e mensagem pronta para o RH da vaga" 
                       class="h-9 px-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 transition flex items-center justify-center gap-1.5 text-xs font-semibold shadow-sm active:scale-95 text-center">
                 <i class="fa-solid fa-envelope-open-text text-purple-400"></i> Carta RH
@@ -3635,6 +3263,22 @@ async function changePassword() {
     // ==========================================
     let currentCoverLetterJob = { id: null, title: '', company: '' };
 
+    
+    function openCoverLetterFromButton(btn) {
+      if (!btn) return;
+      const jobId = btn.getAttribute('data-job-id');
+      const title = btn.getAttribute('data-job-title') || '';
+      const company = btn.getAttribute('data-job-company') || '';
+      openCoverLetterModal(jobId, title, company);
+    }
+
+    function openSniperFromButton(btn) {
+      if (!btn) return;
+      const jobId = btn.getAttribute('data-job-id');
+      const title = btn.getAttribute('data-job-title') || '';
+      openSniperOptimizerForJob(jobId, title);
+    }
+
     function openCoverLetterModal(jobId, title, company) {
       currentCoverLetterJob = { id: jobId, title: title, company: company };
       document.getElementById('cl-job-title').textContent = title;
@@ -4008,6 +3652,272 @@ async function changePassword() {
       showToast('📋 Resumo sugerido copiado para a área de transferência!', 'purple');
     }
 
+
+    // ==========================================
+    // FUNÇÕES ADICIONAIS DO OTIMIZADOR & COPILOTO
+    // ==========================================
+    // ==========================================
+    // COPILOTO: COLAR DIRETO DO CLIPBOARD (PRINT)
+    // ==========================================
+    async function pasteFromClipboard(event) {
+      if (event) event.stopPropagation();
+      try {
+        if (navigator.clipboard && navigator.clipboard.read) {
+          const items = await navigator.clipboard.read();
+          for (const item of items) {
+            const imgType = item.types.find(t => t.startsWith('image/'));
+            if (imgType) {
+              const blob = await item.getType(imgType);
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                setCopilotImage(e.target.result);
+                if (typeof showToast === 'function') showToast('✅ Print colado do clipboard!');
+              };
+              reader.readAsDataURL(blob);
+              return;
+            }
+          }
+        }
+        // Se for texto copiado
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          document.getElementById('copilot-text').value = text;
+          alert('Texto da pergunta colado do clipboard!');
+        } else {
+          alert('Nenhum print ou imagem encontrada na área de transferência. Tire o print (Win+Shift+S no Windows) e clique novamente.');
+        }
+      } catch (err) {
+        alert('Para colar o print diretamente, basta pressionar Ctrl + V no teclado!');
+      }
+    }
+
+    // Configura Drag & Drop limpo sem abrir seletor de arquivos
+    const copilotDropArea = document.getElementById('copilot-dropzone');
+    if (copilotDropArea) {
+      copilotDropArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        copilotDropArea.classList.add('border-indigo-400', 'bg-slate-900');
+      });
+      copilotDropArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        copilotDropArea.classList.remove('border-indigo-400', 'bg-slate-900');
+      });
+      copilotDropArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        copilotDropArea.classList.remove('border-indigo-400', 'bg-slate-900');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          const file = e.dataTransfer.files[0];
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (event) => setCopilotImage(event.target.result);
+            reader.readAsDataURL(file);
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // OTIMIZADOR ATS & GERADOR DE CURRÍCULOS
+    // ==========================================
+    let currentOptimizerMode = 'general';
+    let currentOptimizerSource = 'profile';
+
+    function setOptimizerSource(source) {
+      currentOptimizerSource = source;
+      const btnProfile = document.getElementById('opt-src-profile');
+      const btnUpload = document.getElementById('opt-src-upload');
+      const btnText = document.getElementById('opt-src-text');
+      const boxProfile = document.getElementById('opt-box-profile');
+      const boxUpload = document.getElementById('opt-box-upload');
+      const boxText = document.getElementById('opt-box-text');
+
+      [btnProfile, btnUpload, btnText].forEach(b => {
+        if (b) b.className = 'p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold text-[11px] flex items-center justify-center gap-1.5 transition';
+      });
+
+      if (source === 'profile') {
+        if (btnProfile) btnProfile.className = 'p-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition';
+        if (boxProfile) boxProfile.classList.remove('hidden');
+        if (boxUpload) boxUpload.classList.add('hidden');
+        if (boxText) boxText.classList.add('hidden');
+      } else if (source === 'upload') {
+        if (btnUpload) btnUpload.className = 'p-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition';
+        if (boxProfile) boxProfile.classList.add('hidden');
+        if (boxUpload) boxUpload.classList.remove('hidden');
+        if (boxText) boxText.classList.add('hidden');
+      } else if (source === 'text') {
+        if (btnText) btnText.className = 'p-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition';
+        if (boxProfile) boxProfile.classList.add('hidden');
+        if (boxUpload) boxUpload.classList.add('hidden');
+        if (boxText) boxText.classList.remove('hidden');
+      }
+    }
+
+    function onCustomCVSelected(input) {
+      const file = input.files && input.files[0];
+      const label = document.getElementById('opt-custom-file-label');
+      if (file && label) {
+        label.innerHTML = `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-file-circle-check"></i> ${file.name}</span> (${(file.size / 1024).toFixed(1)} KB)`;
+      }
+    }
+
+    function setOptimizerMode(mode) {
+      currentOptimizerMode = mode;
+      const btnGen = document.getElementById('opt-mode-general');
+      const btnSniper = document.getElementById('opt-mode-sniper');
+      const boxGen = document.getElementById('opt-input-general-box');
+      const boxSniper = document.getElementById('opt-input-sniper-box');
+
+      if (mode === 'general') {
+        btnGen.className = 'p-3 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95';
+        btnSniper.className = 'p-3 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95';
+        boxGen.classList.remove('hidden');
+        boxSniper.classList.add('hidden');
+      } else {
+        btnSniper.className = 'p-3 rounded-xl border border-amber-500 bg-amber-600/20 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95';
+        btnGen.className = 'p-3 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95';
+        boxGen.classList.add('hidden');
+        boxSniper.classList.remove('hidden');
+      }
+    }
+
+    function openSniperOptimizerForJob(jobId, jobTitle) {
+      switchTab('curriculo');
+      setOptimizerMode('sniper');
+      const select = document.getElementById('optimizer-job-id');
+      if (select) {
+        select.value = jobId;
+      }
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
+    }
+
+    async function runResumeOptimization() {
+      const username = document.getElementById('optimizer-user')?.value || 'eduardo';
+      const targetRole = document.getElementById('optimizer-target-role')?.value || '';
+      const jobId = currentOptimizerMode === 'sniper' ? document.getElementById('optimizer-job-id')?.value : null;
+
+      const emptyState = document.getElementById('optimizer-empty-state');
+      const loadingState = document.getElementById('optimizer-loading');
+      const resultState = document.getElementById('optimizer-result');
+      const btnSubmit = document.getElementById('btn-run-optimization');
+
+      emptyState.classList.add('hidden');
+      resultState.classList.add('hidden');
+      loadingState.classList.remove('hidden');
+      btnSubmit.disabled = true;
+      btnSubmit.classList.add('opacity-50');
+
+      try {
+        let res;
+        if (currentOptimizerSource === 'upload') {
+          const fileInput = document.getElementById('opt-custom-file');
+          if (!fileInput.files || !fileInput.files[0]) {
+            alert('Por favor, selecione um arquivo (PDF ou Word) para otimizar.');
+            loadingState.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+            btnSubmit.disabled = false;
+            btnSubmit.classList.remove('opacity-50');
+            return;
+          }
+          const fd = new FormData();
+          fd.append('file', fileInput.files[0]);
+          fd.append('username', username);
+          if (targetRole) fd.append('target_role', targetRole);
+          if (jobId) fd.append('job_id', jobId);
+
+          res = await fetch('/api/resume/optimize', {
+            method: 'POST',
+            body: fd
+          });
+        } else if (currentOptimizerSource === 'text') {
+          const customText = document.getElementById('opt-custom-text').value.trim();
+          if (!customText) {
+            alert('Por favor, cole o texto do currículo no campo.');
+            loadingState.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+            btnSubmit.disabled = false;
+            btnSubmit.classList.remove('opacity-50');
+            return;
+          }
+          const payload = {
+            username: username,
+            target_role: targetRole,
+            job_id: jobId,
+            custom_cv_text: customText
+          };
+          res = await fetch('/api/resume/optimize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          // Perfil Ativo
+          const payload = {
+            username: username,
+            target_role: targetRole,
+            job_id: jobId
+          };
+          res = await fetch('/api/resume/optimize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        const data = await res.json();
+        loadingState.classList.add('hidden');
+        btnSubmit.disabled = false;
+        btnSubmit.classList.remove('opacity-50');
+
+        if (data.success) {
+          document.getElementById('res-score-orig').textContent = `${data.original_score || 75}%`;
+          document.getElementById('res-score-opt').textContent = `${data.optimized_score || 98}% ⭐`;
+
+          const gapsList = document.getElementById('res-gaps-list');
+          gapsList.innerHTML = (data.melhorias_aplicadas || []).map(m => `
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
+              <span>${m}</span>
+            </li>
+          `).join('');
+
+          document.getElementById('btn-download-pdf').href = data.pdf_download;
+          document.getElementById('btn-download-docx').href = data.docx_download;
+
+          resultState.classList.remove('hidden');
+        } else {
+          alert('Erro ao otimizar currículo: ' + (data.error || 'Falha desconhecida'));
+          emptyState.classList.remove('hidden');
+        }
+      } catch (err) {
+        loadingState.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        btnSubmit.disabled = false;
+        btnSubmit.classList.remove('opacity-50');
+        alert('Erro de comunicação com o servidor: ' + err.message);
+      }
+    }
+
+    function confirmMasterResumeUpload() {
+      const currentUser = '{{ current_user or "eduardo" }}';
+      const displayName = '{{ profile.candidato.nome_completo or (current_user.capitalize() if current_user else "Eduardo") }}';
+      const hasResume = {{ 'true' if resume_exists else 'false' }};
+
+      const promptMsg = hasResume
+        ? `Você está prestes a substituir o currículo permanente de ${displayName} (@${currentUser}) que o robô Hermes lê para monitorar vagas.\n\nDeseja selecionar um novo arquivo PDF para substituir?`
+        : `Deseja selecionar o arquivo PDF do currículo de ${displayName} (@${currentUser}) para cadastrar no sistema?`;
+
+      if (confirm(promptMsg)) {
+        document.getElementById('resume-file-input').click();
+      }
+    }
+    
+    
 </script>
 
   <!-- ================= BARRA DE NAVEGAÇÃO INFERIOR PARA CELULAR (MOBILE DOCKED NAV) ================= -->
