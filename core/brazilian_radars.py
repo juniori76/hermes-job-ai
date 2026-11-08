@@ -10,6 +10,7 @@ import hashlib
 import re
 from typing import List, Dict, Any
 from bs4 import BeautifulSoup
+from core.relevance_filter import is_job_title_acceptable
 
 
 HEADERS = {
@@ -51,6 +52,8 @@ def search_vagas_com(term: str, location: str = "sao-paulo", limit: int = 15) ->
             raw_href = a_tag.get("href")
             job_url = f"https://www.vagas.com.br{raw_href}" if raw_href.startswith("/") else raw_href
             title = _clean_text(a_tag.get_text())
+            if not is_job_title_acceptable(title, term):
+                continue
 
             # Empresa
             emp_el = art.find(class_=lambda c: c and ("empr" in c.lower() or "empresa" in c.lower()))
@@ -116,6 +119,8 @@ def search_infojobs(term: str, location: str = "sao-paulo,-sp", limit: int = 15)
 
             title = _clean_text(a_tag.get_text())
             if not title or len(title) < 4:
+                continue
+            if not is_job_title_acceptable(title, term):
                 continue
 
             seen_urls.add(raw_href)

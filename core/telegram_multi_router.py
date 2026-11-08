@@ -115,12 +115,14 @@ def route_job_to_user(job: Dict[str, Any], profiles: Optional[List[Dict]] = None
             # Match exato no título
             if cargo_lower in title:
                 score += 30
-            # Palavras individuais do cargo no título
+            # Palavras individuais SIGNIFICATIVAS do cargo no título (ignora prefixos genéricos como 'analista', 'assistente')
+            from core.relevance_filter import GENERIC_TITLE_PREFIXES
             for part in cargo_lower.split():
-                if len(part) > 3 and part in title:
-                    score += 8
-                elif len(part) > 3 and part in full_text:
-                    score += 2
+                if len(part) > 3 and part not in GENERIC_TITLE_PREFIXES:
+                    if part in title:
+                        score += 10
+                    elif part in full_text:
+                        score += 2
 
         if score > best_score:
             best_score = score

@@ -13,6 +13,7 @@ from core.database import save_jobs, init_db
 from core.gupy_radar import search_gupy_jobs
 from core.brazilian_radars import search_vagas_com, search_infojobs
 from core.profiles_manager import get_profile, list_profiles
+from core.relevance_filter import is_job_title_acceptable
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config")
 
@@ -131,8 +132,13 @@ def scan_jobs(results_wanted_per_term: int = 15, custom_cargos: Optional[List[st
                 if any(fs in loc_lower for fs in foreign_signals) and not is_rem:
                     continue
 
+                job_title_str = str(row.get("title", ""))
+                # Filtro Semântico: Descarta anúncios aleatórios e cargos fora da área
+                if not is_job_title_acceptable(job_title_str, cargo):
+                    continue
+
                 # Freio de Ingestão: Descarta presenciais fora de SP ou internacionais
-                if not is_location_feasible(loc_str, is_rem, str(row.get("title", "")), str(row.get("description", ""))):
+                if not is_location_feasible(loc_str, is_rem, job_title_str, str(row.get("description", ""))):
                     continue
 
                 vaga = {
@@ -163,7 +169,7 @@ def scan_jobs(results_wanted_per_term: int = 15, custom_cargos: Optional[List[st
             print(f"[Hermes Radar] 🟣 Consultando portal Gupy para: '{cargo}'...")
             gupy_jobs = search_gupy_jobs(job_name=cargo, limit=15)
             if gupy_jobs:
-                gupy_filtradas = [j for j in gupy_jobs if is_location_feasible(j.get("location", ""), j.get("is_remote", False), j.get("title", ""), j.get("description", ""))]
+                gupy_filtradas = [j for j in gupy_jobs if is_job_title_acceptable(j.get("title", ""), cargo) and is_location_feasible(j.get("location", ""), j.get("is_remote", False), j.get("title", ""), j.get("description", ""))]
                 novas_gupy = save_jobs(gupy_filtradas)
                 total_novas += novas_gupy
                 print(f"[Hermes Radar] ✅ Gupy '{cargo}': {len(gupy_filtradas)} válidas na região, {novas_gupy} novas salvas.")
