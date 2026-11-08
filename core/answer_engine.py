@@ -64,7 +64,7 @@ Devolva EXCLUSIVAMENTE um objeto JSON no formato:
     for f in open_fields:
         prompt = f"""{rules}
 Responda de forma concisa, profissional e direta (máximo 800 caracteres).
-Se for uma pergunta comportamental (ex: 'conte uma situação onde...'), use a estrutura STAR (Situação, Tarefa, Ação, Resultado) baseando-se no histórico real do candidato como Analista de Suporte e Infraestrutura.
+Se for uma pergunta comportamental (ex: 'conte uma situação onde...'), use a estrutura STAR (Situação, Tarefa, Ação, Resultado) baseando-se no histórico real e competências do perfil do candidato.
 
 PERFIL DO CANDIDATO:
 {json.dumps(profile, ensure_ascii=False)}

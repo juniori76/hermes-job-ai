@@ -230,7 +230,8 @@ async def upload_resume_settings(request: Request, file: UploadFile = File(...),
 
 @app.post("/api/scan")
 async def trigger_scan(background_tasks: BackgroundTasks, request: Request = None, term: Optional[str] = None):
-    """Dispara uma varredura de novas vagas em segundo plano."""
+    """Dispara uma varredura de novas vagas em segundo plano (especifica para o usuario logado ou geral)."""
+    user = get_current_user(request) if request else None
     if not term and request:
         try:
             body = await request.json()
@@ -240,8 +241,16 @@ async def trigger_scan(background_tasks: BackgroundTasks, request: Request = Non
     if term and term.strip():
         background_tasks.add_task(scan_jobs, 15, [term.strip()])
         return {"message": f"Varredura iniciada para o termo '{term.strip()}'!"}
+        
+    if user:
+        u_prof = get_profile(user)
+        u_cargos = u_prof.get("preferencias_de_vaga", {}).get("cargos_alvo") or u_prof.get("cargos_alvo", [])
+        if u_cargos:
+            background_tasks.add_task(scan_jobs, 15, u_cargos)
+            return {"message": f"Varredura iniciada para os cargos de @{user}: {', '.join(u_cargos[:3])}!"}
+
     background_tasks.add_task(scan_jobs)
-    return {"message": "Varredura iniciada para todos os cargos configurados!"}
+    return {"message": "Varredura iniciada para todos os cargos configurados no radar!"}
 
 
 @app.post("/api/resume/upload")
