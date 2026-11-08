@@ -654,13 +654,13 @@
           <div>
             <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1.5 tracking-wider">Score / Status ATS</label>
             <select id="filter-score" onchange="applyAllJobFilters()" class="w-full p-2.5 text-xs glass-input rounded-xl text-slate-200 font-medium focus:border-indigo-500">
-              <option value="approved" selected>⭐ Aprovadas (Score ≥ 75%)</option>
-              <option value="top">🔥 Top Match (Score ≥ 85%)</option>
-              <option value="all">Todas as Vagas</option>
+              <option value="all" {% if high_match_jobs == 0 %}selected{% endif %}>Todas as Oportunidades ({{ total_jobs }})</option>
+              <option value="approved" {% if high_match_jobs > 0 %}selected{% endif %}>⭐ Aprovadas (Score ≥ 75%) ({{ high_match_jobs }})</option>
               <option value="pending">⏳ Aguardando Avaliação IA</option>
+              <option value="top">🔥 Top Match (Score ≥ 85%)</option>
               <option value="applied">✅ Candidaturas Realizadas</option>
               <option value="dry_run">🧪 Vagas Simuladas</option>
-              <option value="rejected">❌ Vagas Rejeitadas</option>
+              <option value="rejected">❌ Vagas Descartadas</option>
             </select>
           </div>
 
@@ -3582,9 +3582,12 @@ async function changePassword() {
   
     async function searchLiveCargo() {
       const input = document.getElementById('live-search-cargo');
-      const term = input ? input.value : '';
-      if (!term || !term.trim()) {
-        alert("Digite um termo para pesquisar (ex: suporte de redes, mikrotik, linux)");
+      let term = input ? input.value.trim() : '';
+      if (!term) {
+        term = '{{ (profile.preferencias_de_vaga.cargos_alvo[0] if (profile and profile.preferencias_de_vaga and profile.preferencias_de_vaga.cargos_alvo) else (profile.cargos_alvo[0] if (profile and profile.cargos_alvo) else "")) }}';
+      }
+      if (!term) {
+        showToast('Digite um cargo no campo de busca para pesquisar.', 'amber');
         return;
       }
       try {
