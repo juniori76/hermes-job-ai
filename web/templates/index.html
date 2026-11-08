@@ -310,28 +310,28 @@
 
     <!-- Navegação em Abas Modernas -->
     <div class="flex items-center gap-2 sm:gap-3 w-full md:w-auto justify-between md:justify-end">
-      <nav class="hidden md:flex items-center gap-1 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 text-sm overflow-x-auto max-w-full">
-        <button onclick="switchTab('vagas')" id="tab-vagas" class="px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2 whitespace-nowrap">
-          <i class="fa-solid fa-briefcase"></i> Central de Vagas
+      <nav class="hidden md:flex items-center gap-1 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 text-xs overflow-x-auto max-w-full">
+        <button onclick="switchTab('vagas')" id="tab-vagas" class="px-3.5 py-2 rounded-xl font-bold text-white bg-indigo-600 shadow-md shadow-indigo-600/30 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-briefcase"></i> Vagas
         </button>
-        <button onclick="switchTab('historico')" id="tab-historico" class="px-4 py-2 rounded-xl font-medium text-emerald-300 hover:text-white transition flex items-center gap-2 whitespace-nowrap bg-emerald-500/10 border border-emerald-500/20">
-          <i class="fa-solid fa-list-check text-emerald-400"></i> Minhas Candidaturas
-          <span id="nav-applied-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">{{ applications_count or applied_jobs or 0 }}</span>
+        <button onclick="switchTab('historico')" id="tab-historico" class="px-3.5 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-list-check text-emerald-400"></i> Candidaturas
+          <span id="nav-applied-badge" class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">{{ applications_count or applied_jobs or 0 }}</span>
         </button>
-        <button onclick="switchTab('copilot')" id="tab-copilot" class="px-4 py-2 rounded-xl font-medium text-amber-300 hover:text-white transition flex items-center gap-2 whitespace-nowrap bg-amber-500/10 border border-amber-500/20">
-          <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Copiloto IA (Ctrl+V)
+        <button onclick="switchTab('copilot')" id="tab-copilot" class="px-3.5 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Copiloto IA
         </button>
-        <button onclick="switchTab('regras')" id="tab-regras" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
-          <i class="fa-solid fa-location-crosshairs text-amber-400"></i> Modalidades, Km & Salário
+        <button onclick="switchTab('regras')" id="tab-regras" class="px-3.5 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-location-crosshairs text-indigo-400"></i> Regras & Km
         </button>
-        <button onclick="switchTab('curriculo')" id="tab-curriculo" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
-          <i class="fa-solid fa-file-waveform text-indigo-400"></i> Análise de Currículo ATS
+        <button onclick="switchTab('curriculo')" id="tab-curriculo" class="px-3.5 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-file-waveform text-purple-400"></i> Currículo ATS
         </button>
-        <button onclick="switchTab('sessoes')" id="tab-sessoes" class="px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
-          <i class="fa-solid fa-user-lock text-emerald-400"></i> Plataformas & IA
+        <button onclick="switchTab('sessoes')" id="tab-sessoes" class="px-3.5 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-user-lock text-cyan-400"></i> Plataformas
         </button>
-        <button onclick="switchTab('admin')" id="tab-admin" class="px-4 py-2 rounded-xl font-medium text-purple-300 hover:text-white transition flex items-center gap-2 whitespace-nowrap bg-purple-500/10 border border-purple-500/20">
-          <i class="fa-solid fa-users-gear text-purple-400"></i> Gestão de Usuários & Perfis
+        <button onclick="switchTab('admin')" id="tab-admin" class="px-3.5 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-users-gear text-pink-400"></i> Perfis
         </button>
       </nav>
 
@@ -347,139 +347,185 @@
     <!-- ================= ABA 1: CENTRAL DE VAGAS ================= -->
     <div id="content-vagas" class="space-y-6">
 
-      <!-- ===== SELETOR DE MODO DE OPERAÇÃO ===== -->
-      <div class="glass-card p-5 rounded-3xl">
-        <div class="flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
-          <div>
-            <h2 class="text-sm font-bold text-white flex items-center gap-2 mb-0.5">
-              <i class="fa-solid fa-sliders text-indigo-400"></i> Modo de Operação
-            </h2>
-            <p class="text-xs text-slate-400" id="mode-description">Selecione como o Hermes deve agir ao encontrar vagas compatíveis.</p>
-          </div>
-          <div class="grid grid-cols-3 gap-1.5 w-full sm:w-auto" id="mode-selector">
-            <!-- Modo Avaliação -->
-            <button onclick="setOperationMode('review')" id="btn-mode-review"
-              class="mode-btn px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-bold border-2 transition flex items-center justify-center gap-1 sm:gap-2 border-blue-500 bg-blue-500/20 text-blue-300 active:scale-95">
-              <i class="fa-solid fa-eye"></i> 🔵 Avaliação
-            </button>
-            <!-- Modo Inteligente -->
-            <button onclick="setOperationMode('smart')" id="btn-mode-smart"
-              class="mode-btn px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-bold border-2 transition flex items-center justify-center gap-1 sm:gap-2 border-slate-700 bg-transparent text-slate-400 hover:border-purple-500 hover:text-purple-300 active:scale-95">
-              <i class="fa-solid fa-brain"></i> 🟣 Inteligente
-            </button>
-            <!-- Modo Automático -->
-            <button onclick="setOperationMode('auto')" id="btn-mode-auto"
-              class="mode-btn px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-bold border-2 transition flex items-center justify-center gap-1 sm:gap-2 border-slate-700 bg-transparent text-slate-400 hover:border-emerald-500 hover:text-emerald-300 active:scale-95">
-              <i class="fa-solid fa-robot"></i> 🟢 Automático
-            </button>
-          </div>
-        </div>
-        <!-- Legenda dinâmica do modo -->
-        <div class="mt-3 p-3 rounded-xl text-xs" id="mode-info-box" style="display:none;"></div>
-      </div>
-      
-      <!-- Barra Superior de Parâmetros Atuais -->
-      <div class="glass-card p-5 rounded-3xl">
-        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto">
-            <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
-              <i class="fa-solid fa-home text-emerald-400"></i>
-              <span>Origem: <strong>{{ profile.candidato.cidade }} - {{ profile.candidato.estado }}</strong></span>
+      <!-- ===== PAINEL DE CONTROLE E OPERAÇÃO UNIFICADO ===== -->
+      <div class="glass-card p-5 sm:p-6 rounded-3xl space-y-4 shadow-xl">
+        <!-- Linha Superior: Modo de Operação & Ações Rápidas -->
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-sliders text-sm"></i>
             </div>
-            <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
-              <i class="fa-solid fa-car-side text-indigo-400"></i>
-              <span>Híbrido: até <strong>{{ profile.preferencias_de_vaga.modalidades.hibrido.distancia_maxima_km if profile.preferencias_de_vaga.modalidades else 30 }}km</strong></span>
-            </div>
-            <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
-              <i class="fa-solid fa-building text-amber-400"></i>
-              <span>Presencial: até <strong>{{ profile.preferencias_de_vaga.modalidades.presencial.distancia_maxima_km if profile.preferencias_de_vaga.modalidades else 15 }}km</strong></span>
-            </div>
-            <div class="flex items-center gap-2 text-xs bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800 text-slate-300">
-              <i class="fa-solid fa-money-bill-wave text-emerald-400"></i>
-              <span>Mín. CLT: <strong>R$ {{ profile.preferencias_de_vaga.financeiro.salario_minimo_clt if profile.preferencias_de_vaga.financeiro else 3500 }}</strong></span>
+            <div>
+              <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                Modo de Operação
+                <span class="text-[10px] font-normal text-slate-400 hidden sm:inline">• Autonomia do Robô Hermes</span>
+              </h2>
+              <p class="text-xs text-slate-400" id="mode-description">Escolha o nível de autonomia do robô para descoberta e candidatura.</p>
             </div>
           </div>
 
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto justify-end">
-            <div class="flex items-center gap-1.5 w-full sm:w-auto">
-              <input type="text" id="live-search-cargo" placeholder="Pesquisar cargo novo (ex: suporte de redes)..." 
-                     class="bg-slate-950 border border-slate-700 focus:border-indigo-500 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 outline-none flex-1 sm:w-60">
-              <button onclick="searchLiveCargo()" title="Dispara busca imediata deste cargo nas 5 plataformas" 
-                      class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 whitespace-nowrap active:scale-95">
-                <i class="fa-solid fa-bolt text-amber-300"></i> Buscar
+          <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full lg:w-auto justify-end">
+            <!-- Seletor de Modos -->
+            <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-950/80 rounded-2xl border border-slate-800 w-full sm:w-auto" id="mode-selector">
+              <button onclick="setOperationMode('review')" id="btn-mode-review"
+                class="mode-btn px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 border-blue-500 bg-blue-500/20 text-blue-300 shadow-sm active:scale-95">
+                <i class="fa-solid fa-eye text-blue-400"></i> Avaliação
+              </button>
+              <button onclick="setOperationMode('smart')" id="btn-mode-smart"
+                class="mode-btn px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 border-transparent text-slate-400 hover:text-purple-300 hover:bg-purple-500/10 active:scale-95">
+                <i class="fa-solid fa-brain text-purple-400"></i> Inteligente
+              </button>
+              <button onclick="setOperationMode('auto')" id="btn-mode-auto"
+                class="mode-btn px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-1.5 border-transparent text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10 active:scale-95">
+                <i class="fa-solid fa-robot text-emerald-400"></i> Automático
               </button>
             </div>
-            
-            <div class="grid grid-cols-2 gap-2 w-full sm:w-auto">
-              <button onclick="triggerAction('/api/scan', 'Varredura disparada em todas as plataformas!')" class="bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-2.5 rounded-xl text-xs font-bold border border-slate-700 flex items-center justify-center gap-1.5 transition shadow-sm active:scale-95">
+
+            <!-- Botões de Ação Imediata -->
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button onclick="triggerAction('/api/scan', 'Varredura disparada em todas as plataformas!')" 
+                      class="flex-1 sm:flex-initial bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-slate-700 flex items-center justify-center gap-1.5 transition active:scale-95">
                 <i class="fa-solid fa-satellite-dish text-indigo-400"></i> Varrer
               </button>
-              <button onclick="triggerAction('/api/evaluate', 'Classificação ATS e Filtro Geográfico iniciados!')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-lg shadow-indigo-600/30 active:scale-95">
+              <button onclick="triggerAction('/api/evaluate', 'Classificação ATS e Filtro Geográfico iniciados!')" 
+                      class="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-lg shadow-indigo-600/25 active:scale-95">
                 <i class="fa-solid fa-brain"></i> Ranquear
               </button>
             </div>
           </div>
         </div>
+
+        <!-- Legenda dinâmica do modo -->
+        <div class="p-3 rounded-xl text-xs" id="mode-info-box" style="display:none;"></div>
+
+        <!-- Linha Inferior: Parâmetros Ativos + Busca ao Vivo -->
+        <div class="pt-3 border-t border-slate-800/80 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
+          <!-- Parâmetros do Perfil -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div class="flex items-center gap-2 text-xs bg-slate-950/70 px-3 py-2 rounded-xl border border-slate-800 text-slate-300">
+              <i class="fa-solid fa-location-dot text-emerald-400 text-xs"></i>
+              <span class="truncate">Base: <strong>{{ profile.candidato.cidade or 'Diadema' }} - {{ profile.candidato.estado or 'SP' }}</strong></span>
+            </div>
+            <div class="flex items-center gap-2 text-xs bg-slate-950/70 px-3 py-2 rounded-xl border border-slate-800 text-slate-300">
+              <i class="fa-solid fa-car-side text-indigo-400 text-xs"></i>
+              <span class="truncate">Híbrido: até <strong>{{ profile.preferencias_de_vaga.modalidades.hibrido.distancia_maxima_km if profile.preferencias_de_vaga.modalidades else 30 }}km</strong></span>
+            </div>
+            <div class="flex items-center gap-2 text-xs bg-slate-950/70 px-3 py-2 rounded-xl border border-slate-800 text-slate-300">
+              <i class="fa-solid fa-building text-amber-400 text-xs"></i>
+              <span class="truncate">Presencial: até <strong>{{ profile.preferencias_de_vaga.modalidades.presencial.distancia_maxima_km if profile.preferencias_de_vaga.modalidades else 18 }}km</strong></span>
+            </div>
+            <div class="flex items-center gap-2 text-xs bg-slate-950/70 px-3 py-2 rounded-xl border border-slate-800 text-slate-300">
+              <i class="fa-solid fa-wallet text-emerald-400 text-xs"></i>
+              <span class="truncate">Mín. CLT: <strong>R$ {{ profile.preferencias_de_vaga.financeiro.salario_minimo_clt if profile.preferencias_de_vaga.financeiro else 3500 }}</strong></span>
+            </div>
+          </div>
+
+          <!-- Busca Imediata por Cargo Novo -->
+          <div class="flex items-center gap-2 w-full xl:w-auto justify-end">
+            <div class="relative flex-1 xl:w-72">
+              <i class="fa-solid fa-bolt absolute left-3 top-2.5 text-amber-400 text-xs"></i>
+              <input type="text" id="live-search-cargo" placeholder="Pesquisar cargo novo (ex: suporte de redes)..." 
+                     class="w-full bg-slate-950/90 border border-slate-800 focus:border-indigo-500 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition">
+            </div>
+            <button onclick="searchLiveCargo()" title="Dispara busca imediata deste cargo nas plataformas" 
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 whitespace-nowrap active:scale-95 shrink-0">
+              <i class="fa-solid fa-magnifying-glass"></i> Buscar
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Métricas Clicáveis (Isoladas por Perfil com Total Global Informativo) -->
-      <div class="grid grid-cols-3 gap-2 sm:gap-4">
-        <div onclick="filterFromMetric('all')" title="Clique para ver oportunidades do seu perfil" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-slate-500 transition group select-none">
-          <div class="flex items-center justify-between">
-            <p class="text-xs text-slate-400 group-hover:text-slate-200 font-semibold uppercase tracking-wider">Radar (@{{ current_user or 'eduardo' }})</p>
-            <i class="fa-solid fa-radar text-xs text-slate-500 group-hover:text-indigo-400 transition"></i>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+        <!-- Card 1: Radar do Candidato -->
+        <div onclick="filterFromMetric('all')" title="Clique para ver todas as vagas do seu radar" 
+             class="glass-card p-5 rounded-3xl cursor-pointer hover:border-indigo-500/60 transition group select-none relative overflow-hidden">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-radar"></i>
+              </div>
+              <span class="text-xs text-slate-400 group-hover:text-slate-200 font-bold uppercase tracking-wider">Radar de Oportunidades</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-[11px] text-slate-600 group-hover:text-indigo-400 transition transform group-hover:translate-x-0.5"></i>
           </div>
-          <div class="flex items-baseline gap-2 mt-1">
-            <p id="stat-total-jobs" class="text-3xl font-black text-white">{{ total_jobs }}</p>
-            <span class="text-[11px] text-slate-500 font-normal">({{ global_total_jobs }} no total)</span>
-          </div>
+          <p id="stat-total-jobs" class="text-3xl font-black text-white tracking-tight">{{ total_jobs }}</p>
+          <p class="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+            <span class="text-indigo-400 font-semibold">@{{ current_user or 'eduardo' }}</span>
+            <span class="text-slate-600">•</span>
+            <span>{{ global_total_jobs }} vagas totais no banco</span>
+          </p>
         </div>
-        <div onclick="filterFromMetric('approved')" title="Clique para filtrar apenas vagas aprovadas (≥ 75%)" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-emerald-500 transition group select-none border border-emerald-500/20">
-          <div class="flex items-center justify-between">
-            <p class="text-xs text-emerald-400 group-hover:text-emerald-300 font-semibold uppercase tracking-wider">Aprovadas no Perfil</p>
-            <i class="fa-solid fa-circle-check text-xs text-emerald-500"></i>
+
+        <!-- Card 2: Aprovadas pelo ATS -->
+        <div onclick="filterFromMetric('approved')" title="Clique para filtrar apenas vagas aprovadas (≥ 75%)" 
+             class="glass-card p-5 rounded-3xl cursor-pointer hover:border-emerald-500/60 transition group select-none relative overflow-hidden border border-emerald-500/20 bg-emerald-950/10">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+              <span class="text-xs text-emerald-300 group-hover:text-emerald-200 font-bold uppercase tracking-wider">Aprovadas no Perfil</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-[11px] text-emerald-600 group-hover:text-emerald-400 transition transform group-hover:translate-x-0.5"></i>
           </div>
-          <p id="stat-approved-jobs" class="text-3xl font-black text-emerald-400 mt-1">{{ high_match_jobs }}</p>
+          <p id="stat-approved-jobs" class="text-3xl font-black text-emerald-400 tracking-tight">{{ high_match_jobs }}</p>
+          <p class="text-xs text-emerald-400/80 mt-1 flex items-center gap-1.5">
+            <i class="fa-solid fa-check text-[10px]"></i>
+            <span>Compatíveis (Km, Salário e Score ≥ 75%)</span>
+          </p>
         </div>
-        <div onclick="filterFromMetric('applied')" title="Clique para filtrar candidaturas realizadas" class="glass-card p-5 rounded-3xl cursor-pointer hover:border-indigo-500 transition group select-none border border-indigo-500/20">
-          <div class="flex items-center justify-between">
-            <p class="text-xs text-indigo-400 group-hover:text-indigo-300 font-semibold uppercase tracking-wider">Minhas Candidaturas</p>
-            <i class="fa-solid fa-paper-plane text-xs text-indigo-500"></i>
+
+        <!-- Card 3: Minhas Candidaturas -->
+        <div onclick="filterFromMetric('applied')" title="Clique para ver candidaturas realizadas" 
+             class="glass-card p-5 rounded-3xl cursor-pointer hover:border-purple-500/60 transition group select-none relative overflow-hidden border border-purple-500/20 bg-purple-950/10">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-paper-plane"></i>
+              </div>
+              <span class="text-xs text-purple-300 group-hover:text-purple-200 font-bold uppercase tracking-wider">Candidaturas Ativas</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-[11px] text-purple-600 group-hover:text-purple-400 transition transform group-hover:translate-x-0.5"></i>
           </div>
-          <p id="stat-applied-jobs" class="text-3xl font-black text-indigo-400 mt-1">{{ applied_jobs }}</p>
+          <p id="stat-applied-jobs" class="text-3xl font-black text-purple-400 tracking-tight">{{ applied_jobs }}</p>
+          <p class="text-xs text-purple-400/80 mt-1 flex items-center gap-1.5">
+            <i class="fa-solid fa-list-check text-[10px]"></i>
+            <span>Currículos enviados e em pipeline</span>
+          </p>
         </div>
       </div>
 
       <!-- Barra de Filtros Avançados -->
-      <div class="glass-card p-5 rounded-3xl space-y-3">
+      <div class="glass-card p-5 rounded-3xl space-y-4 shadow-xl">
         <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
           <div class="relative flex-1">
             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
             <input type="text" id="filter-search" oninput="applyAllJobFilters()" 
-                   placeholder="Buscar por cargo, empresa, tecnologia ou cidade (ex: Simpress, MikroTik, Diadema)..." 
-                   class="w-full pl-9 pr-4 py-2.5 text-xs glass-input rounded-xl text-white">
+                   placeholder="Buscar por cargo, empresa, tecnologia ou cidade (ex: Suporte, MikroTik, Diadema)..." 
+                   class="w-full pl-9 pr-4 py-2.5 text-xs glass-input rounded-xl text-white outline-none focus:border-indigo-500 transition">
           </div>
 
-          <div class="flex items-center gap-3 justify-between md:justify-end">
-            <span class="text-xs text-slate-400 font-medium whitespace-nowrap">
+          <div class="flex items-center gap-2 justify-between md:justify-end flex-wrap sm:flex-nowrap">
+            <div class="px-3 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-400 font-medium whitespace-nowrap">
               Exibindo <span id="filtered-count" class="text-white font-bold">{{ jobs|length }}</span> de <span class="text-indigo-400 font-bold">{{ total_jobs }}</span> vagas
-            </span>
+            </div>
             <button onclick="applyAllJobFilters()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap shadow-md shadow-indigo-600/30 active:scale-95">
-              <i class="fa-solid fa-filter"></i> Aplicar Filtros
+              <i class="fa-solid fa-filter"></i> Aplicar
             </button>
-            <button onclick="resetJobFilters()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl border border-slate-700 transition flex items-center gap-1.5 whitespace-nowrap">
-              <i class="fa-solid fa-filter-circle-xmark"></i> Limpar Filtros
+            <button onclick="resetJobFilters()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl border border-slate-700 transition flex items-center gap-1.5 whitespace-nowrap active:scale-95">
+              <i class="fa-solid fa-rotate-left"></i> Limpar
             </button>
-            <button onclick="cleanRejectedJobs()" title="Remove vagas rejeitadas do banco para despoluir a visualização" class="text-xs bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 px-3 py-2 rounded-xl border border-rose-800/80 transition flex items-center gap-1.5 whitespace-nowrap">
+            <button onclick="cleanRejectedJobs()" title="Remove vagas rejeitadas do banco para despoluir a visualização" class="text-xs bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 px-3 py-2 rounded-xl border border-rose-800/60 transition flex items-center gap-1.5 whitespace-nowrap active:scale-95">
               <i class="fa-solid fa-trash-can"></i> Limpar Descartadas
             </button>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-1">
           <div>
-            <label class="text-[10px] uppercase font-bold text-amber-400 block mb-1">Perfil / Área</label>
-            <select id="filter-user" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-amber-300 font-bold border-amber-500/30">
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1.5 tracking-wider">Perfil / Área</label>
+            <select id="filter-user" onchange="applyAllJobFilters()" class="w-full p-2.5 text-xs glass-input rounded-xl text-slate-200 font-medium focus:border-indigo-500">
               <option value="{{ current_user or 'eduardo' }}" selected>👤 Minhas Vagas (@{{ current_user or 'eduardo' }})</option>
               <option value="all">🌐 Todos os Perfis / Geral</option>
               {% if all_profiles %}
@@ -491,23 +537,23 @@
               {% endif %}
             </select>
           </div>
+
           <div>
-            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Score / Status ATS</label>
-            <select id="filter-score" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200 font-medium">
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1.5 tracking-wider">Score / Status ATS</label>
+            <select id="filter-score" onchange="applyAllJobFilters()" class="w-full p-2.5 text-xs glass-input rounded-xl text-slate-200 font-medium focus:border-indigo-500">
               <option value="approved" selected>⭐ Aprovadas (Score ≥ 75%)</option>
-              <option value="top">🔥 Top Score (Score ≥ 85%)</option>
+              <option value="top">🔥 Top Match (Score ≥ 85%)</option>
               <option value="all">Todas as Vagas</option>
-              <option value="top">🔥 Top Score (Score ≥ 85%)</option>
-              <option value="pending">⏳ Aguardando IA</option>
-              <option value="applied">✅ Candidatadas / Realizadas</option>
-              <option value="dry_run">🧪 Simuladas (Dry-Run)</option>
-              <option value="rejected">❌ Rejeitadas</option>
+              <option value="pending">⏳ Aguardando Avaliação IA</option>
+              <option value="applied">✅ Candidaturas Realizadas</option>
+              <option value="dry_run">🧪 Vagas Simuladas</option>
+              <option value="rejected">❌ Vagas Rejeitadas</option>
             </select>
           </div>
 
           <div>
-            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Data / Recência</label>
-            <select id="filter-recency" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200">
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1.5 tracking-wider">Data / Recência</label>
+            <select id="filter-recency" onchange="applyAllJobFilters()" class="w-full p-2.5 text-xs glass-input rounded-xl text-slate-200 font-medium focus:border-indigo-500">
               <option value="all">Todas as Datas</option>
               <option value="2h">🔥 Urgente (&lt; 2h)</option>
               <option value="6h">⚡ Recente (&lt; 6h)</option>
@@ -518,8 +564,8 @@
           </div>
 
           <div>
-            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Modalidade</label>
-            <select id="filter-modality" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200">
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1.5 tracking-wider">Modalidade</label>
+            <select id="filter-modality" onchange="applyAllJobFilters()" class="w-full p-2.5 text-xs glass-input rounded-xl text-slate-200 font-medium focus:border-indigo-500">
               <option value="all">Todas as Modalidades</option>
               <option value="remote">🏠 Remoto</option>
               <option value="presential">🏢 Presencial / Híbrido</option>
@@ -527,8 +573,8 @@
           </div>
 
           <div>
-            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Plataforma</label>
-            <select id="filter-platform" onchange="applyAllJobFilters()" class="w-full p-2 text-xs glass-input rounded-xl text-slate-200">
+            <label class="text-[10px] uppercase font-bold text-slate-400 block mb-1.5 tracking-wider">Plataforma</label>
+            <select id="filter-platform" onchange="applyAllJobFilters()" class="w-full p-2.5 text-xs glass-input rounded-xl text-slate-200 font-medium focus:border-indigo-500">
               <option value="all">Todas as Plataformas</option>
               <option value="gupy">Gupy</option>
               <option value="linkedin">LinkedIn</option>
@@ -646,30 +692,37 @@
             </div>
 
             <!-- Botões de Ação Direta (Candidatura & Descarte Rápido) -->
-            <div class="w-full md:w-auto mt-3 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-800/60 grid grid-cols-3 md:flex items-center gap-2 justify-end">
+            <div class="w-full md:w-auto mt-4 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-800/60 flex flex-wrap md:flex-nowrap items-center gap-2 justify-end shrink-0">
               <!-- Botão 1: Abrir link da vaga -->
-              <a href="{{ job.job_url }}" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 sm:px-3 py-2.5 sm:py-2 rounded-xl border border-slate-700 transition flex items-center justify-center gap-1.5 font-semibold shadow-sm active:scale-95 text-center">
+              <a href="{{ job.job_url }}" target="_blank" 
+                 class="h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center justify-center gap-1.5 text-xs font-semibold shadow-sm active:scale-95 text-center">
                 <i class="fa-solid fa-arrow-up-right-from-square text-indigo-400"></i> Abrir Vaga
               </a>
 
               <!-- Botão Sniper CV 100% -->
-              <button onclick="openSniperOptimizerForJob('{{ job.id }}', '{{ job.title }}')" title="Adapta e gera seu currículo em PDF/DOCX 100% sob medida para esta vaga" class="text-xs bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 px-2 sm:px-3 py-2.5 sm:py-2 rounded-xl transition flex items-center justify-center gap-1.5 font-bold shadow-sm active:scale-95 text-center">
+              <button onclick="openSniperOptimizerForJob('{{ job.id }}', '{{ job.title }}')" 
+                      title="Adapta e gera seu currículo em PDF/DOCX 100% sob medida para esta vaga" 
+                      class="h-9 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 transition flex items-center justify-center gap-1.5 text-xs font-bold shadow-sm active:scale-95 text-center">
                 <i class="fa-solid fa-crosshairs text-amber-400"></i> Sniper CV
               </button>
 
               <!-- Botão 2: Flag Já Me Candidatei -->
               {% if job.status in ['applied', 'success'] %}
-                <span class="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 shadow-sm">
+                <span class="h-9 px-3.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm text-center">
                   <i class="fa-solid fa-circle-check text-emerald-400"></i> Candidatado
                 </span>
               {% else %}
-                <button onclick="markAsApplied('{{ job.id }}')" title="Marca como candidatada e remove da fila pendente" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-2 sm:px-3.5 py-2.5 sm:py-2 rounded-xl font-bold transition shadow-sm flex items-center justify-center gap-1.5 active:scale-95 text-center">
+                <button onclick="markAsApplied('{{ job.id }}')" 
+                        title="Marca como candidatada e remove da fila pendente" 
+                        class="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5 active:scale-95 text-center">
                   <i class="fa-solid fa-check-double"></i> Já Me Candidatei
                 </button>
               {% endif %}
 
               <!-- Botão 3: Descartar / Limpar da Fila -->
-              <button onclick="markAsDiscarded('{{ job.id }}')" title="Descarta esta vaga (não faz sentido para mim)" class="text-xs bg-slate-800/80 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 px-2 sm:px-3 py-2.5 sm:py-2 rounded-xl border border-slate-700/80 hover:border-rose-800/60 transition flex items-center justify-center gap-1.5 active:scale-95 text-center">
+              <button onclick="markAsDiscarded('{{ job.id }}')" 
+                      title="Descarta esta vaga (não faz sentido para mim)" 
+                      class="h-9 px-3 rounded-xl bg-slate-800/80 hover:bg-rose-950/50 text-slate-400 hover:text-rose-400 border border-slate-700/80 hover:border-rose-800/60 transition flex items-center justify-center gap-1.5 text-xs font-semibold active:scale-95 text-center">
                 <i class="fa-solid fa-ban"></i> Descartar
               </button>
             </div>
@@ -1683,19 +1736,18 @@
         
         if (t === tab) {
           if (el) el.classList.remove('hidden');
-          if (btn) btn.className = 'px-4 py-2 rounded-xl font-bold text-white bg-indigo-600 transition flex items-center gap-2 whitespace-nowrap';
+          if (btn) btn.className = 'px-3.5 py-2 rounded-xl font-bold text-white bg-indigo-600 shadow-md shadow-indigo-600/30 transition flex items-center gap-2 whitespace-nowrap text-xs';
           if (mBtn) {
-            mBtn.className = 'flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-indigo-400 font-bold transition active:scale-95 bg-indigo-500/10';
+            mBtn.className = 'flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-indigo-400 font-bold transition active:scale-95 bg-indigo-500/10 text-xs';
           }
         } else {
           if (el) el.classList.add('hidden');
-          if (btn) btn.className = 'px-4 py-2 rounded-xl font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap';
+          if (btn) btn.className = 'px-3.5 py-2 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-2 whitespace-nowrap text-xs';
           if (mBtn) {
-            mBtn.className = 'flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-slate-400 transition active:scale-95';
+            mBtn.className = 'flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl text-slate-400 transition active:scale-95 text-xs';
           }
         }
       });
-      // Rola suave para o topo ao trocar de aba no celular
       window.scrollTo({ top: 0, behavior: 'smooth' });
       if (tab === 'historico') {
         loadApplicationsHistory();
