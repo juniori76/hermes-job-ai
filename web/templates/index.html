@@ -445,7 +445,7 @@
                 <strong class="text-slate-200">{{ job.company }}</strong> • <i class="fa-solid fa-location-dot text-indigo-400"></i> {{ job.location }} • Publicado: {{ job.created_at[:10] }}
               </p>
 
-              <!-- Destaque de Clima, Fonte do Salário e Links Auditáveis -->
+              <!-- Destaque de Clima, Fonte do Salário e Links Auditáveis Diretos -->
               <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-1.5 text-[11px]">
                 {% if job.company_insight and not job.company_insight.is_confidential %}
                   {% if job.company_insight.pros %}
@@ -453,9 +453,14 @@
                       <i class="fa-solid fa-thumbs-up text-[10px]"></i> {{ job.company_insight.pros }}
                     </span>
                   {% endif %}
-                  {% if job.company_insight.reviews_url %}
-                    <a href="{{ job.company_insight.reviews_url }}" target="_blank" class="text-purple-400 hover:text-purple-300 underline underline-offset-2 flex items-center gap-1">
-                      <i class="fa-solid fa-comments text-[10px]"></i> Ver opiniões de funcionários (Glassdoor/Indeed)
+                  {% if job.company_insight.indeed_url %}
+                    <a href="{{ job.company_insight.indeed_url }}" target="_blank" class="text-blue-400 hover:text-blue-300 underline underline-offset-2 flex items-center gap-1" title="Abrir perfil e opiniões de funcionários no Indeed">
+                      <i class="fa-solid fa-building-user text-[10px]"></i> Avaliações no Indeed
+                    </a>
+                  {% endif %}
+                  {% if job.company_insight.glassdoor_url %}
+                    <a href="{{ job.company_insight.glassdoor_url }}" target="_blank" class="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 flex items-center gap-1" title="Abrir perfil e opiniões no Glassdoor Oficial">
+                      <i class="fa-solid fa-comments text-[10px]"></i> Glassdoor
                     </a>
                   {% endif %}
                 {% elif job.company_insight and job.company_insight.is_confidential %}
@@ -464,10 +469,15 @@
                   </span>
                 {% endif %}
 
-                {% if job.salary_insight and not job.salary_insight.has_explicit_salary and job.salary_insight.source_url %}
-                  <a href="{{ job.salary_insight.source_url }}" target="_blank" class="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 flex items-center gap-1" title="Consultar métrica base salarial do cargo no CAGED/MTE e Glassdoor">
-                    <i class="fa-solid fa-chart-line text-[10px]"></i> Fonte: {{ job.salary_insight.source_name }}
+                {% if job.salary_insight and not job.salary_insight.has_explicit_salary and job.salary_insight.caged_url %}
+                  <a href="{{ job.salary_insight.caged_url }}" target="_blank" class="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 flex items-center gap-1" title="Abrir pesquisa salarial oficial do cargo no Salario.com.br (Base CAGED/MTE)">
+                    <i class="fa-solid fa-chart-line text-[10px]"></i> Tabela Salarial (CAGED/MTE)
                   </a>
+                  {% if job.salary_insight.glassdoor_url %}
+                    <a href="{{ job.salary_insight.glassdoor_url }}" target="_blank" class="text-indigo-300 hover:text-white underline underline-offset-2 flex items-center gap-1" title="Abrir pesquisa salarial no Glassdoor Oficial">
+                      <i class="fa-solid fa-money-bill-trend-up text-[10px]"></i> Glassdoor Salários
+                    </a>
+                  {% endif %}
                 {% endif %}
               </div>
 

@@ -4,14 +4,13 @@ Calcula a faixa de remuneração de mercado para cada vaga com base em:
 1. Salário real divulgado pela empresa (se houver).
 2. Tabela de benchmark salarial oficial (Base CAGED/MTE e Glassdoor São Paulo).
 3. Modificadores de competências técnicas rigorosamente balanceados por senioridade.
-4. Links diretos e auditáveis para pesquisa salarial oficial do cargo.
+4. Links diretos e oficiais para a pesquisa salarial oficial do cargo no Salario.com.br (CAGED/MTE) e Glassdoor.
 """
 
 import re
 import urllib.parse
 from typing import Dict, Any, Optional
 
-# Tabela base de remuneração média de mercado (Região Metropolitana de SP / Remoto nacional)
 ROLE_BENCHMARKS = [
     # TI - Estágios
     (r"(estagi[aá]rio|estagio).*(ti|redes|suporte|infra|seguran[çc]a)", 1400, 2200, "Estágio"),
@@ -50,7 +49,6 @@ ROLE_BENCHMARKS = [
     (r"(faturamento|fiscal|cont[aá]bil)", 2600, 4000, "Técnico"),
 ]
 
-# Modificadores de valorização por habilidades técnicas (controlados)
 SKILL_MODIFIERS = [
     (r"(mikrotik|mtcna|routeros)", 0.05, "MikroTik"),
     (r"(fortinet|firewall|fortigate|pfsense)", 0.05, "Firewall/Segurança"),
@@ -63,16 +61,15 @@ SKILL_MODIFIERS = [
 
 
 def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """
-    Retorna a inteligência salarial da vaga com link de auditoria direta no Glassdoor e CAGED.
-    """
     sal_min = float(job.get("salary_min") or 0.0)
     sal_max = float(job.get("salary_max") or 0.0)
     raw_title = job.get("title") or "Profissional de TI"
     clean_title = re.sub(r"[\–\-\|\(\)\/].*", "", raw_title).strip()
-    encoded_title = urllib.parse.quote_plus(raw_title.strip())
+    encoded_title = urllib.parse.quote_plus(clean_title)
 
-    salary_research_url = f"https://www.google.com/search?q=salario+medio+{encoded_title}+sao+paulo+glassdoor+caged"
+    # Link direto para a base oficial de salários do CAGED / Ministério do Trabalho (Salario.com.br)
+    caged_url = f"https://www.salario.com.br/busca/?q={encoded_title}"
+    glassdoor_url = f"https://www.glassdoor.com.br/Sal%C3%A1rios/index.htm?keyword={encoded_title}"
 
     # 1. Se a vaga já tem salário real explicitamente divulgado
     if sal_min > 500 or sal_max > 500:
@@ -93,6 +90,8 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
             "badge_type": "real",
             "source_name": f"Anúncio Oficial ({job.get('site', 'Vaga')})",
             "source_url": job.get("job_url"),
+            "caged_url": caged_url,
+            "glassdoor_url": glassdoor_url,
             "explanation": "Salário oficial informado no anúncio da vaga pela empresa contratante."
         }
 
@@ -101,7 +100,6 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
     desc_lower = (job.get("description") or "").lower()
     full_text = f"{title_lower} {desc_lower}"
 
-    # Detecção de Senioridade explícita no título
     is_estagio = bool(re.search(r"\b(est[aá]gio|estagi[aá]rio)\b", title_lower))
     is_junior = bool(re.search(r"\b(j[uú]nior|jr|trainee|i\b|1\b)\b", title_lower))
     is_senior = bool(re.search(r"\b(s[eê]nior|sr|especialista|coordenador|supervisor)\b", title_lower))
@@ -119,7 +117,6 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
             rule_found = True
             break
 
-    # Se não achou no título, busca no texto geral
     if not rule_found:
         for pattern, b_min, b_max, label in ROLE_BENCHMARKS:
             if re.search(pattern, desc_lower[:500]):
@@ -129,7 +126,6 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
                 rule_found = True
                 break
 
-    # Teto e Piso de Segurança por Senioridade (Garante que Júnior nunca caia em faixa Pleno/Sênior)
     if is_junior:
         matched_min = min(matched_min, 3800.0)
         matched_max = min(matched_max, 4900.0)
@@ -137,7 +133,6 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
         matched_min = min(matched_min, 1500.0)
         matched_max = min(matched_max, 2200.0)
 
-    # Aplica modificadores de skills técnicas
     bonus_multiplier = 0.0
     skills_boosted = []
     for pattern, boost, skill_name in SKILL_MODIFIERS:
@@ -145,12 +140,10 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
             bonus_multiplier += boost
             skills_boosted.append(skill_name)
 
-    # Limita o bônus máximo
     bonus_multiplier = min(bonus_multiplier, 0.15)
     final_min = round((matched_min * (1.0 + bonus_multiplier)) / 100) * 100
     final_max = round((matched_max * (1.0 + bonus_multiplier)) / 100) * 100
 
-    # Aplica teto final estrito de Júnior se detectado
     if is_junior:
         final_max = min(final_max, 5000.0)
 
@@ -165,7 +158,9 @@ def estimate_job_salary(job: Dict[str, Any], historical_stats: Optional[Dict[str
         "badge_html_text": f"💰 Est. {display}",
         "badge_css": "bg-indigo-500/10 text-indigo-300 border-indigo-500/30",
         "badge_type": "estimate",
-        "source_name": "Média Salarial SP (Base CAGED / Glassdoor)",
-        "source_url": salary_research_url,
+        "source_name": "Base Oficial Salario.com.br / CAGED",
+        "source_url": caged_url,
+        "caged_url": caged_url,
+        "glassdoor_url": glassdoor_url,
         "explanation": f"Métrica base salarial em São Paulo para {clean_title}{boost_desc}. A empresa não divulgou o valor oficial."
     }
