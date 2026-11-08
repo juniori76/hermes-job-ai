@@ -1219,24 +1219,32 @@
         </div>
 
         <form id="form-create-user" onsubmit="submitCreateUser(event)" class="space-y-4 text-sm">
-          <div>
-            <label class="block text-xs font-bold text-slate-400 mb-1">Nome Completo *</label>
-            <input type="text" id="new-user-fullname" required placeholder="Ex: Maria da Silva" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+          <div class="bg-purple-950/40 border border-purple-800/60 p-3 rounded-2xl text-xs text-purple-300 flex items-start gap-2.5">
+            <i class="fa-solid fa-lightbulb text-amber-400 text-sm mt-0.5"></i>
+            <span><strong>Tudo bem!</strong> Você só precisa preencher o <strong>Usuário de Login</strong> e a <strong>Senha</strong>. O restante é opcional e quem for usar pode preencher depois.</span>
           </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-bold text-slate-400 mb-1">Usuário de Login *</label>
-              <input type="text" id="new-user-login" required placeholder="ex: esposa" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+              <label class="block text-xs font-bold text-slate-200 mb-1">Usuário de Login *</label>
+              <input type="text" id="new-user-login" required placeholder="ex: esposa ou irmao" class="w-full bg-slate-950 border border-slate-700 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-400 mb-1">Senha Inicial *</label>
-              <input type="password" id="new-user-pass" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+              <label class="block text-xs font-bold text-slate-200 mb-1">Senha Inicial *</label>
+              <input type="password" id="new-user-pass" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
             </div>
           </div>
+
           <div>
-            <label class="block text-xs font-bold text-slate-400 mb-1">Cargos Pretendidos (separados por vírgula) *</label>
-            <input type="text" id="new-user-roles" required placeholder="Ex: Assistente Administrativo, Analista Financeiro, Atendimento" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+            <label class="block text-xs font-bold text-slate-400 mb-1">Nome Completo <span class="text-slate-500 font-normal">(Opcional)</span></label>
+            <input type="text" id="new-user-fullname" placeholder="Ex: Maria da Silva (se vazio, usa o login)" class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
           </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-400 mb-1">Cargos Pretendidos <span class="text-slate-500 font-normal">(Opcional - pode preencher depois)</span></label>
+            <input type="text" id="new-user-roles" placeholder="Ex: Assistente Administrativo, Vendas, Atendimento..." class="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-xl p-2.5 text-white outline-none">
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-400 mb-1">Cidade / Estado</label>
@@ -1250,7 +1258,7 @@
 
           <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
             <button type="button" onclick="closeCreateUserModal()" class="px-4 py-2 text-slate-400 hover:text-white font-medium">Cancelar</button>
-            <button type="submit" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg shadow-purple-600/30 transition">Criar Perfil</button>
+            <button type="submit" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg shadow-purple-600/30 transition active:scale-95">Criar Perfil</button>
           </div>
         </form>
       </div>
@@ -1980,12 +1988,14 @@ async function changePassword() {
     }
     async function submitCreateUser(e) {
       e.preventDefault();
+      const uLogin = document.getElementById('new-user-login').value.trim();
+      const uName = document.getElementById('new-user-fullname').value.trim();
       const payload = {
-        display_name: document.getElementById('new-user-fullname').value,
-        username: document.getElementById('new-user-login').value,
-        password: document.getElementById('new-user-pass').value,
-        cargos_alvo: document.getElementById('new-user-roles').value,
-        cidade: document.getElementById('new-user-city').value,
+        display_name: uName || (uLogin.charAt(0).toUpperCase() + uLogin.slice(1)),
+        username: uLogin,
+        password: document.getElementById('new-user-pass').value.trim(),
+        cargos_alvo: document.getElementById('new-user-roles').value.trim() || 'Assistente Administrativo, Atendimento',
+        cidade: document.getElementById('new-user-city').value.trim() || 'Diadema, SP',
         distancia_km: parseInt(document.getElementById('new-user-km').value) || 30
       };
 
